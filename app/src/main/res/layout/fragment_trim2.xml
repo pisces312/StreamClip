@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/gray_800">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- 选择视频按钮 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSelectVideo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/select_video"
+            app:cornerRadius="8dp" />
+
+        <TextView
+            android:id="@+id/tvFileName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:ellipsize="middle"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/tvDuration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/teal_200"
+            android:textSize="12sp" />
+
+        <!-- 播放器 + 播放/暂停覆盖按钮 -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <androidx.media3.ui.PlayerView
+                android:id="@+id/playerView"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:background="@color/black"
+                app:use_controller="false"
+                app:resize_mode="fit" />
+
+            <ImageView
+                android:id="@+id/btnPlayPause"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_media_play"
+                android:contentDescription="播放/暂停"
+                android:background="#66000000"
+                android:padding="8dp"
+                android:visibility="gone"
+                android:clickable="true"
+                android:focusable="true" />
+        </FrameLayout>
+
+        <!-- 时间轴区域 -->
+        <FrameLayout
+            android:id="@+id/sliderContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+
+            <!-- 播放位置指示线 -->
+            <View
+                android:id="@+id/playbackIndicator"
+                android:layout_width="2dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:background="@color/playback_indicator"
+                android:visibility="gone" />
+
+            <!-- RangeSlider — 统一时间轴 -->
+            <com.google.android.material.slider.RangeSlider
+                android:id="@+id/rangeSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:trackColor="@color/purple_500"
+                app:thumbColor="@color/purple_500"
+                app:tickVisible="false"
+                app:values="@array/initial_slider_values" />
+        </FrameLayout>
+
+        <!-- 迷你总览条 -->
+        <FrameLayout
+            android:id="@+id/overviewBar"
+            android:layout_width="match_parent"
+            android:layout_height="10dp"
+            android:layout_marginTop="4dp"
+            android:background="@color/overview_bg"
+            android:visibility="gone">
+
+            <!-- 选中范围 -->
+            <View
+                android:id="@+id/overviewRange"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/overview_range" />
+
+            <!-- 可见窗口框 -->
+            <View
+                android:id="@+id/overviewViewport"
+                android:layout_width="50dp"
+                android:layout_height="match_parent"
+                android:background="@color/overview_viewport" />
+        </FrameLayout>
+
+        <!-- 精确时间输入框 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="起始"
+                android:textColor="@color/teal_200"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/etStartTime"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:layout_marginEnd="16dp"
+                android:background="@color/gray_700"
+                android:gravity="center"
+                android:inputType="numberDecimal"
+                android:digits="0123456789."
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:hint="0.000"
+                android:textColorHint="#666666"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:singleLine="true"
+                android:enabled="false" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="终止"
+                android:textColor="@color/teal_200"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/etEndTime"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="@color/gray_700"
+                android:gravity="center"
+                android:inputType="numberDecimal"
+                android:digits="0123456789."
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:hint="0.000"
+                android:textColorHint="#666666"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:singleLine="true"
+                android:enabled="false" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="单位：秒（精确到毫秒）  手动输入后自动联动时间轴"
+            android:textColor="#888888"
+            android:textSize="11sp"
+            android:layout_marginTop="2dp" />
+
+        <!-- 缩放控件 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnZoomOut"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:padding="0dp"
+                android:text="-"
+                android:textSize="18sp"
+                app:cornerRadius="4dp"
+                app:backgroundTint="@color/gray_600"
+                android:minWidth="36dp"
+                android:minHeight="36dp"
+                android:enabled="false" />
+
+            <TextView
+                android:id="@+id/tvZoomLevel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:textColor="@color/white"
+                android:text="1x"
+                android:textSize="13sp"
+                android:minWidth="32dp"
+                android:gravity="center" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnZoomIn"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:padding="0dp"
+                android:text="+"
+                android:textSize="18sp"
+                app:cornerRadius="4dp"
+                app:backgroundTint="@color/gray_600"
+                android:minWidth="36dp"
+                android:minHeight="36dp"
+                android:enabled="false" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/tvSelectedDuration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/teal_200"
+                android:text="选中: 0.000"
+                android:textSize="13sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- 执行按钮 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnExecute"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/execute"
+            app:cornerRadius="8dp" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"
+            android:visibility="gone" />
+
+        <!-- 底部状态栏 -->
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:padding="8dp"
+            android:background="@color/gray_700"
+            android:textColor="#AAAAAA"
+            android:textSize="11sp"
+            android:ellipsize="middle"
+            android:singleLine="true"
+            android:visibility="gone" />
+
+    </LinearLayout>
+</ScrollView>

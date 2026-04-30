@@ -1,0 +1,46 @@
+# Built application files
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Java/class files
+*.class
+
+# Kotlin
+*.kotlin_module
+
+# Gradle files
+.gradle/
+build/
+*/build/
+
+# Local configuration
+local.properties
+
+# IDE - Android Studio / IntelliJ
+*.iml
+.idea/
+.cxx/
+.externalNativeBuild/
+.navigation/
+captures/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# NDK
+obj/
+
+# Signing
+*.jks
+*.keystore
+
+# Log files
+*.log
+
+# AAR/JAR in libs (large binaries, manage separately)
+# Uncomment if you want to exclude them from git:
+# app/libs/*.aar
+# app/libs/*.jar
