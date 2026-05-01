@@ -139,7 +139,7 @@ object FFmpegService {
         val concatFile = File.createTempFile("concat_list", ".txt", context.cacheDir)
         concatFile.writeText(inputPaths.joinToString("\n") { "file '${it.replace("'", "'\\''")}'" })
 
-        val command = "-y -f concat -safe 0 -i \"${concatFile.absolutePath}\" -c copy -fflags +genpts -avoid_negative_ts make_zero \"$outputPath\""
+        val command = "-y -f concat -safe 0 -i \"${concatFile.absolutePath}\" -c copy -fflags +genpts -avoid_negative_ts make_zero -reset_timestamps 1 \"$outputPath\""
 
         val result = executeCommand(command, outputPath, onProgress)
         concatFile.delete()

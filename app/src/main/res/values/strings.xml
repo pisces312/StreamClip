@@ -35,4 +35,5 @@
     <string name="add_timestamp">文件名添加时间戳</string>
     <string name="add_timestamp_desc">避免覆盖原文件</string>
     <string name="current_path">当前路径</string>
+    <string name="scroll_to_bottom">滚动到底部</string>
 </resources>

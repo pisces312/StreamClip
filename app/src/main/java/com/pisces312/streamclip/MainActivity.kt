@@ -3,20 +3,23 @@ package com.pisces312.streamclip
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.Settings
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.pisces312.streamclip.util.CrashHandler
+import com.pisces312.streamclip.util.LogCollector
 import com.google.android.material.tabs.TabLayoutMediator
 import com.pisces312.streamclip.adapter.MainPagerAdapter
 import com.pisces312.streamclip.databinding.ActivityMainBinding
 import com.pisces312.streamclip.fragment.SettingsFragment
-import com.pisces312.streamclip.util.CrashHandler
-import com.pisces312.streamclip.util.LogCollector
 
 class MainActivity : AppCompatActivity() {
 
@@ -99,6 +102,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkPermissions() {
+        // Android 11+: request MANAGE_EXTERNAL_STORAGE
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                AlertDialog.Builder(this)
+                    .setTitle("需要文件访问权限")
+                    .setMessage("StreamClip 需要访问所有文件才能读取视频和保存输出。请在设置中开启\"允许访问所有文件\"。")
+                    .setPositiveButton("去设置") { _, _ ->
+                        val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                            Uri.parse("package:$packageName"))
+                        startActivity(intent)
+                    }
+                    .setNegativeButton("取消", null)
+                    .setCancelable(false)
+                    .show()
+            }
+        }
+
         val permissions = mutableListOf<String>()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -114,7 +134,7 @@ class MainActivity : AppCompatActivity() {
                 != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(Manifest.permission.POST_NOTIFICATIONS)
             }
-        } else {
+        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)

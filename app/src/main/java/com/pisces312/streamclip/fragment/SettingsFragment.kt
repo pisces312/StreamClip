@@ -27,14 +27,42 @@ class SettingsFragment : Fragment() {
                 val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 requireContext().contentResolver.takePersistableUriPermission(uri, takeFlags)
 
-                // 保存路径
-                SettingsManager.setCustomOutputPath(requireContext(), uri.toString())
-                SettingsManager.setUseSourceDir(requireContext(), false)
-
-                updateUi()
-                Toast.makeText(requireContext(), "已选择输出目录", Toast.LENGTH_SHORT).show()
+                // 将 content URI 转换为文件路径
+                val filePath = uriToFilepath(uri)
+                if (filePath != null) {
+                    SettingsManager.setCustomOutputPath(requireContext(), filePath)
+                    SettingsManager.setUseSourceDir(requireContext(), false)
+                    updateUi()
+                    Toast.makeText(requireContext(), "已选择输出目录", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(requireContext(), "无法解析目录路径", Toast.LENGTH_SHORT).show()
+                }
             }
         }
+    }
+
+    /**
+     * 将 SAF content URI 转换为文件路径
+     * 例如 content://com.android.externalstorage.documents/tree/primary%3ADCIM
+     *   → /storage/emulated/0/DCIM
+     */
+    private fun uriToFilepath(uri: Uri): String? {
+        if (uri.scheme == "file") return uri.path
+        if (uri.scheme != "content") return null
+
+        // 处理 externalstoragedocuments
+        if (uri.authority == "com.android.externalstorage.documents") {
+            val docId = android.provider.DocumentsContract.getTreeDocumentId(uri)
+            val parts = docId.split(":")
+            if (parts.isEmpty()) return null
+            val storageId = parts[0]
+            val subPath = if (parts.size > 1) parts[1] else ""
+            // primary → /storage/emulated/0
+            val basePath = if (storageId == "primary") "/storage/emulated/0" else "/storage/$storageId"
+            return if (subPath.isNotEmpty()) "$basePath/$subPath" else basePath
+        }
+
+        return null
     }
 
     override fun onCreateView(
@@ -117,15 +145,23 @@ class SettingsFragment : Fragment() {
             return
         }
 
+        // path 现在是文件路径而非 content URI
         try {
-            val uri = Uri.parse(path)
             val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "resource/folder")
+                setDataAndType(Uri.parse(path), "resource/folder")
                 flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             }
             startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(context, "无法打开目录: ${e.message}", Toast.LENGTH_SHORT).show()
+            // 回退：用文件管理器打开
+            try {
+                val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                    setDataAndType(Uri.parse(path), "resource/folder")
+                }
+                startActivity(intent)
+            } catch (e2: Exception) {
+                Toast.makeText(context, "无法打开目录: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

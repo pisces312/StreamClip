@@ -27,6 +27,12 @@ class LogActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = getString(R.string.title_logs)
 
+        binding.fabScrollBottom.setOnClickListener {
+            binding.logScrollView.post {
+                binding.logScrollView.fullScroll(android.view.View.FOCUS_DOWN)
+            }
+        }
+
         loadLogs()
     }
 
@@ -53,6 +59,11 @@ class LogActivity : AppCompatActivity() {
         }
 
         binding.logTextView.text = logs.toString()
+
+        // 加载后自动滚到底部
+        binding.logScrollView.post {
+            binding.logScrollView.fullScroll(android.view.View.FOCUS_DOWN)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

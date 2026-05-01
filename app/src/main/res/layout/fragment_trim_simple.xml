@@ -12,7 +12,6 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- 选择视频按钮 -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSelectVideo"
             android:layout_width="match_parent"
@@ -38,163 +37,62 @@
             android:textColor="@color/teal_200"
             android:textSize="12sp" />
 
-        <!-- 播放器 + 播放/暂停覆盖按钮 -->
-        <FrameLayout
+        <androidx.media3.ui.PlayerView
+            android:id="@+id/playerView"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp">
-
-            <androidx.media3.ui.PlayerView
-                android:id="@+id/playerView"
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:background="@color/black"
-                app:use_controller="false"
-                app:resize_mode="fit" />
-
-            <ImageView
-                android:id="@+id/btnPlayPause"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_gravity="center"
-                android:src="@android:drawable/ic_media_play"
-                android:contentDescription="播放/暂停"
-                android:background="#66000000"
-                android:padding="8dp"
-                android:visibility="gone"
-                android:clickable="true"
-                android:focusable="true" />
-        </FrameLayout>
-
-        <!-- 播放进度 SeekBar -->
-        <SeekBar
-            android:id="@+id/seekBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:max="1000"
-            android:progress="0"
-            android:progressTint="@color/teal_200"
-            android:thumbTint="@color/teal_200" />
-
-        <!-- 起始/终止时间输入 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="起始"
-                android:textColor="@color/teal_200"
-                android:textSize="13sp" />
-
-            <EditText
-                android:id="@+id/etStartTime"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                android:layout_marginEnd="16dp"
-                android:background="@color/gray_700"
-                android:gravity="center"
-                android:inputType="numberDecimal"
-                android:digits="0123456789."
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:hint="0.000"
-                android:textColorHint="#666666"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:singleLine="true"
-                android:enabled="false" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="终止"
-                android:textColor="@color/teal_200"
-                android:textSize="13sp" />
-
-            <EditText
-                android:id="@+id/etEndTime"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                android:background="@color/gray_700"
-                android:gravity="center"
-                android:inputType="numberDecimal"
-                android:digits="0123456789."
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:hint="0.000"
-                android:textColorHint="#666666"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:singleLine="true"
-                android:enabled="false" />
-        </LinearLayout>
+            android:layout_height="200dp"
+            android:layout_marginTop="16dp"
+            android:background="@color/black"
+            app:use_controller="true"
+            app:resize_mode="fit" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="单位：秒（精确到毫秒）"
-            android:textColor="#888888"
-            android:textSize="11sp"
-            android:layout_marginTop="2dp" />
+            android:layout_marginTop="16dp"
+            android:text="选择截取范围"
+            android:textColor="@color/white"
+            android:textSize="16sp" />
 
-        <!-- 快捷按钮：设为起点/设为终点 -->
+        <com.google.android.material.slider.RangeSlider
+            android:id="@+id/rangeSlider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:trackColor="@color/purple_500"
+            app:thumbColor="@color/purple_500"
+            app:tickVisible="false"
+            app:values="@array/initial_slider_values" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:orientation="horizontal">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSetStart"
+            <TextView
+                android:id="@+id/tvStartTime"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:text="设为起点"
-                android:textSize="13sp"
-                app:cornerRadius="8dp"
-                app:backgroundTint="@color/gray_600"
-                android:enabled="false" />
+                android:textColor="@color/white"
+                android:text="开始: 00:00" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSetEnd"
+            <TextView
+                android:id="@+id/tvEndTime"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="设为终点"
-                android:textSize="13sp"
-                app:cornerRadius="8dp"
-                app:backgroundTint="@color/gray_600"
-                android:enabled="false" />
+                android:gravity="end"
+                android:textColor="@color/white"
+                android:text="结束: 00:00" />
         </LinearLayout>
 
-        <!-- 选中时长 -->
-        <TextView
-            android:id="@+id/tvSelectedDuration"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/teal_200"
-            android:textSize="13sp"
-            android:gravity="center"
-            android:visibility="gone" />
-
-        <!-- 执行按钮 -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnExecute"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="24dp"
             android:text="@string/execute"
             app:cornerRadius="8dp" />
 

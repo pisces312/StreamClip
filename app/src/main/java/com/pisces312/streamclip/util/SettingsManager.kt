@@ -63,7 +63,6 @@ object SettingsManager {
                     parentDir.absolutePath.contains(context.packageName)
                 )
                 if (isCacheOrPrivate) {
-                    // 源文件在缓存/私有目录，回退到公共目录
                     FileUtils.getOutputDir(context)
                 } else {
                     parentDir ?: FileUtils.getOutputDir(context)
@@ -79,6 +78,8 @@ object SettingsManager {
             }
         }
     }
+
+
 
     /**
      * 生成输出文件名

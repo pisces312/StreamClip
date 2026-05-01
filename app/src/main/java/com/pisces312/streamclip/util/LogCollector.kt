@@ -15,6 +15,7 @@ object LogCollector {
 
     private const val TAG = "StreamClip"
     private const val MAX_MEMORY_LOGS = 500
+    private const val MAX_LOG_FILE_SIZE = 1 * 1024 * 1024L // 1MB
     private const val LOG_FILE_NAME = "app_logs.txt"
     private const val CRASH_LOG_FILE_NAME = "crash_logs.txt"
 
@@ -64,6 +65,9 @@ object LogCollector {
         // 写入文件
         fileLogger?.let { file ->
             try {
+                if (file.length() > MAX_LOG_FILE_SIZE) {
+                    trimLogFile(file)
+                }
                 file.appendText(entry.format() + "\n")
             } catch (e: Exception) {
                 // 文件写入失败，仅保留内存日志
@@ -86,6 +90,23 @@ object LogCollector {
     fun e(tag: String, message: String) = log("ERROR", tag, message)
     fun e(tag: String, message: String, throwable: Throwable) {
         log("ERROR", tag, "$message\n${throwable.stackTraceToString()}")
+    }
+
+    /**
+     * 截断日志文件，保留后半部分
+     */
+    private fun trimLogFile(file: File) {
+        try {
+            val lines = file.readLines()
+            if (lines.size > 100) {
+                file.writeText(lines.takeLast(lines.size / 2).joinToString("\n", postfix = "\n"))
+            } else {
+                file.writeText("")
+            }
+        } catch (e: Exception) {
+            // 截断失败则清空
+            file.writeText("")
+        }
     }
 
     /**
