@@ -12,8 +12,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.appcompat.app.AlertDialog
 import com.pisces312.streamclip.adapter.VideoListAdapter
 import com.pisces312.streamclip.databinding.FragmentMergeBinding
+import com.pisces312.streamclip.model.VideoInfo
 import com.pisces312.streamclip.service.FFmpegService
 import com.pisces312.streamclip.util.FileUtils
 import com.pisces312.streamclip.util.SettingsManager
@@ -153,6 +155,41 @@ class MergeFragment : Fragment() {
                 }
             }
 
+            // Probe video info for all files
+            val videoInfos = mutableListOf<VideoInfo>()
+            for (path in paths) {
+                val info = FFmpegService.probeVideoInfo(path)
+                if (info == null) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(requireContext(), "无法探测视频参数: ${java.io.File(path).name}", Toast.LENGTH_SHORT).show()
+                        binding.progressBar.visibility = View.GONE
+                        binding.btnExecute.isEnabled = true
+                    }
+                    return@launch
+                }
+                videoInfos.add(info)
+            }
+
+            // Check compatibility
+            val firstInfo = videoInfos[0]
+            val incompatibleFiles = mutableListOf<Pair<String, List<String>>>()
+            for (i in 1 until videoInfos.size) {
+                val info = videoInfos[i]
+                if (!firstInfo.isCompatibleWith(info)) {
+                    val fields = firstInfo.getIncompatibleFields(info)
+                    incompatibleFiles.add(java.io.File(info.path).name to fields)
+                }
+            }
+
+            if (incompatibleFiles.isNotEmpty()) {
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.btnExecute.isEnabled = true
+                    showIncompatibleDialog(firstInfo, incompatibleFiles)
+                }
+                return@launch
+            }
+
             val firstSourceFile = java.io.File(paths[0])
             val outputDir = SettingsManager.getOutputDir(requireContext(), firstSourceFile)
             val outputName = SettingsManager.getOutputFileName(
@@ -178,6 +215,35 @@ class MergeFragment : Fragment() {
                 }
             }
         }
+    }
+
+    private fun showIncompatibleDialog(
+        firstInfo: VideoInfo,
+        incompatibleFiles: List<Pair<String, List<String>>>
+    ) {
+        val message = buildString {
+            appendLine("以下视频参数不一致，无法无损合并：")
+            appendLine()
+            appendLine("参考视频: ${java.io.File(firstInfo.path).name}")
+            appendLine("  分辨率: ${firstInfo.resolution}")
+            appendLine("  视频编码: ${firstInfo.videoCodec}")
+            appendLine("  音频编码: ${firstInfo.audioCodec}")
+            appendLine("  帧率: ${firstInfo.frameRate}")
+            appendLine("  像素格式: ${firstInfo.pixelFormat}")
+            appendLine("  旋转: ${firstInfo.rotation}°")
+            appendLine()
+            appendLine("不兼容视频:")
+            for ((fileName, fields) in incompatibleFiles) {
+                appendLine("  $fileName")
+                appendLine("    差异: ${fields.joinToString(", ")}")
+            }
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("参数不一致")
+            .setMessage(message)
+            .setPositiveButton("确定", null)
+            .show()
     }
 
     override fun onDestroyView() {

@@ -163,6 +163,59 @@ object FFmpegService {
     }
 
     /**
+     * Probe video stream info from a video file using ffprobe
+     */
+    fun probeVideoInfo(inputPath: String): com.pisces312.streamclip.model.VideoInfo? {
+        return try {
+            val session = FFprobeKit.execute(
+                "-v quiet -select_streams v:0 -show_entries stream=width,height,codec_name,r_frame_rate,pix_fmt -of csv=p=0 \"$inputPath\""
+            )
+            if (!ReturnCode.isSuccess(session.returnCode)) return null
+
+            val output = session.output.trim()
+            if (output.isEmpty()) return null
+
+            val parts = output.split(",")
+            if (parts.size < 5) return null
+
+            val width = parts[0].trim().toIntOrNull() ?: 0
+            val height = parts[1].trim().toIntOrNull() ?: 0
+            val videoCodec = parts[2].trim()
+            val frameRate = parts[3].trim()
+            val pixelFormat = parts[4].trim()
+
+            val audioSession = FFprobeKit.execute(
+                "-v quiet -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 \"$inputPath\""
+            )
+            val audioCodec = if (ReturnCode.isSuccess(audioSession.returnCode)) {
+                audioSession.output.trim().ifEmpty { "none" }
+            } else "none"
+
+            // Probe rotation from side_data
+            val rotationSession = FFprobeKit.execute(
+                "-v quiet -select_streams v:0 -show_entries stream_side_data=rotation -of csv=p=0 \"$inputPath\""
+            )
+            val rotation = if (ReturnCode.isSuccess(rotationSession.returnCode)) {
+                rotationSession.output.trim().toIntOrNull() ?: 0
+            } else 0
+
+            com.pisces312.streamclip.model.VideoInfo(
+                path = inputPath,
+                width = width,
+                height = height,
+                videoCodec = videoCodec,
+                audioCodec = audioCodec,
+                frameRate = frameRate,
+                pixelFormat = pixelFormat,
+                rotation = rotation
+            )
+        } catch (e: Exception) {
+            LogCollector.e("FFmpegService", "Probe video info failed: ${e.message}")
+            null
+        }
+    }
+
+    /**
      * Probe audio stream info from a video file using ffprobe
      */
     fun probeAudioInfo(inputPath: String): AudioInfo? {

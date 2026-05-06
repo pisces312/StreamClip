@@ -3,6 +3,7 @@
 *.aab
 *.ap_
 *.dex
+*.idsig
 
 # Java/class files
 *.class
