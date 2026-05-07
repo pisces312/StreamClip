@@ -5,6 +5,7 @@
     <string name="title_merge">无损合并</string>
     <string name="title_extract">提取音频</string>
     <string name="title_compress">视频压缩</string>
+    <string name="title_custom">自定义命令</string>
     <string name="select_video">选择视频</string>
     <string name="start_time">开始时间</string>
     <string name="end_time">结束时间</string>

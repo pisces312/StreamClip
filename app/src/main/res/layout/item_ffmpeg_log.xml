@@ -6,4 +6,5 @@
     android:paddingVertical="2dp"
     android:textSize="11sp"
     android:fontFamily="monospace"
-    android:textIsSelectable="true" />
+    android:textIsSelectable="true"
+    android:textColor="#FFFFFF" />

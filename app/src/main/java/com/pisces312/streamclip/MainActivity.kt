@@ -170,6 +170,7 @@ class MainActivity : AppCompatActivity() {
                 2 -> getString(R.string.title_merge)
                 3 -> getString(R.string.title_extract)
                 4 -> getString(R.string.title_compress)
+                5 -> getString(R.string.title_custom)
                 else -> ""
             }
         }.attach()

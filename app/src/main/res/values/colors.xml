@@ -10,6 +10,8 @@
     <color name="gray_800">#FF1F1F1F</color>
     <color name="gray_700">#FF2D2D2D</color>
     <color name="gray_600">#FF404040</color>
+    <color name="gray_500">#FF808080</color>
+    <color name="gray_400">#FFB0B0B0</color>
     <color name="highlight_range">#33BB86FC</color>   <!-- 选中区域半透明紫 -->
     <color name="playback_indicator">#FF03DAC5</color> <!-- 播放位置线 teal -->
     <color name="overview_bg">#FF2D2D2D</color>       <!-- 总览条背景 -->

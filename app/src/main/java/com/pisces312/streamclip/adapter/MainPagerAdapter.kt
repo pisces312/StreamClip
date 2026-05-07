@@ -8,10 +8,11 @@ import com.pisces312.streamclip.fragment.Trim2Fragment
 import com.pisces312.streamclip.fragment.MergeFragment
 import com.pisces312.streamclip.fragment.ExtractFragment
 import com.pisces312.streamclip.fragment.CompressFragment
+import com.pisces312.streamclip.fragment.CustomCommandFragment
 
 class MainPagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activity) {
 
-    override fun getItemCount(): Int = 5
+    override fun getItemCount(): Int = 6
 
     override fun createFragment(position: Int): Fragment {
         return when (position) {
@@ -20,6 +21,7 @@ class MainPagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activi
             2 -> MergeFragment()
             3 -> ExtractFragment()
             4 -> CompressFragment()
+            5 -> CustomCommandFragment()
             else -> throw IllegalArgumentException("Invalid position: $position")
         }
     }

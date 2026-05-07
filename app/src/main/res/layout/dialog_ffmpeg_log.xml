@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="#1a1a1a">
 
     <TextView
         android:layout_width="wrap_content"
@@ -16,7 +17,7 @@
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#f5f5f5"
+        android:background="#2D2D2D"
         android:padding="8dp">
 
         <TextView
@@ -26,7 +27,7 @@
             android:textIsSelectable="true"
             android:textSize="12sp"
             android:fontFamily="monospace"
-            android:textColor="#333" />
+            android:textColor="#FFFFFF" />
     </HorizontalScrollView>
 
     <TextView
@@ -35,6 +36,7 @@
         android:text="实时日志"
         android:textStyle="bold"
         android:textSize="14sp"
+        android:textColor="#FFFFFF"
         android:layout_marginTop="12dp"
         android:layout_marginBottom="4dp" />
 
@@ -69,6 +71,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="关闭" />
+            android:text="关闭"
+            android:enabled="false" />
     </LinearLayout>
 </LinearLayout>

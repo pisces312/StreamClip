@@ -18,7 +18,6 @@ data class CompressConfig(
         // Copy all metadata first (before encoder settings)
         if (copyMetadata) {
             cmd.append("-map_metadata 0 ")
-            cmd.append("-movflags use_metadata_tags ")
         }
         
         // Video encoder
