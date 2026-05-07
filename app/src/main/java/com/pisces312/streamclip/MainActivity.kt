@@ -111,6 +111,9 @@ class MainActivity : AppCompatActivity() {
             appendLine("• 要兼容 → H.264 CRF 25")
             appendLine("• 要省空间 → HEVC CRF 30")
             appendLine("• 要快 → 硬件编码 3Mbps")
+            appendLine()
+            appendLine("【合并视频多选】")
+            appendLine("• 长按文件管理器中的视频项即可多选")
         }
         AlertDialog.Builder(this)
             .setTitle(R.string.guide_title)

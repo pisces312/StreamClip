@@ -2,6 +2,25 @@
 
 Android 视频处理工具，基于 FFmpeg 实现视频裁剪、音频提取、视频合并功能。
 
+## 请我喝杯咖啡 | 捐赠支持
+
+若项目对你有帮助，欢迎小额赞助，助力持续维护 ✨
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="50%">
+        <img src="app/src/main/assets/donate-alipay.png" width="200" alt="支付宝"><br>
+        <b>支付宝</b>
+      </td>
+      <td align="center" width="50%">
+        <img src="app/src/main/assets/donate-wechat.png" width="200" alt="微信"><br>
+        <b>微信</b>
+      </td>
+    </tr>
+  </table>
+</div>
+
 ## 功能
 
 | 功能 | 说明 |
@@ -39,3 +58,5 @@ Android 视频处理工具，基于 FFmpeg 实现视频裁剪、音频提取、�
 ## 版本
 
 - v1.0.0 — 初始版本，裁剪/音频提取/合并基础功能
+
+

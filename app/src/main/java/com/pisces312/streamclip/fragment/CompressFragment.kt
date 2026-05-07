@@ -24,6 +24,9 @@ import com.pisces312.streamclip.util.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.attribute.FileTime
 
 class CompressFragment : Fragment() {
 
@@ -199,12 +202,26 @@ class CompressFragment : Fragment() {
             .show()
     }
 
+    private var sourceCreationTime: FileTime? = null
+    private var sourceModifiedTime: FileTime? = null
+
     private fun handleVideoSelected(uri: Uri) {
         val path = FileUtils.getPathFromUri(requireContext(), uri)
         if (path != null) {
             videoPath = path
             binding.tvSelectedFile.text = java.io.File(path).name
             SettingsManager.setLastVideoDir(requireContext(), uri)
+
+            // 读取原文件时间戳
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                try {
+                    val p = Paths.get(path)
+                    sourceCreationTime = Files.getAttribute(p, "creationTime") as FileTime
+                    sourceModifiedTime = Files.getLastModifiedTime(p)
+                } catch (e: Exception) {
+                    LogCollector.w("Compress", "读取时间戳失败: ${e.message}")
+                }
+            }
         } else {
             Toast.makeText(requireContext(), "无法获取文件路径", Toast.LENGTH_SHORT).show()
         }
@@ -266,6 +283,20 @@ class CompressFragment : Fragment() {
                     if (result.success) {
                         val outFileName = outPath.substring(outPath.lastIndexOf('/') + 1)
                         FileUtils.scanFile(requireContext(), java.io.File(outPath))
+
+                        // 恢复时间戳
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            try {
+                                val p = Paths.get(outPath)
+                                sourceModifiedTime?.let { Files.setLastModifiedTime(p, it) }
+                                sourceCreationTime?.let {
+                                    Files.setAttribute(p, "creationTime", it)
+                                }
+                            } catch (e: Exception) {
+                                LogCollector.w("Compress", "恢复时间戳失败: ${e.message}")
+                            }
+                        }
+
                         Toast.makeText(requireContext(), "压缩完成: $outFileName", Toast.LENGTH_LONG).show()
                     } else {
                         Toast.makeText(requireContext(), "压缩失败: ${result.error}", Toast.LENGTH_LONG).show()
