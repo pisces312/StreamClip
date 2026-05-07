@@ -52,8 +52,9 @@ data class CompressConfig(
         // Audio
         cmd.append("-c:a $audioEncoder ")
 
-        // Format
-        cmd.append("-f $outputFormat ")
+        // Format: use MOV format to preserve GPS metadata (moov/udta/xyz atom)
+        // Android MediaMetadataRetriever reads xyz atom, not loci
+        cmd.append("-f mov ")
 
         cmd.append("\"$outputPath\"")
 
