@@ -96,6 +96,7 @@ class MainActivity : AppCompatActivity() {
                 1 -> getString(R.string.title_trim2)
                 2 -> getString(R.string.title_merge)
                 3 -> getString(R.string.title_extract)
+                4 -> getString(R.string.title_compress)
                 else -> ""
             }
         }.attach()

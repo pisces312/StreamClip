@@ -98,7 +98,7 @@ object SettingsManager {
      */
     fun getOutputFileName(context: Context, sourceFileName: String?, operation: String, extension: String): String {
         val baseName = sourceFileName?.substringBeforeLast(".") ?: operation
-        return generateOutputFileName(baseName, extension, context)
+        return generateOutputFileName("${baseName}_${operation}", extension, context)
     }
 
     /**

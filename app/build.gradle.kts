@@ -52,8 +52,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0")
     
-    // FFmpeg Kit (local AAR)
-    implementation(files("libs/ffmpeg-kit-6.0-arm64-release.aar"))
+    // FFmpeg Kit with MediaCodec HW encode
+    implementation(files("libs/ffmpeg-kit-6.0-arm64-hw-release.aar"))
     implementation(files("libs/smart-exception-common-0.2.1.jar"))
     implementation(files("libs/smart-exception-java-0.2.1.jar"))
 
