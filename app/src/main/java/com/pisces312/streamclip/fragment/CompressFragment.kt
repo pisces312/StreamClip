@@ -7,10 +7,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.pisces312.streamclip.databinding.FragmentCompressBinding
@@ -22,121 +24,189 @@ import com.pisces312.streamclip.util.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 class CompressFragment : Fragment() {
 
     private var _binding: FragmentCompressBinding? = null
     private val binding get() = _binding!!
-    private var selectedVideoUri: Uri? = null
     private var videoPath: String? = null
+    private var isHardwareTab = true
 
-    private val pickVideo = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+    private val pickVideo = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
-                selectedVideoUri = uri
-                requireContext().contentResolver.takePersistableUriPermission(
-                    uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-                videoPath = FileUtils.getPathResultFromUri(requireContext(), uri)?.path
-                binding.tvSelectedFile.text = videoPath ?: uri.toString()
-                LogCollector.d("Compress", "Selected: $videoPath")
+                handleVideoSelected(uri)
             }
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         _binding = FragmentCompressBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        setupSpinners()
-        setupQualitySeekBar()
+        setupTabLayout()
+        setupHardwarePanel()
+        setupSoftwarePanel()
         setupButtons()
+        setupHelpButtons()
     }
 
-    private fun setupSpinners() {
-        binding.spinnerEncoder.adapter = ArrayAdapter(
-            requireContext(), android.R.layout.simple_spinner_item,
-            CompressConfig.ENCODERS.map { it.second }
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-
-        binding.spinnerEncoder.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
-                val encoderKey = CompressConfig.ENCODERS[position].first
-                val isHardware = encoderKey in listOf("h264_mediacodec", "hevc_mediacodec")
-                updateQualityControl(isHardware)
+    private fun setupTabLayout() {
+        binding.tabLayout.addOnTabSelectedListener(object :
+            com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
+                isHardwareTab = tab?.position == 0
+                binding.panelHardware.visibility = if (isHardwareTab) View.VISIBLE else View.GONE
+                binding.panelSoftware.visibility = if (isHardwareTab) View.GONE else View.VISIBLE
             }
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+
+            override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+            override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
         })
-
-        binding.spinnerRateControl.adapter = ArrayAdapter(
-            requireContext(), android.R.layout.simple_spinner_item,
-            CompressConfig.RATE_CONTROLS.map { it.second }
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-
-        binding.spinnerResolution.adapter = ArrayAdapter(
-            requireContext(), android.R.layout.simple_spinner_item,
-            CompressConfig.RESOLUTIONS.map { it.second }
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-
-        binding.spinnerFrameRate.adapter = ArrayAdapter(
-            requireContext(), android.R.layout.simple_spinner_item,
-            CompressConfig.FRAME_RATES.map { it.second }
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-
-        binding.spinnerPreset.adapter = ArrayAdapter(
-            requireContext(), android.R.layout.simple_spinner_item,
-            CompressConfig.PRESETS.map { it.second }
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-
-        binding.spinnerAudioEncoder.adapter = ArrayAdapter(
-            requireContext(), android.R.layout.simple_spinner_item,
-            CompressConfig.AUDIO_ENCODERS.map { it.second }
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-
-        binding.spinnerOutputFormat.adapter = ArrayAdapter(
-            requireContext(), android.R.layout.simple_spinner_item,
-            CompressConfig.FORMATS.map { it.second }
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
     }
 
-    private fun setupQualitySeekBar() {
-        binding.seekBarQuality.max = 51
-        binding.seekBarQuality.progress = 23
-        binding.tvQualityValue.text = "23"
+    private fun setupHardwarePanel() {
+        // Encoder
+        binding.spinnerEncoderHw.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.HW_ENCODERS.map { it.second }
+        )
 
-        binding.seekBarQuality.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        // Bitrate
+        binding.spinnerBitrate.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.BITRATES.map { it.second }
+        )
+        binding.spinnerBitrate.setSelection(2) // 2 Mbps default
+
+        // Speed
+        binding.spinnerSpeed.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.SPEEDS.map { it.second }
+        )
+        binding.spinnerSpeed.setSelection(1) // balanced
+
+        // Resolution
+        binding.spinnerResolutionHw.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.RESOLUTIONS.map { it.second }
+        )
+
+        // Audio
+        binding.spinnerAudioHw.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.AUDIO_ENCODERS.map { it.second }
+        )
+        binding.spinnerAudioHw.setSelection(0) // copy
+    }
+
+    private fun setupSoftwarePanel() {
+        // Encoder
+        binding.spinnerEncoderSw.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.SW_ENCODERS.map { it.second }
+        )
+
+        // CRF SeekBar
+        binding.seekBarCrf.max = 51
+        binding.seekBarCrf.progress = 23
+        binding.seekBarCrf.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val encoderKey = CompressConfig.ENCODERS[binding.spinnerEncoder.selectedItemPosition].first
-                val isHardware = encoderKey in listOf("h264_mediacodec", "hevc_mediacodec")
-                if (isHardware) {
-                    binding.tvQualityValue.text = "${progress * 200}Kbps"
-                } else {
-                    binding.tvQualityValue.text = progress.toString()
-                }
+                binding.tvCrfValue.text = progress.toString()
             }
+
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
+
+        // Preset
+        binding.spinnerPresetSw.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.PRESETS.map { it.second }
+        )
+        binding.spinnerPresetSw.setSelection(5) // medium
+
+        // Resolution
+        binding.spinnerResolutionSw.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.RESOLUTIONS.map { it.second }
+        )
+
+        // Audio
+        binding.spinnerAudioSw.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.AUDIO_ENCODERS.map { it.second }
+        )
+        binding.spinnerAudioSw.setSelection(0) // copy
     }
 
-    private fun updateQualityControl(isHardware: Boolean) {
-        if (isHardware) {
-            binding.seekBarQuality.isEnabled = true
-            binding.seekBarQuality.max = 25
-            binding.seekBarQuality.progress = 5
-            binding.tvQualityValue.text = "1000Kbps"
-            binding.tvQualityValue.text = "1000Kbps"
+    private fun setupHelpButtons() {
+        val helpMap = mapOf(
+            binding.btnHelpEncoderHw to "encoder",
+            binding.btnHelpEncoderSw to "encoder",
+            binding.btnHelpBitrate to "bitrate",
+            binding.btnHelpCrf to "crf",
+            binding.btnHelpSpeed to "speed",
+            binding.btnHelpPreset to "preset",
+            binding.btnHelpResolutionHw to "resolution",
+            binding.btnHelpResolutionSw to "resolution",
+            binding.btnHelpAudioHw to "audio",
+            binding.btnHelpAudioSw to "audio"
+        )
+
+        helpMap.forEach { (view, key) ->
+            view.setOnClickListener {
+                showHelpDialog(key)
+            }
+        }
+    }
+
+    private fun showHelpDialog(key: String) {
+        val title = when (key) {
+            "encoder" -> "编码器"
+            "bitrate" -> "码率"
+            "crf" -> "CRF 质量"
+            "speed" -> "速度质量平衡"
+            "preset" -> "预设速度"
+            "resolution" -> "分辨率"
+            "audio" -> "音频编码"
+            else -> "帮助"
+        }
+        val message = CompressConfig.HELP_TEXTS[key] ?: "暂无说明"
+
+        AlertDialog.Builder(requireContext())
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("确定", null)
+            .show()
+    }
+
+    private fun handleVideoSelected(uri: Uri) {
+        val path = FileUtils.getPathFromUri(requireContext(), uri)
+        if (path != null) {
+            videoPath = path
+            binding.tvSelectedFile.text = java.io.File(path).name
+            SettingsManager.setLastVideoDir(requireContext(), uri)
         } else {
-            binding.seekBarQuality.isEnabled = true
-            binding.seekBarQuality.max = 51
-            binding.seekBarQuality.progress = 23
-            binding.tvQualityValue.text = "23"
-            binding.tvQualityValue.text = "23"
+            Toast.makeText(requireContext(), "无法获取文件路径", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -173,6 +243,7 @@ class CompressFragment : Fragment() {
             val outPath = java.io.File(outputDir, outputName).absolutePath
 
             binding.progressBar.visibility = View.VISIBLE
+            binding.tvProgress.visibility = View.VISIBLE
             binding.tvProgress.text = "压缩中..."
             binding.btnCompress.isEnabled = false
 
@@ -189,16 +260,15 @@ class CompressFragment : Fragment() {
 
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
+                    binding.tvProgress.visibility = View.GONE
                     binding.btnCompress.isEnabled = true
 
                     if (result.success) {
                         val outFileName = outPath.substring(outPath.lastIndexOf('/') + 1)
                         FileUtils.scanFile(requireContext(), java.io.File(outPath))
                         Toast.makeText(requireContext(), "压缩完成: $outFileName", Toast.LENGTH_LONG).show()
-                        binding.tvProgress.text = "完成: $outPath"
                     } else {
                         Toast.makeText(requireContext(), "压缩失败: ${result.error}", Toast.LENGTH_LONG).show()
-                        binding.tvProgress.text = "失败: ${result.error}"
                     }
                 }
             }
@@ -206,16 +276,25 @@ class CompressFragment : Fragment() {
     }
 
     private fun buildConfig(): CompressConfig {
-        return CompressConfig(
-            encoder = CompressConfig.ENCODERS[binding.spinnerEncoder.selectedItemPosition].first,
-            rateControl = CompressConfig.RATE_CONTROLS[binding.spinnerRateControl.selectedItemPosition].first,
-            qualityValue = binding.seekBarQuality.progress,
-            resolution = CompressConfig.RESOLUTIONS[binding.spinnerResolution.selectedItemPosition].first,
-            frameRate = CompressConfig.FRAME_RATES[binding.spinnerFrameRate.selectedItemPosition].first,
-            preset = CompressConfig.PRESETS[binding.spinnerPreset.selectedItemPosition].first,
-            audioEncoder = CompressConfig.AUDIO_ENCODERS[binding.spinnerAudioEncoder.selectedItemPosition].first,
-            outputFormat = CompressConfig.FORMATS[binding.spinnerOutputFormat.selectedItemPosition].first
-        )
+        return if (isHardwareTab) {
+            CompressConfig(
+                encoder = CompressConfig.HW_ENCODERS[binding.spinnerEncoderHw.selectedItemPosition].first,
+                bitrate = CompressConfig.BITRATES[binding.spinnerBitrate.selectedItemPosition].first,
+                resolution = CompressConfig.RESOLUTIONS[binding.spinnerResolutionHw.selectedItemPosition].first,
+                speed = CompressConfig.SPEEDS[binding.spinnerSpeed.selectedItemPosition].first,
+                audioEncoder = CompressConfig.AUDIO_ENCODERS[binding.spinnerAudioHw.selectedItemPosition].first,
+                isHardware = true
+            )
+        } else {
+            CompressConfig(
+                encoder = CompressConfig.SW_ENCODERS[binding.spinnerEncoderSw.selectedItemPosition].first,
+                crf = binding.seekBarCrf.progress,
+                resolution = CompressConfig.RESOLUTIONS[binding.spinnerResolutionSw.selectedItemPosition].first,
+                preset = CompressConfig.PRESETS[binding.spinnerPresetSw.selectedItemPosition].first,
+                audioEncoder = CompressConfig.AUDIO_ENCODERS[binding.spinnerAudioSw.selectedItemPosition].first,
+                isHardware = false
+            )
+        }
     }
 
     override fun onDestroyView() {

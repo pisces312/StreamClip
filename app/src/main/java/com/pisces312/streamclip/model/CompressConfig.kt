@@ -1,14 +1,15 @@
 package com.pisces312.streamclip.model
 
 data class CompressConfig(
-    val encoder: String = "h264_mediacodec",  // h264_mediacodec, hevc_mediacodec, libx264, libx265
-    val rateControl: String = "crf",          // crf, bitrate, cq
-    val qualityValue: Int = 23,               // CRF 0-51, bitrate kbps, CQ 0-51
-    val resolution: String = "original",      // original, 1080p, 720p, 480p
-    val frameRate: String = "original",       // original, 30, 24
-    val preset: String = "medium",            // ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow
-    val audioEncoder: String = "copy",        // copy, aac, mp3, flac
-    val outputFormat: String = "mp4"          // mp4, mkv, webm
+    val encoder: String = "h264_mediacodec",
+    val bitrate: Int = 2000,           // 硬编码码率 (kbps)
+    val crf: Int = 23,                 // 软编码 CRF (0-51)
+    val resolution: String = "original",
+    val speed: String = "balanced",    // 硬编码速度
+    val preset: String = "medium",     // 软编码预设
+    val audioEncoder: String = "copy",
+    val outputFormat: String = "mp4",
+    val isHardware: Boolean = true
 ) {
     fun toFFmpegCommand(inputPath: String, outputPath: String): String {
         val cmd = StringBuilder("-i \"$inputPath\" ")
@@ -17,12 +18,17 @@ data class CompressConfig(
         cmd.append("-c:v $encoder ")
         
         // Rate control
-        val isHardwareEncoder = encoder in listOf("h264_mediacodec", "hevc_mediacodec")
-        when {
-            isHardwareEncoder -> cmd.append("-b:v ${qualityValue}k ")
-            rateControl == "crf" -> cmd.append("-crf $qualityValue ")
-            rateControl == "bitrate" -> cmd.append("-b:v ${qualityValue}k ")
-            rateControl == "cq" -> cmd.append("-cq $qualityValue -qmin $qualityValue -qmax ${qualityValue + 6} ")
+        if (isHardware) {
+            cmd.append("-b:v ${bitrate}k ")
+            // MediaCodec speed/quality hint
+            when (speed) {
+                "speed" -> cmd.append("-tune zerolatency ")
+                "quality" -> cmd.append("-cq 18 ")
+                else -> {} // balanced: no extra flag
+            }
+        } else {
+            cmd.append("-crf $crf ")
+            cmd.append("-preset $preset ")
         }
         
         // Resolution
@@ -34,16 +40,6 @@ data class CompressConfig(
                 else -> -1
             }
             if (height > 0) cmd.append("-vf scale=-2:$height ")
-        }
-        
-        // Frame rate
-        if (frameRate != "original") {
-            cmd.append("-r $frameRate ")
-        }
-        
-        // Preset (for software encoders)
-        if (encoder in listOf("libx264", "libx265")) {
-            cmd.append("-preset $preset ")
         }
         
         // Audio
@@ -58,17 +54,31 @@ data class CompressConfig(
     }
     
     companion object {
-        val ENCODERS = listOf(
+        // Hardware encoders
+        val HW_ENCODERS = listOf(
             "h264_mediacodec" to "H.264 硬件",
-            "hevc_mediacodec" to "H.265 硬件",
+            "hevc_mediacodec" to "H.265 硬件"
+        )
+        
+        // Software encoders
+        val SW_ENCODERS = listOf(
             "libx264" to "H.264 软件",
             "libx265" to "H.265 软件"
         )
         
-        val RATE_CONTROLS = listOf(
-            "crf" to "CRF 质量",
-            "bitrate" to "固定码率",
-            "cq" to "CQ 恒定质量"
+        val BITRATES = listOf(
+            500 to "500 Kbps",
+            1000 to "1 Mbps",
+            2000 to "2 Mbps",
+            4000 to "4 Mbps",
+            8000 to "8 Mbps",
+            12000 to "12 Mbps"
+        )
+        
+        val SPEEDS = listOf(
+            "speed" to "速度优先",
+            "balanced" to "平衡",
+            "quality" to "质量优先"
         )
         
         val RESOLUTIONS = listOf(
@@ -76,12 +86,6 @@ data class CompressConfig(
             "1080p" to "1080p",
             "720p" to "720p",
             "480p" to "480p"
-        )
-        
-        val FRAME_RATES = listOf(
-            "original" to "原始",
-            "30" to "30fps",
-            "24" to "24fps"
         )
         
         val PRESETS = listOf(
@@ -105,8 +109,18 @@ data class CompressConfig(
         
         val FORMATS = listOf(
             "mp4" to "MP4",
-            "mkv" to "MKV",
-            "webm" to "WebM"
+            "mkv" to "MKV"
+        )
+        
+        // Help texts
+        val HELP_TEXTS = mapOf(
+            "encoder" to "编码器将视频压缩为更小文件。硬件编码速度快但质量略低，软件编码质量好但速度慢。",
+            "bitrate" to "码率决定每秒视频数据量。越高画质越好文件越大。建议：短视频2-4Mbps，长视频1-2Mbps。",
+            "crf" to "CRF (Constant Rate Factor) 控制质量。0=无损，23=默认，51=最差。值越小文件越大画质越好。",
+            "speed" to "硬件编码的速度质量平衡。速度优先适合快速处理，质量优先适合最终输出。",
+            "preset" to "软件编码的预设速度。极快到极慢共10档，越慢压缩率越高文件越小。",
+            "resolution" to "输出视频分辨率。原始保持原尺寸，降低分辨率可大幅减小文件。",
+            "audio" to "音频编码。复制原音频不重新编码最快，AAC兼容性最好。"
         )
     }
 }
