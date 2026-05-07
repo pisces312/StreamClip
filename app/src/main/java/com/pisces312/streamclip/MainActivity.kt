@@ -10,6 +10,7 @@ import android.os.Environment
 import android.provider.Settings
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.LinearLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -86,8 +87,44 @@ class MainActivity : AppCompatActivity() {
                 showGuideDialog()
                 true
             }
+            R.id.action_donate -> {
+                showDonateDialog()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun showDonateDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_donate, null)
+        val container = dialogView.findViewById<LinearLayout>(R.id.containerDonate)
+        val ivAlipay = dialogView.findViewById<android.widget.ImageView>(R.id.ivDonateAlipay)
+        val ivWechat = dialogView.findViewById<android.widget.ImageView>(R.id.ivDonateWechat)
+
+        // 根据屏幕方向调整布局
+        val orientation = resources.configuration.orientation
+        container.orientation = if (orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+            LinearLayout.HORIZONTAL
+        } else {
+            LinearLayout.VERTICAL
+        }
+
+        try {
+            val bitmapAlipay = android.graphics.BitmapFactory.decodeStream(assets.open("donate-alipay.png"))
+            ivAlipay.setImageBitmap(bitmapAlipay)
+        } catch (e: Exception) {
+            LogCollector.w("MainActivity", "加载支付宝二维码失败: ${e.message}")
+        }
+        try {
+            val bitmapWechat = android.graphics.BitmapFactory.decodeStream(assets.open("donate-wechat.png"))
+            ivWechat.setImageBitmap(bitmapWechat)
+        } catch (e: Exception) {
+            LogCollector.w("MainActivity", "加载微信二维码失败: ${e.message}")
+        }
+        AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setPositiveButton(R.string.guide_ok, null)
+            .show()
     }
 
     private fun showGuideDialog() {

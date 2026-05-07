@@ -25,6 +25,11 @@ object FFmpegService {
         val message: String
     )
 
+    data class LogLine(
+        val text: String,
+        val isError: Boolean = false
+    )
+
     /**
      * Audio stream info from ffprobe
      */
@@ -41,12 +46,13 @@ object FFmpegService {
     suspend fun executeCommand(
         command: String,
         outputPath: String? = null,
-        onProgress: ((Progress) -> Unit)? = null
+        onProgress: ((Progress) -> Unit)? = null,
+        onLog: ((LogLine) -> Unit)? = null
     ): Result = withContext(Dispatchers.IO) {
         suspendCancellableCoroutine { continuation ->
             LogCollector.d("FFmpegService", "Executing: $command")
 
-            val session = if (onProgress != null) {
+            val session = if (onProgress != null || onLog != null) {
                 FFmpegKit.executeAsync(command, { session ->
                     val returnCode = session.returnCode
                     val success = ReturnCode.isSuccess(returnCode)
@@ -63,11 +69,12 @@ object FFmpegService {
                     )
                 }, { log ->
                     LogCollector.d("FFmpegService", log.message)
+                    onLog?.invoke(LogLine(log.message, false))
                 }, StatisticsCallback { statistics ->
                     val time = statistics.time
                     if (time > 0) {
                         val percent = ((time / 1000.0) / 60 * 100).toInt().coerceIn(0, 100)
-                        onProgress(Progress(percent, "Processing: ${time}ms"))
+                        onProgress?.invoke(Progress(percent, "Processing: ${time}ms"))
                     }
                 })
             } else {
@@ -144,6 +151,50 @@ object FFmpegService {
         val result = executeCommand(command, outputPath, onProgress)
         concatFile.delete()
         return result
+    }
+
+    /**
+     * Probe video location/GPS metadata using ffprobe
+     * Returns location string like "+121.2345+031.6789/" or null
+     */
+    fun probeLocation(inputPath: String): String? {
+        return try {
+            // Get all metadata: format + streams
+            val session = FFprobeKit.execute("-v quiet -show_format -show_streams \"$inputPath\"")
+            if (!ReturnCode.isSuccess(session.returnCode)) return null
+
+            val output = session.output
+            // Log full metadata for debugging
+            LogCollector.d("FFmpegService", "=== Full metadata for $inputPath ===")
+            LogCollector.d("FFmpegService", output)
+            LogCollector.d("FFmpegService", "=== End metadata ===")
+
+            // Try multiple patterns for GPS location
+            // ffprobe -show_format output format: TAG:key=value
+            val patterns = listOf(
+                // Standard location tag (TAG:location=value or TAG:location-eng=value)
+                Regex("""TAG:location(?:-eng)?=(\S+)""", RegexOption.MULTILINE),
+                // GPS coordinates in different formats
+                Regex("""TAG:(?:gps|GPS)_?(?:location|position|coordinates)?=(\S+)""", RegexOption.MULTILINE),
+                // com.apple.quicktime.location (MOV/MP4)
+                Regex("""TAG:com\.apple\.quicktime\.location=(\S+)""", RegexOption.MULTILINE),
+                // Any tag containing lat/long
+                Regex("""TAG:(?:latitude|longitude|lat|long|lng)=([+-]?\d+\.?\d*)""", RegexOption.MULTILINE)
+            )
+
+            for (regex in patterns) {
+                val match = regex.find(output)
+                val value = match?.groupValues?.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() && it != "N/A" }
+                if (value != null) {
+                    LogCollector.d("FFmpegService", "Found location via pattern ${regex.pattern}: $value")
+                    return value
+                }
+            }
+            null
+        } catch (e: Exception) {
+            LogCollector.e("FFmpegService", "Probe location failed: ${e.message}")
+            null
+        }
     }
 
     /**

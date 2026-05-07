@@ -33,6 +33,7 @@ class Trim2Fragment : Fragment() {
     private var player: ExoPlayer? = null
     private var selectedVideoUri: Uri? = null
     private var videoDurationMs: Long = 0
+    private var sourceFileTimes: Pair<java.nio.file.attribute.FileTime?, java.nio.file.attribute.FileTime?>? = null
 
     // 记录拖动前的值，用于判断拖的是哪个手柄
     private var prevStartSec = 0f
@@ -126,6 +127,8 @@ class Trim2Fragment : Fragment() {
                 binding.tvStatus.text = "⚠️ 缓存: ${java.io.File(pathResult.path).name} (已复制)"
                 binding.tvStatus.setTextColor(0xFFFF9800.toInt())
             }
+            // 读取原文件时间戳
+            sourceFileTimes = FileUtils.readFileTimes(pathResult.path)
         }
     }
 
@@ -221,6 +224,10 @@ class Trim2Fragment : Fragment() {
 
                 if (result.success) {
                     FileUtils.scanFile(requireContext(), outputFile)
+                    // 恢复时间戳
+                    sourceFileTimes?.let { (creation, modified) ->
+                        FileUtils.applyFileTimes(outputFile.absolutePath, creation, modified)
+                    }
                     updateOutputStatus(outputFile)
                     Toast.makeText(requireContext(), "截取完成: ${outputFile.name}", Toast.LENGTH_LONG).show()
                 } else {

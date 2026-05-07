@@ -9,10 +9,17 @@ data class CompressConfig(
     val preset: String = "medium",     // 软编码预设
     val audioEncoder: String = "copy",
     val outputFormat: String = "mp4",
-    val isHardware: Boolean = true
+    val isHardware: Boolean = true,
+    val copyMetadata: Boolean = true   // Copy all metadata from source
 ) {
     fun toFFmpegCommand(inputPath: String, outputPath: String): String {
         val cmd = StringBuilder("-i \"$inputPath\" ")
+        
+        // Copy all metadata first (before encoder settings)
+        if (copyMetadata) {
+            cmd.append("-map_metadata 0 ")
+            cmd.append("-movflags use_metadata_tags ")
+        }
         
         // Video encoder
         cmd.append("-c:v $encoder ")
@@ -44,12 +51,12 @@ data class CompressConfig(
         
         // Audio
         cmd.append("-c:a $audioEncoder ")
-        
+
         // Format
         cmd.append("-f $outputFormat ")
-        
+
         cmd.append("\"$outputPath\"")
-        
+
         return cmd.toString()
     }
     

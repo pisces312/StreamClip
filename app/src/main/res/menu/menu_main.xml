@@ -16,4 +16,9 @@
         android:id="@+id/action_guide"
         android:title="@string/title_guide"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_donate"
+        android:title="@string/title_donate"
+        app:showAsAction="never" />
 </menu>

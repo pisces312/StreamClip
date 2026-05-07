@@ -9,24 +9,26 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.SeekBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.pisces312.streamclip.databinding.FragmentCompressBinding
 import com.pisces312.streamclip.model.CompressConfig
 import com.pisces312.streamclip.service.FFmpegService
+import com.pisces312.streamclip.adapter.FfmpegLogAdapter
 import com.pisces312.streamclip.util.FileUtils
 import com.pisces312.streamclip.util.LogCollector
 import com.pisces312.streamclip.util.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.attribute.FileTime
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.appcompat.app.AlertDialog
+
 
 class CompressFragment : Fragment() {
 
@@ -202,8 +204,7 @@ class CompressFragment : Fragment() {
             .show()
     }
 
-    private var sourceCreationTime: FileTime? = null
-    private var sourceModifiedTime: FileTime? = null
+    private var sourceFileTimes: Pair<java.nio.file.attribute.FileTime?, java.nio.file.attribute.FileTime?>? = null
 
     private fun handleVideoSelected(uri: Uri) {
         val path = FileUtils.getPathFromUri(requireContext(), uri)
@@ -213,15 +214,7 @@ class CompressFragment : Fragment() {
             SettingsManager.setLastVideoDir(requireContext(), uri)
 
             // 读取原文件时间戳
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                try {
-                    val p = Paths.get(path)
-                    sourceCreationTime = Files.getAttribute(p, "creationTime") as FileTime
-                    sourceModifiedTime = Files.getLastModifiedTime(p)
-                } catch (e: Exception) {
-                    LogCollector.w("Compress", "读取时间戳失败: ${e.message}")
-                }
-            }
+            sourceFileTimes = FileUtils.readFileTimes(path)
         } else {
             Toast.makeText(requireContext(), "无法获取文件路径", Toast.LENGTH_SHORT).show()
         }
@@ -264,38 +257,49 @@ class CompressFragment : Fragment() {
             binding.tvProgress.text = "压缩中..."
             binding.btnCompress.isEnabled = false
 
+            // Show log dialog
+            val logDialog = showFfmpegLogDialog(config.toFFmpegCommand(path, outPath))
+
             lifecycleScope.launch {
                 val command = config.toFFmpegCommand(path, outPath)
                 LogCollector.d("Compress", "Command: $command")
 
-                val result = FFmpegService.executeCommand(command, outPath) { progress ->
-                    lifecycleScope.launch(Dispatchers.Main) {
-                        binding.progressBar.progress = progress.percent
-                        binding.tvProgress.text = "${progress.percent}% - ${progress.message}"
+                val result = FFmpegService.executeCommand(
+                    command,
+                    outPath,
+                    onProgress = { progress ->
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            binding.progressBar.progress = progress.percent
+                            binding.tvProgress.text = "${progress.percent}% - ${progress.message}"
+                        }
+                    },
+                    onLog = { logLine ->
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            logDialog.addLog(logLine)
+                        }
                     }
-                }
+                )
 
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
                     binding.tvProgress.visibility = View.GONE
                     binding.btnCompress.isEnabled = true
+                    logDialog.onComplete(result.success)
 
                     if (result.success) {
                         val outFileName = outPath.substring(outPath.lastIndexOf('/') + 1)
                         FileUtils.scanFile(requireContext(), java.io.File(outPath))
 
                         // 恢复时间戳
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                            try {
-                                val p = Paths.get(outPath)
-                                sourceModifiedTime?.let { Files.setLastModifiedTime(p, it) }
-                                sourceCreationTime?.let {
-                                    Files.setAttribute(p, "creationTime", it)
-                                }
-                            } catch (e: Exception) {
-                                LogCollector.w("Compress", "恢复时间戳失败: ${e.message}")
-                            }
+                        sourceFileTimes?.let { (creation, modified) ->
+                            FileUtils.applyFileTimes(outPath, creation, modified)
                         }
+
+                        // 验证 GPS metadata 是否保留
+                        val sourceLocation = videoPath?.let { FFmpegService.probeLocation(it) }
+                        val outputLocation = FFmpegService.probeLocation(outPath)
+                        LogCollector.d("CompressFragment", "Source location: $sourceLocation")
+                        LogCollector.d("CompressFragment", "Output location: $outputLocation")
 
                         Toast.makeText(requireContext(), "压缩完成: $outFileName", Toast.LENGTH_LONG).show()
                     } else {
@@ -331,5 +335,53 @@ class CompressFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun showFfmpegLogDialog(command: String): FfmpegLogDialog {
+        val dialogView = layoutInflater.inflate(com.pisces312.streamclip.R.layout.dialog_ffmpeg_log, null)
+        val tvCommand = dialogView.findViewById<TextView>(com.pisces312.streamclip.R.id.tvCommand)
+        val recyclerLogs = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(com.pisces312.streamclip.R.id.recyclerLogs)
+        val btnCopy = dialogView.findViewById<Button>(com.pisces312.streamclip.R.id.btnCopy)
+        val btnClose = dialogView.findViewById<Button>(com.pisces312.streamclip.R.id.btnClose)
+
+        tvCommand.text = command
+
+        val adapter = FfmpegLogAdapter()
+        recyclerLogs.layoutManager = LinearLayoutManager(requireContext())
+        recyclerLogs.adapter = adapter
+
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        btnCopy.setOnClickListener {
+            val clipboard = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = android.content.ClipData.newPlainText("FFmpeg Log", "Command:\n$command\n\nLogs:\n${adapter.getAllLogs()}")
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(requireContext(), "已复制到剪贴板", Toast.LENGTH_SHORT).show()
+        }
+
+        btnClose.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+
+        return object : FfmpegLogDialog {
+            override fun addLog(log: FFmpegService.LogLine) {
+                adapter.addLog(log)
+                recyclerLogs.scrollToPosition(adapter.itemCount - 1)
+            }
+            override fun onComplete(success: Boolean) {
+                btnClose.isEnabled = true
+                btnClose.text = if (success) "完成" else "关闭"
+            }
+        }
+    }
+
+    interface FfmpegLogDialog {
+        fun addLog(log: FFmpegService.LogLine)
+        fun onComplete(success: Boolean)
     }
 }

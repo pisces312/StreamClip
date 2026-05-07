@@ -33,6 +33,7 @@ class TrimSimpleFragment : Fragment() {
     private var player: ExoPlayer? = null
     private var selectedVideoUri: Uri? = null
     private var videoDurationMs: Long = 0
+    private var sourceFileTimes: Pair<java.nio.file.attribute.FileTime?, java.nio.file.attribute.FileTime?>? = null
 
     private val pickVideo = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -92,6 +93,8 @@ class TrimSimpleFragment : Fragment() {
                 binding.tvStatus.text = "⚠️ 缓存: ${java.io.File(pathResult.path).name} (已复制)"
                 binding.tvStatus.setTextColor(0xFFFF9800.toInt())
             }
+            // 读取原文件时间戳
+            sourceFileTimes = FileUtils.readFileTimes(pathResult.path)
         }
     }
 
@@ -178,6 +181,10 @@ class TrimSimpleFragment : Fragment() {
 
                 if (result.success) {
                     FileUtils.scanFile(requireContext(), outputFile)
+                    // 恢复时间戳
+                    sourceFileTimes?.let { (creation, modified) ->
+                        FileUtils.applyFileTimes(outputFile.absolutePath, creation, modified)
+                    }
                     updateOutputStatus(outputFile)
                     Toast.makeText(requireContext(), "截取完成: ${outputFile.name}", Toast.LENGTH_LONG).show()
                 } else {

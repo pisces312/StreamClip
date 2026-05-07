@@ -110,10 +110,7 @@ class SettingsFragment : Fragment() {
             showClearCacheDialog()
         }
 
-        // 支持开发者
-        binding.btnDonate.setOnClickListener {
-            showDonateDialog()
-        }
+
     }
 
     private fun updateUi() {
@@ -184,97 +181,6 @@ class SettingsFragment : Fragment() {
                 Toast.makeText(context, "缓存已清除", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("取消", null)
-            .show()
-    }
-
-    private fun showDonateDialog() {
-        val context = requireContext()
-
-        // 支付宝
-        val alipayImageView = android.widget.ImageView(context).apply {
-            try {
-                val bitmap = android.graphics.BitmapFactory.decodeStream(
-                    context.assets.open("donate-alipay.png")
-                )
-                setImageBitmap(bitmap)
-            } catch (e: Exception) {
-                LogCollector.w("Settings", "加载支付宝二维码失败: ${e.message}")
-            }
-            adjustViewBounds = true
-        }
-
-        // 微信
-        val wechatImageView = android.widget.ImageView(context).apply {
-            try {
-                val bitmap = android.graphics.BitmapFactory.decodeStream(
-                    context.assets.open("donate-wechat.png")
-                )
-                setImageBitmap(bitmap)
-            } catch (e: Exception) {
-                LogCollector.w("Settings", "加载微信二维码失败: ${e.message}")
-            }
-            adjustViewBounds = true
-        }
-
-        // 水平布局：左边支付宝，右边微信
-        val linearLayout = android.widget.LinearLayout(context).apply {
-            orientation = android.widget.LinearLayout.HORIZONTAL
-            setPadding(48, 24, 48, 24)
-            gravity = android.view.Gravity.CENTER
-
-            // 支付宝列
-            val alipayCol = android.widget.LinearLayout(context).apply {
-                orientation = android.widget.LinearLayout.VERTICAL
-                gravity = android.view.Gravity.CENTER_HORIZONTAL
-                layoutParams = android.widget.LinearLayout.LayoutParams(
-                    0,
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                    1f
-                )
-                addView(alipayImageView)
-                addView(android.widget.TextView(context).apply {
-                    text = "支付宝"
-                    setTextColor(context.getColor(android.R.color.white))
-                    textSize = 14f
-                    gravity = android.view.Gravity.CENTER_HORIZONTAL
-                    layoutParams = android.widget.LinearLayout.LayoutParams(
-                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                    ).apply { topMargin = 8 }
-                })
-            }
-
-            // 微信列
-            val wechatCol = android.widget.LinearLayout(context).apply {
-                orientation = android.widget.LinearLayout.VERTICAL
-                gravity = android.view.Gravity.CENTER_HORIZONTAL
-                layoutParams = android.widget.LinearLayout.LayoutParams(
-                    0,
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                    1f
-                )
-                addView(wechatImageView)
-                addView(android.widget.TextView(context).apply {
-                    text = "微信"
-                    setTextColor(context.getColor(android.R.color.white))
-                    textSize = 14f
-                    gravity = android.view.Gravity.CENTER_HORIZONTAL
-                    layoutParams = android.widget.LinearLayout.LayoutParams(
-                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                    ).apply { topMargin = 8 }
-                })
-            }
-
-            addView(alipayCol)
-            addView(wechatCol)
-        }
-
-        AlertDialog.Builder(context)
-            .setTitle("支持开发者")
-            .setMessage("如果您觉得 StreamClip 好用，欢迎扫码支持。\n\n完全自愿，不影响任何功能使用。")
-            .setView(linearLayout)
-            .setPositiveButton("关闭", null)
             .show()
     }
 

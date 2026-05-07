@@ -9,6 +9,9 @@ import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.attribute.FileTime
 
 object FileUtils {
 
@@ -268,5 +271,39 @@ object FileUtils {
             null,
             null
         )
+    }
+
+    /**
+     * Read file creation and modification times
+     * Returns Pair<creationTime, modifiedTime> or null if failed
+     */
+    fun readFileTimes(path: String): Pair<FileTime?, FileTime?>? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val p = Paths.get(path)
+                val creationTime = Files.getAttribute(p, "creationTime") as? FileTime
+                val modifiedTime = Files.getLastModifiedTime(p)
+                Pair(creationTime, modifiedTime)
+            } catch (e: Exception) {
+                null
+            }
+        } else {
+            null
+        }
+    }
+
+    /**
+     * Apply creation and modification times to output file
+     */
+    fun applyFileTimes(outputPath: String, creationTime: FileTime?, modifiedTime: FileTime?) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val p = Paths.get(outputPath)
+                modifiedTime?.let { Files.setLastModifiedTime(p, it) }
+                creationTime?.let { Files.setAttribute(p, "creationTime", it) }
+            } catch (e: Exception) {
+                // Silently ignore
+            }
+        }
     }
 }

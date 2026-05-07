@@ -185,29 +185,5 @@
         android:background="#555555"
         android:layout_marginVertical="16dp" />
 
-    <!-- 支持开发者 -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="支持开发者"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="@color/white"
-        android:layout_marginBottom="16dp" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="StreamClip 完全免费，所有功能均可正常使用"
-        android:textSize="14sp"
-        android:textColor="#CCCCCC"
-        android:layout_marginBottom="8dp" />
-
-    <Button
-        android:id="@+id/btnDonate"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="支持开发者" />
-
 </LinearLayout>
 </ScrollView>
