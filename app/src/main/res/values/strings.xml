@@ -37,4 +37,17 @@
     <string name="add_timestamp_desc">避免覆盖原文件</string>
     <string name="current_path">当前路径</string>
     <string name="scroll_to_bottom">滚动到底部</string>
+    <string name="title_guide">使用指南</string>
+    <string name="guide_title">编码设置推荐</string>
+    <string name="guide_h264_title">H.264（兼容性最好）</string>
+    <string name="guide_h264_desc">日常使用首选，所有设备都能播放</string>
+    <string name="guide_hevc_title">HEVC/H.265（体积最小）</string>
+    <string name="guide_hevc_desc">比 H.264 省 40-60% 空间，旧设备可能无法播放</string>
+    <string name="guide_hw_title">硬件编码（速度最快）</string>
+    <string name="guide_hw_desc">适合快速分享，画质略低于软编码</string>
+    <string name="guide_crf">CRF 质量</string>
+    <string name="guide_crf_desc">数值越小画质越好，体积越大。推荐 24-28</string>
+    <string name="guide_bitrate">码率</string>
+    <string name="guide_bitrate_desc">每秒数据量，推荐 2-4 Mbps（1080p）</string>
+    <string name="guide_ok">知道了</string>
 </resources>

@@ -82,8 +82,41 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this, LogActivity::class.java))
                 true
             }
+            R.id.action_guide -> {
+                showGuideDialog()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun showGuideDialog() {
+        val message = buildString {
+            appendLine("【H.264 — 兼容性最好】")
+            appendLine("• 收藏存档：CRF 23")
+            appendLine("• 平衡推荐：CRF 25（推荐）")
+            appendLine("• 快速分享：CRF 28")
+            appendLine()
+            appendLine("【HEVC/H.265 — 体积最小】")
+            appendLine("• 高画质收藏：CRF 28")
+            appendLine("• 体积优先：CRF 30（推荐）")
+            appendLine("• 比 H.264 省 40-60% 空间")
+            appendLine()
+            appendLine("【硬件编码 — 速度最快】")
+            appendLine("• 1080p 推荐 3 Mbps")
+            appendLine("• 720p 推荐 1.5-2 Mbps")
+            appendLine("• 适合快速分享")
+            appendLine()
+            appendLine("【通用建议】")
+            appendLine("• 要兼容 → H.264 CRF 25")
+            appendLine("• 要省空间 → HEVC CRF 30")
+            appendLine("• 要快 → 硬件编码 3Mbps")
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.guide_title)
+            .setMessage(message)
+            .setPositiveButton(R.string.guide_ok, null)
+            .show()
     }
 
     private fun setupViewPager() {

@@ -61,17 +61,17 @@ class CompressFragment : Fragment() {
     }
 
     private fun setupTabLayout() {
-        binding.tabLayout.addOnTabSelectedListener(object :
-            com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
+        binding.tabLayout.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
                 isHardwareTab = tab?.position == 0
                 binding.panelHardware.visibility = if (isHardwareTab) View.VISIBLE else View.GONE
                 binding.panelSoftware.visibility = if (isHardwareTab) View.GONE else View.VISIBLE
             }
-
             override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
             override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
         })
+        isHardwareTab = true
+        binding.panelSoftware.visibility = View.GONE
     }
 
     private fun setupHardwarePanel() {

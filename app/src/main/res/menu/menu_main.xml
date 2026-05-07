@@ -11,4 +11,9 @@
         android:id="@+id/action_logs"
         android:title="@string/title_logs"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_guide"
+        android:title="@string/title_guide"
+        app:showAsAction="never" />
 </menu>
