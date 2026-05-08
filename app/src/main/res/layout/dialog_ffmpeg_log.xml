@@ -40,6 +40,66 @@
         android:layout_marginTop="12dp"
         android:layout_marginBottom="4dp" />
 
+    <!-- 进度条区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:background="#2D2D2D">
+
+        <!-- 进度条和百分比 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:max="100"
+                android:progress="0" />
+
+            <TextView
+                android:id="@+id/tvPercent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0%"
+                android:textSize="14sp"
+                android:textColor="#FFFFFF"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <!-- 时间和文件大小信息 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp">
+
+            <TextView
+                android:id="@+id/tvTimeInfo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="已用: 00:00 | 预估: --:--"
+                android:textSize="12sp"
+                android:textColor="#AAAAAA" />
+
+            <TextView
+                android:id="@+id/tvOutputSize"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="输出: 0 MB"
+                android:textSize="12sp"
+                android:textColor="#AAAAAA" />
+        </LinearLayout>
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerLogs"
         android:layout_width="match_parent"

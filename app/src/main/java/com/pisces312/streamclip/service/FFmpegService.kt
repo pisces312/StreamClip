@@ -21,8 +21,11 @@ object FFmpegService {
     )
 
     data class Progress(
-        val percent: Int,
-        val message: String
+        val percent: Int = 0,
+        val processedTimeMs: Long = 0,
+        val totalTimeMs: Long = -1,
+        val outputSizeBytes: Long = 0,
+        val message: String = ""
     )
 
     data class LogLine(
@@ -41,16 +44,35 @@ object FFmpegService {
     )
 
     /**
+     * Get video duration in milliseconds using ffprobe
+     * Returns -1 if failed
+     */
+    fun getDurationMs(inputPath: String): Long {
+        return try {
+            val session = FFprobeKit.execute("-v quiet -show_entries format=duration -of csv=p=0 \"$inputPath\"")
+            if (!ReturnCode.isSuccess(session.returnCode)) return -1
+            val output = session.output.trim()
+            val seconds = output.toDoubleOrNull() ?: return -1
+            (seconds * 1000).toLong()
+        } catch (e: Exception) {
+            LogCollector.e("FFmpegService", "Get duration failed: ${e.message}")
+            -1
+        }
+    }
+
+    /**
      * Execute FFmpeg command with ffmpeg-kit
      */
     suspend fun executeCommand(
         command: String,
         outputPath: String? = null,
+        totalTimeMs: Long = -1,
         onProgress: ((Progress) -> Unit)? = null,
         onLog: ((LogLine) -> Unit)? = null
     ): Result = withContext(Dispatchers.IO) {
         suspendCancellableCoroutine { continuation ->
             LogCollector.d("FFmpegService", "Executing: $command")
+            val startTime = System.currentTimeMillis()
 
             val session = if (onProgress != null || onLog != null) {
                 FFmpegKit.executeAsync(command, { session ->
@@ -71,10 +93,36 @@ object FFmpegService {
                     LogCollector.d("FFmpegService", log.message)
                     onLog?.invoke(LogLine(log.message, false))
                 }, StatisticsCallback { statistics ->
-                    val time = statistics.time
+                    val time = statistics.time.toLong()
                     if (time > 0) {
-                        val percent = ((time / 1000.0) / 60 * 100).toInt().coerceIn(0, 100)
-                        onProgress?.invoke(Progress(percent, "Processing: ${time}ms"))
+                        val percent = if (totalTimeMs > 0) {
+                            ((time.toDouble() / totalTimeMs) * 100).toInt().coerceIn(0, 100)
+                        } else {
+                            ((time / 1000.0) / 60 * 100).toInt().coerceIn(0, 100)
+                        }
+
+                        val elapsedMs = System.currentTimeMillis() - startTime
+                        val estimatedRemainingMs = if (percent > 0 && percent < 100) {
+                            (elapsedMs / percent.toDouble() * (100 - percent)).toLong()
+                        } else {
+                            -1
+                        }
+
+                        val outputSize = if (outputPath != null) {
+                            try {
+                                java.io.File(outputPath).length()
+                            } catch (e: Exception) {
+                                0L
+                            }
+                        } else 0L
+
+                        onProgress?.invoke(Progress(
+                            percent = percent,
+                            processedTimeMs = time,
+                            totalTimeMs = totalTimeMs,
+                            outputSizeBytes = outputSize,
+                            message = "Processing: ${time}ms"
+                        ))
                     }
                 })
             } else {
@@ -127,7 +175,7 @@ object FFmpegService {
         }
 
         LogCollector.d("FFmpegService", "Command: $command")
-        return executeCommand(command, outputPath, onProgress)
+        return executeCommand(command, outputPath, onProgress = onProgress)
     }
 
     /**
@@ -148,7 +196,7 @@ object FFmpegService {
 
         val command = "-y -f concat -safe 0 -i \"${concatFile.absolutePath}\" -c copy -fflags +genpts -avoid_negative_ts make_zero -reset_timestamps 1 \"$outputPath\""
 
-        val result = executeCommand(command, outputPath, onProgress)
+        val result = executeCommand(command, outputPath, onProgress = onProgress)
         concatFile.delete()
         return result
     }
@@ -210,7 +258,7 @@ object FFmpegService {
 
         val command = "-y -i \"$inputPath\" -vn -c:a copy \"$outputPath\""
         LogCollector.d("FFmpegService", "Command: $command")
-        return executeCommand(command, outputPath, onProgress)
+        return executeCommand(command, outputPath, onProgress = onProgress)
     }
 
     /**

@@ -257,6 +257,9 @@ class CompressFragment : Fragment() {
             binding.tvProgress.text = "压缩中..."
             binding.btnCompress.isEnabled = false
 
+            // Get video duration
+            val totalTimeMs = FFmpegService.getDurationMs(path)
+
             // Show log dialog
             val logDialog = showFfmpegLogDialog(config.toFFmpegCommand(path, outPath))
 
@@ -267,10 +270,12 @@ class CompressFragment : Fragment() {
                 val result = FFmpegService.executeCommand(
                     command,
                     outPath,
+                    totalTimeMs = totalTimeMs,
                     onProgress = { progress ->
                         lifecycleScope.launch(Dispatchers.Main) {
                             binding.progressBar.progress = progress.percent
-                            binding.tvProgress.text = "${progress.percent}% - ${progress.message}"
+                            binding.tvProgress.text = "${progress.percent}%"
+                            logDialog.updateProgress(progress)
                         }
                     },
                     onLog = { logLine ->
@@ -337,12 +342,16 @@ class CompressFragment : Fragment() {
         _binding = null
     }
 
-    private fun showFfmpegLogDialog(command: String): FfmpegLogDialog {
+    private fun showFfmpegLogDialog(command: String, totalTimeMs: Long = -1): FfmpegLogDialog {
         val dialogView = layoutInflater.inflate(com.pisces312.streamclip.R.layout.dialog_ffmpeg_log, null)
         val tvCommand = dialogView.findViewById<TextView>(com.pisces312.streamclip.R.id.tvCommand)
         val recyclerLogs = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(com.pisces312.streamclip.R.id.recyclerLogs)
         val btnCopy = dialogView.findViewById<Button>(com.pisces312.streamclip.R.id.btnCopy)
         val btnClose = dialogView.findViewById<Button>(com.pisces312.streamclip.R.id.btnClose)
+        val progressBar = dialogView.findViewById<android.widget.ProgressBar>(com.pisces312.streamclip.R.id.progressBar)
+        val tvPercent = dialogView.findViewById<TextView>(com.pisces312.streamclip.R.id.tvPercent)
+        val tvTimeInfo = dialogView.findViewById<TextView>(com.pisces312.streamclip.R.id.tvTimeInfo)
+        val tvOutputSize = dialogView.findViewById<TextView>(com.pisces312.streamclip.R.id.tvOutputSize)
 
         tvCommand.text = command
 
@@ -354,6 +363,8 @@ class CompressFragment : Fragment() {
             .setView(dialogView)
             .setCancelable(false)
             .create()
+
+        val startTime = System.currentTimeMillis()
 
         btnCopy.setOnClickListener {
             val clipboard = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
@@ -377,11 +388,48 @@ class CompressFragment : Fragment() {
                 btnClose.isEnabled = true
                 btnClose.text = if (success) "完成" else "关闭"
             }
+            override fun updateProgress(progress: FFmpegService.Progress) {
+                progressBar?.progress = progress.percent
+                tvPercent?.text = "${progress.percent}%"
+
+                // Calculate elapsed and estimated remaining time
+                val elapsedRealMs = System.currentTimeMillis() - startTime
+                val estimatedRemainingMs = if (progress.percent > 0 && progress.percent < 100) {
+                    (elapsedRealMs.toDouble() / progress.percent * (100 - progress.percent)).toLong()
+                } else {
+                    -1
+                }
+
+                // Format time info
+                val elapsedStr = formatTime(elapsedRealMs / 1000)
+                val remainingStr = if (estimatedRemainingMs > 0) {
+                    formatTime(estimatedRemainingMs / 1000)
+                } else {
+                    "--:--"
+                }
+                tvTimeInfo?.text = "已用: $elapsedStr | 预估: $remainingStr"
+
+                // Format output size
+                val sizeMB = progress.outputSizeBytes / (1024.0 * 1024.0)
+                tvOutputSize?.text = "输出: %.1f MB".format(sizeMB)
+            }
+
+            private fun formatTime(seconds: Long): String {
+                val h = seconds / 3600
+                val m = (seconds % 3600) / 60
+                val s = seconds % 60
+                return if (h > 0) {
+                    "%d:%02d:%02d".format(h, m, s)
+                } else {
+                    "%02d:%02d".format(m, s)
+                }
+            }
         }
     }
 
     interface FfmpegLogDialog {
         fun addLog(log: FFmpegService.LogLine)
         fun onComplete(success: Boolean)
+        fun updateProgress(progress: FFmpegService.Progress)
     }
 }
