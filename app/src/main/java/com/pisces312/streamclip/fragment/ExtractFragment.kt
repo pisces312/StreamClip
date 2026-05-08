@@ -95,7 +95,7 @@ class ExtractFragment : Fragment() {
      * 用 ffprobe 获取音频信息并显示
      */
     private fun probeAudioInfo(uri: Uri) {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val pathResult = FileUtils.getPathResultFromUri(requireContext(), uri) ?: return@launch
             val info = withContext(Dispatchers.IO) {
                 FFmpegService.probeAudioInfo(pathResult.path)
@@ -113,7 +113,7 @@ class ExtractFragment : Fragment() {
             return
         }
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             binding.progressBar.visibility = View.VISIBLE
             binding.btnExecute.isEnabled = false
             if (SettingsManager.isKeepScreenOn(requireContext())) {

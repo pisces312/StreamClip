@@ -116,19 +116,21 @@ class CustomCommandFragment : Fragment() {
         // Show log dialog
         val logDialog = showFfmpegLogDialog(command)
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             LogCollector.d("CustomCommand", "Command: $command")
 
             val result = FFmpegService.executeCommand(
                 command,
                 onProgress = { progress ->
-                    lifecycleScope.launch(Dispatchers.Main) {
+                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                        if (_binding == null) return@launch
                         binding.progressBar.progress = progress.percent
                         binding.tvProgress.text = "${progress.percent}% - ${progress.message}"
                     }
                 },
                 onLog = { logLine ->
-                    lifecycleScope.launch(Dispatchers.Main) {
+                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                        if (_binding == null) return@launch
                         logDialog?.addLog(logLine)
                     }
                 }

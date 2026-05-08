@@ -272,7 +272,7 @@ class CompressFragment : Fragment() {
             // Show log dialog
             val logDialog = showFfmpegLogDialog(config.toFFmpegCommand(path, outPath))
 
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 val command = config.toFFmpegCommand(path, outPath)
                 LogCollector.d("Compress", "Command: $command")
 
@@ -281,14 +281,16 @@ class CompressFragment : Fragment() {
                     outPath,
                     totalTimeMs = totalTimeMs,
                     onProgress = { progress ->
-                        lifecycleScope.launch(Dispatchers.Main) {
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            if (_binding == null) return@launch
                             binding.progressBar.progress = progress.percent
                             binding.tvProgress.text = "${progress.percent}%"
                             logDialog.updateProgress(progress)
                         }
                     },
                     onLog = { logLine ->
-                        lifecycleScope.launch(Dispatchers.Main) {
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            if (_binding == null) return@launch
                             logDialog.addLog(logLine)
                         }
                     }

@@ -188,7 +188,7 @@ class Trim2Fragment : Fragment() {
             return
         }
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             binding.progressBar.visibility = View.VISIBLE
             binding.btnExecute.isEnabled = false
             if (SettingsManager.isKeepScreenOn(requireContext())) {
