@@ -95,13 +95,15 @@ object FFmpegService {
                 }, StatisticsCallback { statistics ->
                     val time = statistics.time.toLong()
                     if (time > 0) {
+                        // 只有在有总时长时才计算有效百分比，否则返回 -1 表示未知
                         val percent = if (totalTimeMs > 0) {
                             ((time.toDouble() / totalTimeMs) * 100).toInt().coerceIn(0, 100)
                         } else {
-                            ((time / 1000.0) / 60 * 100).toInt().coerceIn(0, 100)
+                            -1
                         }
 
                         val elapsedMs = System.currentTimeMillis() - startTime
+                        // 预估剩余时间：只有百分比有效时才计算
                         val estimatedRemainingMs = if (percent > 0 && percent < 100) {
                             (elapsedMs / percent.toDouble() * (100 - percent)).toLong()
                         } else {

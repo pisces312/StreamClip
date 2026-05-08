@@ -389,21 +389,23 @@ class CompressFragment : Fragment() {
                 btnClose.text = if (success) "完成" else "关闭"
             }
             override fun updateProgress(progress: FFmpegService.Progress) {
-                progressBar?.progress = progress.percent
-                tvPercent?.text = "${progress.percent}%"
+                // percent 为 -1 表示未知总时长
+                if (progress.percent >= 0) {
+                    progressBar?.progress = progress.percent
+                    tvPercent?.text = "${progress.percent}%"
+                } else {
+                    progressBar?.progress = 0
+                    tvPercent?.text = "--%"
+                }
 
                 // Calculate elapsed and estimated remaining time
                 val elapsedRealMs = System.currentTimeMillis() - startTime
-                val estimatedRemainingMs = if (progress.percent > 0 && progress.percent < 100) {
-                    (elapsedRealMs.toDouble() / progress.percent * (100 - progress.percent)).toLong()
-                } else {
-                    -1
-                }
 
                 // Format time info
                 val elapsedStr = formatTime(elapsedRealMs / 1000)
-                val remainingStr = if (estimatedRemainingMs > 0) {
-                    formatTime(estimatedRemainingMs / 1000)
+                // estimatedRemainingMs 为 -1 表示无法预估
+                val remainingStr = if (progress.processedTimeMs >= 0 && progress.percent > 0 && progress.percent < 100) {
+                    formatTime((elapsedRealMs / progress.percent.toDouble() * (100 - progress.percent)).toLong() / 1000)
                 } else {
                     "--:--"
                 }
