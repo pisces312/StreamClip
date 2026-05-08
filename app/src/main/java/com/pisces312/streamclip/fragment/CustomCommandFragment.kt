@@ -1,5 +1,6 @@
 package com.pisces312.streamclip.fragment
 
+import com.pisces312.streamclip.R
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -92,7 +93,7 @@ class CustomCommandFragment : Fragment() {
     private fun executeCustomCommand() {
         var command = binding.etCommand.text.toString().trim()
         if (command.isEmpty()) {
-            Toast.makeText(requireContext(), "请输入 FFmpeg 命令", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.enter_ffmpeg_command), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -106,7 +107,7 @@ class CustomCommandFragment : Fragment() {
 
         binding.progressBar.visibility = View.VISIBLE
         binding.tvProgress.visibility = View.VISIBLE
-        binding.tvProgress.text = "执行中..."
+        binding.tvProgress.text = getString(R.string.executing)
         binding.btnExecute.isEnabled = false
         if (SettingsManager.isKeepScreenOn(requireContext())) {
             requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -137,13 +138,14 @@ class CustomCommandFragment : Fragment() {
                 binding.progressBar.visibility = View.GONE
                 binding.tvProgress.visibility = View.GONE
                 binding.btnExecute.isEnabled = true
+                binding.progressBar.progress = 100
                 requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 logDialog?.onComplete(result.success)
 
                 if (result.success) {
-                    Toast.makeText(requireContext(), "命令执行完成", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), getString(R.string.command_complete), Toast.LENGTH_LONG).show()
                 } else {
-                    Toast.makeText(requireContext(), "执行失败: ${result.error}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), getString(R.string.command_failed, result.error), Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -171,7 +173,7 @@ class CustomCommandFragment : Fragment() {
             val clipboard = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
             val clip = android.content.ClipData.newPlainText("FFmpeg Log", "Command:\n$command\n\nLogs:\n${adapter.getAllLogs()}")
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(requireContext(), "已复制到剪贴板", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.copied_to_clipboard), Toast.LENGTH_SHORT).show()
         }
 
         btnClose.setOnClickListener {
@@ -187,7 +189,7 @@ class CustomCommandFragment : Fragment() {
             }
             override fun onComplete(success: Boolean) {
                 btnClose.isEnabled = true
-                btnClose.text = if (success) "完成" else "关闭"
+                btnClose.text = if (success) getString(R.string.done) else getString(R.string.close)
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.pisces312.streamclip.fragment
 
+import com.pisces312.streamclip.R
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -118,7 +119,7 @@ class TrimSimpleFragment : Fragment() {
                         binding.rangeSlider.valueTo = duration / 1000f
                         binding.rangeSlider.values = listOf(0f, duration / 1000f)
                         binding.tvDuration.text = formatDuration(duration)
-                        binding.tvStartTime.text = "开始: 00:00"
+                        binding.tvStartTime.text = "${getString(R.string.start_time)}: 00:00"
                         binding.tvEndTime.text = "结束: ${formatTime(duration / 1000f)}"
                     }
                 }
@@ -131,7 +132,7 @@ class TrimSimpleFragment : Fragment() {
 
     private fun executeTrim() {
         val uri = selectedVideoUri ?: run {
-            Toast.makeText(requireContext(), "请先选择视频", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.please_select_video), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -140,7 +141,7 @@ class TrimSimpleFragment : Fragment() {
         val endSec = values[1]
 
         if (endSec - startSec < 1) {
-            Toast.makeText(requireContext(), "截取时长至少1秒", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.trim_duration_at_least_1s), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -153,7 +154,7 @@ class TrimSimpleFragment : Fragment() {
 
             val pathResult = FileUtils.getPathResultFromUri(requireContext(), uri) ?: run {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "无法读取文件", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), getString(R.string.cannot_read_file), Toast.LENGTH_SHORT).show()
                     binding.progressBar.visibility = View.GONE
                     binding.btnExecute.isEnabled = true
                     requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -183,6 +184,7 @@ class TrimSimpleFragment : Fragment() {
             withContext(Dispatchers.Main) {
                 binding.progressBar.visibility = View.GONE
                 binding.btnExecute.isEnabled = true
+                binding.progressBar.progress = 100
                 requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
                 if (result.success) {
@@ -192,11 +194,11 @@ class TrimSimpleFragment : Fragment() {
                         FileUtils.applyFileTimes(outputFile.absolutePath, creation, modified)
                     }
                     updateOutputStatus(outputFile)
-                    Toast.makeText(requireContext(), "截取完成: ${outputFile.name}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), getString(R.string.trim_complete, outputFile.name), Toast.LENGTH_LONG).show()
                 } else {
                     val errorMsg = result.error ?: "未知错误"
                     android.util.Log.e("TrimSimpleFragment", "Trim failed: $errorMsg")
-                    Toast.makeText(requireContext(), "失败: $errorMsg", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), getString(R.string.failed, errorMsg), Toast.LENGTH_LONG).show()
                 }
             }
         }

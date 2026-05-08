@@ -1,5 +1,6 @@
 package com.pisces312.streamclip.fragment
 
+import com.pisces312.streamclip.R
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -81,12 +82,13 @@ class CompressFragment : Fragment() {
     }
 
     private fun setupHardwarePanel() {
-        // Encoder
+        // Encoder (default H.265)
         binding.spinnerEncoderHw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
             CompressConfig.HW_ENCODERS.map { it.second }
         )
+        binding.spinnerEncoderHw.setSelection(1) // H.265 default
 
         // Bitrate
         binding.spinnerBitrate.adapter = ArrayAdapter(
@@ -121,12 +123,13 @@ class CompressFragment : Fragment() {
     }
 
     private fun setupSoftwarePanel() {
-        // Encoder
+        // Encoder (default H.265)
         binding.spinnerEncoderSw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
             CompressConfig.SW_ENCODERS.map { it.second }
         )
+        binding.spinnerEncoderSw.setSelection(1) // H.265 default
 
         // CRF SeekBar
         binding.seekBarCrf.max = 51
@@ -201,7 +204,7 @@ class CompressFragment : Fragment() {
         AlertDialog.Builder(requireContext())
             .setTitle(title)
             .setMessage(message)
-            .setPositiveButton("确定", null)
+            .setPositiveButton(getString(R.string.ok), null)
             .show()
     }
 
@@ -217,7 +220,7 @@ class CompressFragment : Fragment() {
             // 读取原文件时间戳
             sourceFileTimes = FileUtils.readFileTimes(path)
         } else {
-            Toast.makeText(requireContext(), "无法获取文件路径", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.cannot_get_path), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -238,7 +241,7 @@ class CompressFragment : Fragment() {
         binding.btnCompress.setOnClickListener {
             val path = videoPath
             if (path == null) {
-                Toast.makeText(requireContext(), "请先选择视频", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), getString(R.string.please_select_video), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -255,7 +258,7 @@ class CompressFragment : Fragment() {
 
             binding.progressBar.visibility = View.VISIBLE
             binding.tvProgress.visibility = View.VISIBLE
-            binding.tvProgress.text = "压缩中..."
+            binding.tvProgress.text = getString(R.string.compressing)
             binding.btnCompress.isEnabled = false
 
             // 根据设置保持屏幕常亮
@@ -295,6 +298,7 @@ class CompressFragment : Fragment() {
                     binding.progressBar.visibility = View.GONE
                     binding.tvProgress.visibility = View.GONE
                     binding.btnCompress.isEnabled = true
+                    binding.progressBar.progress = 100
                     // 清除屏幕常亮
                     requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     logDialog.onComplete(result.success)
@@ -314,9 +318,9 @@ class CompressFragment : Fragment() {
                         LogCollector.d("CompressFragment", "Source location: $sourceLocation")
                         LogCollector.d("CompressFragment", "Output location: $outputLocation")
 
-                        Toast.makeText(requireContext(), "压缩完成: $outFileName", Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(), getString(R.string.compress_complete, outFileName), Toast.LENGTH_LONG).show()
                     } else {
-                        Toast.makeText(requireContext(), "压缩失败: ${result.error}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(), getString(R.string.compress_failed, result.error), Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -378,7 +382,7 @@ class CompressFragment : Fragment() {
             val clipboard = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
             val clip = android.content.ClipData.newPlainText("FFmpeg Log", "Command:\n$command\n\nLogs:\n${adapter.getAllLogs()}")
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(requireContext(), "已复制到剪贴板", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.copied_to_clipboard), Toast.LENGTH_SHORT).show()
         }
 
         btnClose.setOnClickListener {
@@ -394,7 +398,7 @@ class CompressFragment : Fragment() {
             }
             override fun onComplete(success: Boolean) {
                 btnClose.isEnabled = true
-                btnClose.text = if (success) "完成" else "关闭"
+                btnClose.text = if (success) getString(R.string.done) else getString(R.string.close)
             }
             override fun updateProgress(progress: FFmpegService.Progress) {
                 // percent 为 -1 表示未知总时长

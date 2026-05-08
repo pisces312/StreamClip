@@ -1,5 +1,6 @@
 package com.pisces312.streamclip.fragment
 
+import com.pisces312.streamclip.R
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -108,7 +109,7 @@ class ExtractFragment : Fragment() {
 
     private fun executeExtract() {
         val uri = selectedVideoUri ?: run {
-            Toast.makeText(requireContext(), "请先选择视频", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.please_select_video), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -121,7 +122,7 @@ class ExtractFragment : Fragment() {
 
             val pathResult = FileUtils.getPathResultFromUri(requireContext(), uri) ?: run {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "无法读取文件", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), getString(R.string.cannot_read_file), Toast.LENGTH_SHORT).show()
                     binding.progressBar.visibility = View.GONE
                     binding.btnExecute.isEnabled = true
                     requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -152,14 +153,15 @@ class ExtractFragment : Fragment() {
             withContext(Dispatchers.Main) {
                 binding.progressBar.visibility = View.GONE
                 binding.btnExecute.isEnabled = true
+                binding.progressBar.progress = 100
                 requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
                 if (result.success) {
                     FileUtils.scanFile(requireContext(), outputFile)
                     updateOutputStatus(outputFile)
-                    Toast.makeText(requireContext(), "提取完成: ${outputFile.name}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), getString(R.string.extract_complete, outputFile.name), Toast.LENGTH_LONG).show()
                 } else {
-                    Toast.makeText(requireContext(), "失败: ${result.error}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), getString(R.string.failed, result.error), Toast.LENGTH_LONG).show()
                 }
             }
         }

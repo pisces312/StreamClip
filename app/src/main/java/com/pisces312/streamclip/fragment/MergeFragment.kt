@@ -1,5 +1,6 @@
 package com.pisces312.streamclip.fragment
 
+import com.pisces312.streamclip.R
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -133,7 +134,7 @@ class MergeFragment : Fragment() {
 
     private fun executeMerge() {
         if (videoUris.size < 2) {
-            Toast.makeText(requireContext(), "至少选择2个视频", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.select_at_least_2), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -151,7 +152,7 @@ class MergeFragment : Fragment() {
                     paths.add(pathResult.path)
                 } else {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(requireContext(), "无法读取某个视频文件", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), getString(R.string.cannot_read_video), Toast.LENGTH_SHORT).show()
                         binding.progressBar.visibility = View.GONE
                         binding.btnExecute.isEnabled = true
                         requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -166,7 +167,7 @@ class MergeFragment : Fragment() {
                 val info = FFmpegService.probeVideoInfo(path)
                 if (info == null) {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(requireContext(), "无法探测视频参数: ${java.io.File(path).name}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), getString(R.string.cannot_probe_video, java.io.File(path).name), Toast.LENGTH_SHORT).show()
                         binding.progressBar.visibility = View.GONE
                         binding.btnExecute.isEnabled = true
                         requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -212,14 +213,15 @@ class MergeFragment : Fragment() {
             withContext(Dispatchers.Main) {
                 binding.progressBar.visibility = View.GONE
                 binding.btnExecute.isEnabled = true
+                binding.progressBar.progress = 100
                 requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
                 if (result.success) {
                     FileUtils.scanFile(requireContext(), outputFile)
                     updateOutputStatus(outputFile)
-                    Toast.makeText(requireContext(), "合并完成: ${outputFile.name}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), getString(R.string.merge_complete, outputFile.name), Toast.LENGTH_LONG).show()
                 } else {
-                    Toast.makeText(requireContext(), "失败: ${result.error}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), getString(R.string.failed, result.error), Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -248,9 +250,9 @@ class MergeFragment : Fragment() {
         }
 
         AlertDialog.Builder(requireContext())
-            .setTitle("参数不一致")
+            .setTitle(getString(R.string.incompatible_params))
             .setMessage(message)
-            .setPositiveButton("确定", null)
+            .setPositiveButton(getString(R.string.ok), null)
             .show()
     }
 

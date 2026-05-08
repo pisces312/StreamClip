@@ -106,6 +106,31 @@
     <string name="guide_merge_tip_title">Merging Multiple Videos</string>
     <string name="guide_merge_tip">• Long press on video items in file manager to multi-select</string>
 
+    <!-- Processing -->
+    <string name="compressing">Compressing...</string>
+    <string name="executing">Executing...</string>
+    <string name="done">Done</string>
+    <string name="close">Close</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
+    <string name="ok">OK</string>
+    <string name="incompatible_params">Incompatible Parameters</string>
+    <string name="cannot_get_path">Cannot get file path</string>
+    <string name="please_select_video">Please select a video first</string>
+    <string name="compress_complete">Compression complete: %s</string>
+    <string name="compress_failed">Compression failed: %s</string>
+    <string name="enter_ffmpeg_command">Please enter FFmpeg command</string>
+    <string name="command_complete">Command executed</string>
+    <string name="command_failed">Execution failed: %s</string>
+    <string name="extract_complete">Extraction complete: %s</string>
+    <string name="failed">Failed: %s</string>
+    <string name="select_at_least_2">Select at least 2 videos</string>
+    <string name="cannot_read_video">Cannot read video file</string>
+    <string name="cannot_probe_video">Cannot probe video parameters: %s</string>
+    <string name="merge_complete">Merge complete: %s</string>
+    <string name="trim_duration_at_least_1s">Trim duration must be at least 1 second</string>
+    <string name="cannot_read_file">Cannot read file</string>
+    <string name="trim_complete">Trim complete: %s</string>
+
     <!-- Donate -->
     <string name="alipay">Alipay</string>
     <string name="wechat">WeChat</string>
