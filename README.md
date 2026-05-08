@@ -40,6 +40,7 @@ Requires signing env vars: `KEY_ALIAS`, `KEY_PASSWORD`, `KEY_STORE`, `KEY_STORE_
 
 ## Versions / 版本
 
+- **v1.3.1** — Batch processing queue, frame rate control, bilingual README
 - **v1.3.0** — Custom FFmpeg command page, GPS metadata fix
 - **v1.2.0** — Video compression (hardware + software encoding), GPS metadata preservation, donation, real-time logs
 - **v1.1.0** — Compression refactor with H.264/H.265 tabs
