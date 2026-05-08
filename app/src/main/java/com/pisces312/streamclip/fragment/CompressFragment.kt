@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.WindowManager
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -257,6 +258,11 @@ class CompressFragment : Fragment() {
             binding.tvProgress.text = "压缩中..."
             binding.btnCompress.isEnabled = false
 
+            // 根据设置保持屏幕常亮
+            if (SettingsManager.isKeepScreenOn(requireContext())) {
+                requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+
             // Get video duration
             val totalTimeMs = FFmpegService.getDurationMs(path)
 
@@ -289,6 +295,8 @@ class CompressFragment : Fragment() {
                     binding.progressBar.visibility = View.GONE
                     binding.tvProgress.visibility = View.GONE
                     binding.btnCompress.isEnabled = true
+                    // 清除屏幕常亮
+                    requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     logDialog.onComplete(result.success)
 
                     if (result.success) {

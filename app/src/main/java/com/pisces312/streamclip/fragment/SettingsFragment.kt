@@ -94,6 +94,11 @@ class SettingsFragment : Fragment() {
             SettingsManager.setAddTimestamp(requireContext(), isChecked)
         }
 
+        // 执行时保持常亮
+        binding.switchKeepScreenOn.setOnCheckedChangeListener { _, isChecked ->
+            SettingsManager.setKeepScreenOn(requireContext(), isChecked)
+        }
+
         // 选择自定义目录
         binding.btnSelectDir.setOnClickListener {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
@@ -124,6 +129,7 @@ class SettingsFragment : Fragment() {
         val context = requireContext()
         binding.switchUseSourceDir.isChecked = SettingsManager.isUseSourceDir(context)
         binding.switchAddTimestamp.isChecked = SettingsManager.isAddTimestamp(context)
+        binding.switchKeepScreenOn.isChecked = SettingsManager.isKeepScreenOn(context)
 
         // 显示当前输出路径
         val path = when {

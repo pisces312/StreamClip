@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.WindowManager
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -107,6 +108,9 @@ class CustomCommandFragment : Fragment() {
         binding.tvProgress.visibility = View.VISIBLE
         binding.tvProgress.text = "执行中..."
         binding.btnExecute.isEnabled = false
+        if (SettingsManager.isKeepScreenOn(requireContext())) {
+            requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
 
         // Show log dialog
         val logDialog = showFfmpegLogDialog(command)
@@ -133,6 +137,7 @@ class CustomCommandFragment : Fragment() {
                 binding.progressBar.visibility = View.GONE
                 binding.tvProgress.visibility = View.GONE
                 binding.btnExecute.isEnabled = true
+                requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 logDialog?.onComplete(result.success)
 
                 if (result.success) {

@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.WindowManager
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -139,6 +140,9 @@ class MergeFragment : Fragment() {
         lifecycleScope.launch {
             binding.progressBar.visibility = View.VISIBLE
             binding.btnExecute.isEnabled = false
+            if (SettingsManager.isKeepScreenOn(requireContext())) {
+                requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
 
             val paths = mutableListOf<String>()
             for (uri in videoUris) {
@@ -150,6 +154,7 @@ class MergeFragment : Fragment() {
                         Toast.makeText(requireContext(), "无法读取某个视频文件", Toast.LENGTH_SHORT).show()
                         binding.progressBar.visibility = View.GONE
                         binding.btnExecute.isEnabled = true
+                        requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     }
                     return@launch
                 }
@@ -164,6 +169,7 @@ class MergeFragment : Fragment() {
                         Toast.makeText(requireContext(), "无法探测视频参数: ${java.io.File(path).name}", Toast.LENGTH_SHORT).show()
                         binding.progressBar.visibility = View.GONE
                         binding.btnExecute.isEnabled = true
+                        requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     }
                     return@launch
                 }
@@ -185,6 +191,7 @@ class MergeFragment : Fragment() {
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
                     binding.btnExecute.isEnabled = true
+                    requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     showIncompatibleDialog(firstInfo, incompatibleFiles)
                 }
                 return@launch
@@ -205,6 +212,7 @@ class MergeFragment : Fragment() {
             withContext(Dispatchers.Main) {
                 binding.progressBar.visibility = View.GONE
                 binding.btnExecute.isEnabled = true
+                requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
                 if (result.success) {
                     FileUtils.scanFile(requireContext(), outputFile)

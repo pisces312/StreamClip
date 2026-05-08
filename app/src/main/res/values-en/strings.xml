@@ -54,6 +54,11 @@
     <string name="guide_bitrate_desc">Data amount per second, recommended 2-4 Mbps (1080p)</string>
     <string name="guide_ok">Got It</string>
 
+    <!-- General Settings -->
+    <string name="general_settings">General Settings</string>
+    <string name="keep_screen_on">Keep Screen On</string>
+    <string name="keep_screen_on_desc">Prevent screen from sleeping during processing</string>
+
     <!-- Language Settings -->
     <string name="language">Language</string>
     <string name="language_follow_system">Follow System</string>

@@ -10,6 +10,7 @@ object SettingsManager {
     private const val KEY_USE_SOURCE_DIR = "use_source_dir"
     private const val KEY_ADD_TIMESTAMP = "add_timestamp"
     private const val KEY_LAST_VIDEO_DIR = "last_video_dir"
+    private const val KEY_KEEP_SCREEN_ON = "keep_screen_on"
 
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -35,6 +36,17 @@ object SettingsManager {
 
     fun setAddTimestamp(context: Context, value: Boolean) {
         getPrefs(context).edit().putBoolean(KEY_ADD_TIMESTAMP, value).apply()
+    }
+
+    /**
+     * 执行期间是否保持屏幕常亮（默认true）
+     */
+    fun isKeepScreenOn(context: Context): Boolean {
+        return getPrefs(context).getBoolean(KEY_KEEP_SCREEN_ON, true)
+    }
+
+    fun setKeepScreenOn(context: Context, value: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_KEEP_SCREEN_ON, value).apply()
     }
 
     /**

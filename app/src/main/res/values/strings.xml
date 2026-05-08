@@ -71,7 +71,12 @@
     <string name="guide_merge_tip_title">合并视频多选</string>
     <string name="guide_merge_tip">• 长按文件管理器中的视频项即可多选</string>
 
-    <!-- Language Settings -->
+    <!-- 通用设置 -->
+    <string name="general_settings">通用设置</string>
+    <string name="keep_screen_on">执行时保持常亮</string>
+    <string name="keep_screen_on_desc">压缩或处理期间防止屏幕休眠</string>
+
+    <!-- 语言设置 -->
     <string name="language">语言</string>
     <string name="language_follow_system">跟随系统</string>
     <string name="language_zh">中文</string>

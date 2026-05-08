@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.provider.OpenableColumns
 import android.view.LayoutInflater
 import android.view.View
+import android.view.WindowManager
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -114,12 +115,16 @@ class ExtractFragment : Fragment() {
         lifecycleScope.launch {
             binding.progressBar.visibility = View.VISIBLE
             binding.btnExecute.isEnabled = false
+            if (SettingsManager.isKeepScreenOn(requireContext())) {
+                requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
 
             val pathResult = FileUtils.getPathResultFromUri(requireContext(), uri) ?: run {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(requireContext(), "无法读取文件", Toast.LENGTH_SHORT).show()
                     binding.progressBar.visibility = View.GONE
                     binding.btnExecute.isEnabled = true
+                    requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 }
                 return@launch
             }
@@ -147,6 +152,7 @@ class ExtractFragment : Fragment() {
             withContext(Dispatchers.Main) {
                 binding.progressBar.visibility = View.GONE
                 binding.btnExecute.isEnabled = true
+                requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
                 if (result.success) {
                     FileUtils.scanFile(requireContext(), outputFile)
