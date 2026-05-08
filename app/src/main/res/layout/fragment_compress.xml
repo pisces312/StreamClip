@@ -10,21 +10,53 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSelectVideo"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="选择视频" />
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSelectVideo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/batch_select_video" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSelectMultiple"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="@string/batch_select_multiple"
+                style="?attr/materialButtonOutlinedStyle" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvSelectedFile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="未选择文件"
+            android:text="@string/batch_no_files_selected"
             android:textSize="12sp"
             android:maxLines="2"
             android:ellipsize="end" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerSelectedVideos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:maxHeight="200dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvBatchStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="12sp"
+            android:visibility="gone" />
 
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabLayout"
@@ -117,11 +149,11 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="速度质量平衡"
+                    android:text="帧率"
                     android:textStyle="bold" />
 
                 <ImageView
-                    android:id="@+id/btnHelpSpeed"
+                    android:id="@+id/btnHelpFrameRateHw"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
@@ -129,7 +161,7 @@
             </LinearLayout>
 
             <Spinner
-                android:id="@+id/spinnerSpeed"
+                android:id="@+id/spinnerFrameRateHw"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp" />
@@ -309,6 +341,34 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:text="帧率"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/btnHelpFrameRateSw"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_info"
+                    android:contentDescription="帮助" />
+            </LinearLayout>
+
+            <Spinner
+                android:id="@+id/spinnerFrameRateSw"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="12dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="分辨率"
                     android:textStyle="bold" />
 
@@ -360,7 +420,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="开始压缩" />
+            android:text="@string/start_batch_compress" />
 
         <ProgressBar
             android:id="@+id/progressBar"

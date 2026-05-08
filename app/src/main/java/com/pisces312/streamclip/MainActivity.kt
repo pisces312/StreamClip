@@ -72,6 +72,10 @@ class MainActivity : BaseActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_batch_tasks -> {
+                startActivity(Intent(this, com.pisces312.streamclip.ui.BatchTaskActivity::class.java))
+                true
+            }
             R.id.action_settings -> {
                 supportFragmentManager.beginTransaction()
                     .replace(android.R.id.content, SettingsFragment())

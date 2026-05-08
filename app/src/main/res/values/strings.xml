@@ -132,4 +132,36 @@
     <!-- Donate -->
     <string name="alipay">支付宝</string>
     <string name="wechat">微信</string>
+
+    <!-- Batch Processing -->
+    <string name="batch_tasks">批处理任务</string>
+    <string name="batch_processing">批量处理中</string>
+    <string name="batch_queue_size">队列: %d 个任务</string>
+    <string name="batch_processing_progress">处理中 %1$d/%2$d</string>
+    <string name="batch_complete">批量处理完成</string>
+    <string name="batch_complete_summary">完成 %1$d/%2$d</string>
+    <string name="batch_failed_count">失败 %d 个</string>
+    <string name="batch_notification_channel_name">批处理任务</string>
+    <string name="batch_notification_channel_desc">显示批量视频处理进度</string>
+    <string name="no_batch_tasks">暂无任务</string>
+    <string name="pause">暂停</string>
+    <string name="start">开始</string>
+    <string name="task_status_pending">排队中</string>
+    <string name="task_status_running">处理中 %d%%</string>
+    <string name="task_status_paused">已暂停</string>
+    <string name="task_status_completed">完成</string>
+    <string name="task_status_failed">失败%s</string>
+    <string name="task_status_cancelled">已取消</string>
+    <string name="cannot_open_file">无法打开文件</string>
+    <string name="batch_select_video">选择视频</string>
+    <string name="batch_select_multiple">批量选择</string>
+    <string name="batch_no_files_selected">未选择文件</string>
+    <string name="batch_selected_count" formatted="false">已选择 %d 个视频 (%s)</string>
+    <string name="batch_direct_read">直读: %d</string>
+    <string name="batch_cached">缓存: %d</string>
+    <string name="cannot_read_videos">无法读取所选视频</string>
+    <string name="batch_confirm_title">确认批量压缩</string>
+    <string name="batch_confirm_message">即将批量压缩 %d 个视频</string>
+    <string name="start_batch_compress">开始压缩</string>
+    <string name="remove">移除</string>
 </resources>

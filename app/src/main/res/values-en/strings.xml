@@ -134,4 +134,36 @@
     <!-- Donate -->
     <string name="alipay">Alipay</string>
     <string name="wechat">WeChat</string>
+
+    <!-- Batch Processing -->
+    <string name="batch_tasks">Batch Tasks</string>
+    <string name="batch_processing">Batch Processing</string>
+    <string name="batch_queue_size">Queue: %d tasks</string>
+    <string name="batch_processing_progress">Processing %1$d/%2$d</string>
+    <string name="batch_complete">Batch Processing Complete</string>
+    <string name="batch_complete_summary">Completed %1$d/%2$d</string>
+    <string name="batch_failed_count">%d failed</string>
+    <string name="batch_notification_channel_name">Batch Tasks</string>
+    <string name="batch_notification_channel_desc">Show batch video processing progress</string>
+    <string name="no_batch_tasks">No tasks</string>
+    <string name="pause">Pause</string>
+    <string name="start">Start</string>
+    <string name="task_status_pending">Queued</string>
+    <string name="task_status_running">Processing %d%%</string>
+    <string name="task_status_paused">Paused</string>
+    <string name="task_status_completed">Completed</string>
+    <string name="task_status_failed">Failed%s</string>
+    <string name="task_status_cancelled">Cancelled</string>
+    <string name="cannot_open_file">Cannot open file</string>
+    <string name="batch_select_video">Select Video</string>
+    <string name="batch_select_multiple">Batch Select</string>
+    <string name="batch_no_files_selected">No file selected</string>
+    <string name="batch_selected_count" formatted="false">Selected %d videos (%s)</string>
+    <string name="batch_direct_read">Direct: %d</string>
+    <string name="batch_cached">Cached: %d</string>
+    <string name="cannot_read_videos">Cannot read selected videos</string>
+    <string name="batch_confirm_title">Confirm Batch Compression</string>
+    <string name="batch_confirm_message">About to compress %d videos</string>
+    <string name="start_batch_compress">Start Compression</string>
+    <string name="remove">Remove</string>
 </resources>
