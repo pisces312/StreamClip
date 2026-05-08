@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">StreamClip</string>
+    <string name="title_trim">Lossless Trim</string>
+    <string name="title_trim2">Lossless Trim 2</string>
+    <string name="title_merge">Lossless Merge</string>
+    <string name="title_extract">Extract Audio</string>
+    <string name="title_compress">Video Compress</string>
+    <string name="title_custom">Custom Command</string>
+    <string name="select_video">Select Video</string>
+    <string name="start_time">Start Time</string>
+    <string name="end_time">End Time</string>
+    <string name="execute">Execute</string>
+    <string name="processing">Processing...</string>
+    <string name="success">Complete</string>
+    <string name="error">Error</string>
+    <string name="notification_channel_name">Processing Tasks</string>
+    <string name="notification_channel_desc">Video processing progress notifications</string>
+    <string name="title_logs">Logs</string>
+    <string name="copy_logs">Copy Logs</string>
+    <string name="share_logs">Share Logs</string>
+    <string name="clear_logs">Clear Logs</string>
+    <string name="clear_logs_title">Clear Logs</string>
+    <string name="clear_logs_confirm">Are you sure you want to clear all logs?</string>
+    <string name="logs_copied">Logs copied</string>
+    <string name="logs_cleared">Logs cleared</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="crash_detected">Crash Detected</string>
+    <string name="view_crash_log">View Crash Log</string>
+    <string name="title_settings">Settings</string>
+    <string name="output_settings">Output Settings</string>
+    <string name="use_source_dir">Use Source Directory</string>
+    <string name="use_source_dir_desc">Output to the same folder as the original video</string>
+    <string name="custom_output_dir">Custom Output Directory</string>
+    <string name="select_dir">Select Directory</string>
+    <string name="open_dir">Open Output Directory</string>
+    <string name="add_timestamp">Add Timestamp to Filename</string>
+    <string name="add_timestamp_desc">Avoid overwriting original files</string>
+    <string name="current_path">Current Path</string>
+    <string name="scroll_to_bottom">Scroll to Bottom</string>
+    <string name="title_guide">User Guide</string>
+    <string name="title_donate">Support Developer</string>
+    <string name="guide_title">Encoding Settings Guide</string>
+    <string name="guide_h264_title">H.264 (Best Compatibility)</string>
+    <string name="guide_h264_desc">Recommended for daily use, playable on all devices</string>
+    <string name="guide_hevc_title">HEVC/H.265 (Smallest Size)</string>
+    <string name="guide_hevc_desc">Saves 40-60% space compared to H.264, may not work on older devices</string>
+    <string name="guide_hw_title">Hardware Encoding (Fastest Speed)</string>
+    <string name="guide_hw_desc">Suitable for quick sharing, slightly lower quality than software encoding</string>
+    <string name="guide_crf">CRF Quality</string>
+    <string name="guide_crf_desc">Lower values mean better quality but larger file size. Recommended: 24-28</string>
+    <string name="guide_bitrate">Bitrate</string>
+    <string name="guide_bitrate_desc">Data amount per second, recommended 2-4 Mbps (1080p)</string>
+    <string name="guide_ok">Got It</string>
+
+    <!-- Language Settings -->
+    <string name="language">Language</string>
+    <string name="language_follow_system">Follow System</string>
+    <string name="language_zh">中文</string>
+    <string name="language_en">English</string>
+
+    <!-- Common UI -->
+    <string name="same_as_source">Same as source video directory</string>
+    <string name="not_set">Not set</string>
+    <string name="cache_size">Cache size: %s</string>
+    <string name="cache_management">Cache Management</string>
+    <string name="cache_calculating">Cache size: Calculating...</string>
+    <string name="clear_cache">Clear Cache</string>
+    <string name="clear_cache_confirm">Current cache size: %s\n\nClear all cache and logs?</string>
+    <string name="cache_cleared">Cache cleared</string>
+    <string name="clear">Clear</string>
+    <string name="dir_selected">Output directory selected</string>
+    <string name="dir_parse_failed">Failed to parse directory path</string>
+    <string name="use_source_dir_hint">Using source video directory, please navigate manually</string>
+    <string name="output_dir_not_set">Output directory not set</string>
+    <string name="cannot_open_dir">Cannot open directory: %s</string>
+
+    <!-- Permission Dialog -->
+    <string name="permission_required">Permission Required</string>
+    <string name="permission_storage_desc">StreamClip needs file access to read videos and save output. Please enable "Allow access to all files" in settings.</string>
+    <string name="go_to_settings">Go to Settings</string>
+
+    <!-- Guide Dialog -->
+    <string name="guide_h264_recommend">H.264 Settings</string>
+    <string name="guide_h264_archive">• Archive: CRF 23</string>
+    <string name="guide_h264_balanced">• Balanced: CRF 25 (Recommended)</string>
+    <string name="guide_h264_quick">• Quick share: CRF 28</string>
+    <string name="guide_hevc_recommend">HEVC/H.265 Settings</string>
+    <string name="guide_hevc_high">• High quality: CRF 28</string>
+    <string name="guide_hevc_size">• Size priority: CRF 30 (Recommended)</string>
+    <string name="guide_hevc_space">• Saves 40-60% space vs H.264</string>
+    <string name="guide_hw_recommend">Hardware Encoding Settings</string>
+    <string name="guide_hw_1080p">• 1080p: 3 Mbps recommended</string>
+    <string name="guide_hw_720p">• 720p: 1.5-2 Mbps recommended</string>
+    <string name="guide_hw_speed">• Best for quick sharing</string>
+    <string name="guide_general_title">General Tips</string>
+    <string name="guide_general_compat">• Need compatibility → H.264 CRF 25</string>
+    <string name="guide_general_size">• Need smaller size → HEVC CRF 30</string>
+    <string name="guide_general_speed">• Need speed → Hardware 3Mbps</string>
+    <string name="guide_merge_tip_title">Merging Multiple Videos</string>
+    <string name="guide_merge_tip">• Long press on video items in file manager to multi-select</string>
+
+    <!-- Donate -->
+    <string name="alipay">Alipay</string>
+    <string name="wechat">WeChat</string>
+</resources>

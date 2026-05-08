@@ -22,7 +22,7 @@ import com.pisces312.streamclip.adapter.MainPagerAdapter
 import com.pisces312.streamclip.databinding.ActivityMainBinding
 import com.pisces312.streamclip.fragment.SettingsFragment
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
@@ -129,28 +129,28 @@ class MainActivity : AppCompatActivity() {
 
     private fun showGuideDialog() {
         val message = buildString {
-            appendLine("【H.264 — 兼容性最好】")
-            appendLine("• 收藏存档：CRF 23")
-            appendLine("• 平衡推荐：CRF 25（推荐）")
-            appendLine("• 快速分享：CRF 28")
+            appendLine(getString(R.string.guide_h264_recommend))
+            appendLine(getString(R.string.guide_h264_archive))
+            appendLine(getString(R.string.guide_h264_balanced))
+            appendLine(getString(R.string.guide_h264_quick))
             appendLine()
-            appendLine("【HEVC/H.265 — 体积最小】")
-            appendLine("• 高画质收藏：CRF 28")
-            appendLine("• 体积优先：CRF 30（推荐）")
-            appendLine("• 比 H.264 省 40-60% 空间")
+            appendLine(getString(R.string.guide_hevc_recommend))
+            appendLine(getString(R.string.guide_hevc_high))
+            appendLine(getString(R.string.guide_hevc_size))
+            appendLine(getString(R.string.guide_hevc_space))
             appendLine()
-            appendLine("【硬件编码 — 速度最快】")
-            appendLine("• 1080p 推荐 3 Mbps")
-            appendLine("• 720p 推荐 1.5-2 Mbps")
-            appendLine("• 适合快速分享")
+            appendLine(getString(R.string.guide_hw_recommend))
+            appendLine(getString(R.string.guide_hw_1080p))
+            appendLine(getString(R.string.guide_hw_720p))
+            appendLine(getString(R.string.guide_hw_speed))
             appendLine()
-            appendLine("【通用建议】")
-            appendLine("• 要兼容 → H.264 CRF 25")
-            appendLine("• 要省空间 → HEVC CRF 30")
-            appendLine("• 要快 → 硬件编码 3Mbps")
+            appendLine(getString(R.string.guide_general_title))
+            appendLine(getString(R.string.guide_general_compat))
+            appendLine(getString(R.string.guide_general_size))
+            appendLine(getString(R.string.guide_general_speed))
             appendLine()
-            appendLine("【合并视频多选】")
-            appendLine("• 长按文件管理器中的视频项即可多选")
+            appendLine(getString(R.string.guide_merge_tip_title))
+            appendLine(getString(R.string.guide_merge_tip))
         }
         AlertDialog.Builder(this)
             .setTitle(R.string.guide_title)
@@ -181,14 +181,14 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
                 AlertDialog.Builder(this)
-                    .setTitle("需要文件访问权限")
-                    .setMessage("StreamClip 需要访问所有文件才能读取视频和保存输出。请在设置中开启\"允许访问所有文件\"。")
-                    .setPositiveButton("去设置") { _, _ ->
+                    .setTitle(R.string.permission_required)
+                    .setMessage(R.string.permission_storage_desc)
+                    .setPositiveButton(R.string.go_to_settings) { _, _ ->
                         val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
                             Uri.parse("package:$packageName"))
                         startActivity(intent)
                     }
-                    .setNegativeButton("取消", null)
+                    .setNegativeButton(R.string.cancel, null)
                     .setCancelable(false)
                     .show()
             }

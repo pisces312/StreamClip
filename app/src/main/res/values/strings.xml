@@ -52,4 +52,54 @@
     <string name="guide_bitrate">码率</string>
     <string name="guide_bitrate_desc">每秒数据量，推荐 2-4 Mbps（1080p）</string>
     <string name="guide_ok">知道了</string>
+    <string name="guide_h264_recommend">H.264 设置推荐</string>
+    <string name="guide_h264_archive">• 收藏存档：CRF 23</string>
+    <string name="guide_h264_balanced">• 平衡推荐：CRF 25（推荐）</string>
+    <string name="guide_h264_quick">• 快速分享：CRF 28</string>
+    <string name="guide_hevc_recommend">HEVC/H.265 设置推荐</string>
+    <string name="guide_hevc_high">• 高画质收藏：CRF 28</string>
+    <string name="guide_hevc_size">• 体积优先：CRF 30（推荐）</string>
+    <string name="guide_hevc_space">• 比 H.264 省 40-60% 空间</string>
+    <string name="guide_hw_recommend">硬件编码设置</string>
+    <string name="guide_hw_1080p">• 1080p 推荐 3 Mbps</string>
+    <string name="guide_hw_720p">• 720p 推荐 1.5-2 Mbps</string>
+    <string name="guide_hw_speed">• 适合快速分享</string>
+    <string name="guide_general_title">通用建议</string>
+    <string name="guide_general_compat">• 要兼容 → H.264 CRF 25</string>
+    <string name="guide_general_size">• 要省空间 → HEVC CRF 30</string>
+    <string name="guide_general_speed">• 要快 → 硬件编码 3Mbps</string>
+    <string name="guide_merge_tip_title">合并视频多选</string>
+    <string name="guide_merge_tip">• 长按文件管理器中的视频项即可多选</string>
+
+    <!-- Language Settings -->
+    <string name="language">语言</string>
+    <string name="language_follow_system">跟随系统</string>
+    <string name="language_zh">中文</string>
+    <string name="language_en">English</string>
+
+    <!-- Common UI -->
+    <string name="same_as_source">与原视频相同目录</string>
+    <string name="not_set">未设置</string>
+    <string name="cache_size">缓存大小: %s</string>
+    <string name="cache_management">缓存管理</string>
+    <string name="cache_calculating">缓存大小: 计算中...</string>
+    <string name="clear_cache">清除缓存</string>
+    <string name="clear_cache_confirm">当前缓存大小: %s\n\n确定要清除所有缓存和日志吗？</string>
+    <string name="cache_cleared">缓存已清除</string>
+    <string name="clear">清除</string>
+    <string name="dir_selected">已选择输出目录</string>
+    <string name="dir_parse_failed">无法解析目录路径</string>
+    <string name="use_source_dir_hint">使用原视频目录，请自行前往查看</string>
+    <string name="output_dir_not_set">未设置输出目录</string>
+    <string name="cannot_open_dir">无法打开目录: %s</string>
+
+    <!-- Permission Dialog -->
+    <string name="permission_required">需要文件访问权限</string>
+    <string name="permission_storage_desc">StreamClip 需要访问所有文件才能读取视频和保存输出。请在设置中开启\"允许访问所有文件\"。</string>
+    <string name="go_to_settings">去设置</string>
+    <string name="cancel">取消</string>
+
+    <!-- Donate -->
+    <string name="alipay">支付宝</string>
+    <string name="wechat">微信</string>
 </resources>

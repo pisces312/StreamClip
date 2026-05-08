@@ -14,7 +14,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="输出设置"
+        android:text="@string/output_settings"
         android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="@color/white"
@@ -37,14 +37,14 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="使用原视频所在目录"
+                android:text="@string/use_source_dir"
                 android:textSize="16sp"
                 android:textColor="@color/white" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="输出到与原视频相同的文件夹"
+                android:text="@string/use_source_dir_desc"
                 android:textSize="12sp"
                 android:textColor="#AAAAAA" />
         </LinearLayout>
@@ -71,7 +71,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="自定义输出目录"
+            android:text="@string/custom_output_dir"
             android:textSize="16sp"
             android:textColor="@color/white" />
 
@@ -79,7 +79,7 @@
             android:id="@+id/tvCurrentPath"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="当前路径"
+            android:text="@string.current_path"
             android:textSize="12sp"
             android:textColor="#AAAAAA"
             android:layout_marginTop="4dp" />
@@ -88,7 +88,7 @@
             android:id="@+id/btnSelectDir"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="选择目录"
+            android:text="@string/select_dir"
             android:layout_marginTop="8dp" />
     </LinearLayout>
 
@@ -115,14 +115,14 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="文件名添加时间戳"
+                android:text="@string/add_timestamp"
                 android:textSize="16sp"
                 android:textColor="@color/white" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="避免覆盖原文件"
+                android:text="@string/add_timestamp_desc"
                 android:textSize="12sp"
                 android:textColor="#AAAAAA" />
         </LinearLayout>
@@ -144,7 +144,7 @@
         android:id="@+id/btnOpenDir"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="打开输出目录"
+        android:text="@string/open_dir"
         android:layout_marginTop="16dp" />
 
     <View
@@ -157,7 +157,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="缓存管理"
+        android:text="@string/cache_management"
         android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="@color/white"
@@ -167,7 +167,7 @@
         android:id="@+id/tvCacheSize"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="缓存大小: 计算中..."
+        android:text="@string/cache_calculating"
         android:textSize="14sp"
         android:textColor="#CCCCCC"
         android:layout_marginBottom="8dp" />
@@ -178,6 +178,49 @@
         android:layout_height="wrap_content"
         android:text="清除缓存"
         android:layout_marginTop="8dp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#555555"
+        android:layout_marginVertical="16dp" />
+
+    <!-- 语言设置 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/title_settings"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/white"
+        android:layout_marginBottom="16dp" />
+
+    <LinearLayout
+        android:id="@+id/layoutLanguage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingVertical="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/language"
+            android:textSize="16sp"
+            android:textColor="@color/white" />
+
+        <TextView
+            android:id="@+id/tvLanguageValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#AAAAAA" />
+    </LinearLayout>
 
     <View
         android:layout_width="match_parent"

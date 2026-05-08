@@ -12,7 +12,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.SwitchCompat
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import com.pisces312.streamclip.R
 import com.pisces312.streamclip.databinding.FragmentSettingsBinding
+import com.pisces312.streamclip.util.LocaleHelper
 import com.pisces312.streamclip.util.LogCollector
 import com.pisces312.streamclip.util.SettingsManager
 
@@ -34,9 +36,9 @@ class SettingsFragment : Fragment() {
                     SettingsManager.setCustomOutputPath(requireContext(), filePath)
                     SettingsManager.setUseSourceDir(requireContext(), false)
                     updateUi()
-                    Toast.makeText(requireContext(), "已选择输出目录", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), R.string.dir_selected, Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(requireContext(), "无法解析目录路径", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), R.string.dir_parse_failed, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -105,6 +107,11 @@ class SettingsFragment : Fragment() {
             openOutputDir()
         }
 
+        // 语言设置
+        binding.layoutLanguage.setOnClickListener {
+            showLanguageDialog()
+        }
+
         // 清除缓存
         binding.btnClearCache.setOnClickListener {
             showClearCacheDialog()
@@ -120,8 +127,8 @@ class SettingsFragment : Fragment() {
 
         // 显示当前输出路径
         val path = when {
-            SettingsManager.isUseSourceDir(context) -> "与原视频相同目录"
-            else -> SettingsManager.getCustomOutputPath(context) ?: "未设置"
+            SettingsManager.isUseSourceDir(context) -> getString(R.string.same_as_source)
+            else -> SettingsManager.getCustomOutputPath(context) ?: getString(R.string.not_set)
         }
         binding.tvCurrentPath.text = path
 
@@ -130,21 +137,59 @@ class SettingsFragment : Fragment() {
 
         // 显示缓存大小
         val cacheSize = SettingsManager.getCacheSize(context)
-        binding.tvCacheSize.text = "缓存大小: ${SettingsManager.formatSize(cacheSize)}"
+        binding.tvCacheSize.text = getString(R.string.cache_size, SettingsManager.formatSize(cacheSize))
+
+        // 更新语言显示
+        updateLanguageDisplay()
+    }
+
+    private fun updateLanguageDisplay() {
+        val language = LocaleHelper.getLanguage(requireContext())
+        val displayText = when (language) {
+            LocaleHelper.LANGUAGE_ZH -> getString(R.string.language_zh)
+            LocaleHelper.LANGUAGE_EN -> getString(R.string.language_en)
+            else -> getString(R.string.language_follow_system)
+        }
+        binding.tvLanguageValue.text = displayText
+    }
+
+    private fun showLanguageDialog() {
+        val options = arrayOf(
+            getString(R.string.language_follow_system),
+            getString(R.string.language_zh),
+            getString(R.string.language_en)
+        )
+        val values = arrayOf(LocaleHelper.FOLLOW_SYSTEM, LocaleHelper.LANGUAGE_ZH, LocaleHelper.LANGUAGE_EN)
+        val currentLanguage = LocaleHelper.getLanguage(requireContext())
+        val checkedItem = values.indexOf(currentLanguage).coerceAtLeast(0)
+
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.language)
+            .setSingleChoiceItems(options, checkedItem) { dialog, which ->
+                val selected = values[which]
+                if (selected != LocaleHelper.getLanguage(requireContext())) {
+                    LocaleHelper.setLanguage(requireContext(), selected)
+                    // 需要重启应用才能生效
+                    requireActivity().recreate()
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun openOutputDir() {
         val context = requireContext()
         val path = when {
             SettingsManager.isUseSourceDir(context) -> {
-                Toast.makeText(context, "使用原视频目录，请自行前往查看", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, R.string.use_source_dir_hint, Toast.LENGTH_SHORT).show()
                 return
             }
             else -> SettingsManager.getCustomOutputPath(context)
         }
 
         if (path.isNullOrEmpty()) {
-            Toast.makeText(context, "未设置输出目录", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.output_dir_not_set, Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -163,7 +208,7 @@ class SettingsFragment : Fragment() {
                 }
                 startActivity(intent)
             } catch (e2: Exception) {
-                Toast.makeText(context, "无法打开目录: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, getString(R.string.cannot_open_dir, e.message), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -173,14 +218,14 @@ class SettingsFragment : Fragment() {
         val cacheSize = SettingsManager.getCacheSize(context)
 
         AlertDialog.Builder(context)
-            .setTitle("清除缓存")
-            .setMessage("当前缓存大小: ${SettingsManager.formatSize(cacheSize)}\n\n确定要清除所有缓存和日志吗？")
-            .setPositiveButton("清除") { _, _ ->
+            .setTitle(R.string.clear_cache)
+            .setMessage(getString(R.string.clear_cache_confirm, SettingsManager.formatSize(cacheSize)))
+            .setPositiveButton(R.string.clear) { _, _ ->
                 SettingsManager.clearCache(context)
                 updateUi()
-                Toast.makeText(context, "缓存已清除", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, R.string.cache_cleared, Toast.LENGTH_SHORT).show()
             }
-            .setNegativeButton("取消", null)
+            .setNegativeButton(R.string.cancel, null)
             .show()
     }
 
