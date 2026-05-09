@@ -16,13 +16,13 @@ class TabOrderActivity : BaseActivity() {
     private lateinit var binding: ActivityTabOrderBinding
     private lateinit var adapter: TabOrderAdapter
 
-    private val tabInfo = mapOf(
-        "trim" to Pair(R.string.title_trim, R.drawable.ic_video),
-        "trim2" to Pair(R.string.title_trim2, R.drawable.ic_video),
-        "merge" to Pair(R.string.title_merge, R.drawable.ic_merge),
-        "extract" to Pair(R.string.title_extract, R.drawable.ic_extract),
-        "compress" to Pair(R.string.title_compress, R.drawable.ic_compress),
-        "custom" to Pair(R.string.title_custom, R.drawable.ic_terminal)
+    private val tabTitles = mapOf(
+        "trim" to R.string.title_trim,
+        "trim2" to R.string.title_trim2,
+        "merge" to R.string.title_merge,
+        "extract" to R.string.title_extract,
+        "compress" to R.string.title_compress,
+        "custom" to R.string.title_custom
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,9 +41,9 @@ class TabOrderActivity : BaseActivity() {
     private fun setupRecyclerView() {
         val order = TabOrderManager.getOrder(this)
         val items = order.mapNotNull { id ->
-            tabInfo[id]?.let { (titleRes, iconRes) ->
-                TabOrderAdapter.TabItem(id, getString(titleRes), iconRes)
-            }
+            val titleRes = tabTitles[id] ?: return@mapNotNull null
+            val iconRes = TabOrderManager.TAB_ICONS[id] ?: return@mapNotNull null
+            TabOrderAdapter.TabItem(id, getString(titleRes), iconRes)
         }.toMutableList()
 
         adapter = TabOrderAdapter(items)

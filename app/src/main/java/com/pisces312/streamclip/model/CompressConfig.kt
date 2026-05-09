@@ -13,17 +13,56 @@ data class CompressConfig(
     val isHardware: Boolean = true,
     val copyMetadata: Boolean = true   // Copy all metadata from source
 ) : java.io.Serializable {
-    fun toFFmpegCommand(inputPath: String, outputPath: String): String {
+    /**
+     * @param colorSpace color_space from probe (e.g. "bt2020nc"), empty for SDR
+     * @param colorPrimaries color_primaries from probe (e.g. "bt2020"), empty for SDR
+     * @param colorTransfer color_transfer from probe (e.g. "arib-std-b67"/"smpte2084"), empty for SDR
+     */
+    fun toFFmpegCommand(
+        inputPath: String,
+        outputPath: String,
+        colorSpace: String = "",
+        colorPrimaries: String = "",
+        colorTransfer: String = ""
+    ): String {
         val cmd = StringBuilder("-y -i \"$inputPath\" ")
-        
+
         // Copy all metadata first (before encoder settings)
         if (copyMetadata) {
             cmd.append("-map_metadata 0 ")
         }
-        
+
+        val isHdr = colorTransfer == "arib-std-b67" || colorTransfer == "smpte2084"
+
+        // HDR handling — do NOT remove these parameters for HDR sources.
+        // Without them, hardware encoder (hevc_mediacodec) will produce washed-out colors
+        // because it silently converts 10-bit HDR to 8-bit SDR without proper tonemapping.
+        // For SDR sources, FFmpeg infers correct defaults — no explicit flags needed.
+        if (isHdr) {
+            // Container-level color metadata (players read these to apply correct color rendering)
+            if (colorSpace.isNotEmpty()) cmd.append("-colorspace $colorSpace ")
+            if (colorPrimaries.isNotEmpty()) cmd.append("-color_primaries $colorPrimaries ")
+            if (colorTransfer.isNotEmpty()) cmd.append("-color_trc $colorTransfer ")
+            cmd.append("-color_range tv ")
+
+            if (isHardware) {
+                // hevc_mediacodec defaults to Main profile (8-bit); Main10 is required for 10-bit HDR
+                cmd.append("-profile:v main10 ")
+                // Tag stream as HDR10 for player detection
+                cmd.append("-metadata:s:v:0 hdr10=1 ")
+                // Write HDR metadata into HEVC bitstream (bsf values: primaries=9→BT.2020,
+                // transfer=18→HLG/16→PQ, matrix=9→BT.2020nc)
+                val tcValue = if (colorTransfer == "arib-std-b67") 18 else 16
+                cmd.append("-bsf:v hevc_metadata=video_full_range_flag=0:colour_primaries=9:transfer_characteristics=$tcValue:matrix_coefficients=9 ")
+            } else {
+                // Software encoder (libx265/libx264) needs explicit 10-bit pixel format
+                cmd.append("-pix_fmt yuv420p10le ")
+            }
+        }
+
         // Video encoder
         cmd.append("-c:v $encoder ")
-        
+
         // Rate control
         if (isHardware) {
             cmd.append("-b:v ${bitrate}k ")
@@ -31,8 +70,9 @@ data class CompressConfig(
             cmd.append("-crf $crf ")
             cmd.append("-preset $preset ")
         }
-        
+
         // Resolution
+        val filters = mutableListOf<String>()
         if (resolution != "original") {
             val height = when (resolution) {
                 "1080p" -> 1080
@@ -40,7 +80,11 @@ data class CompressConfig(
                 "480p" -> 480
                 else -> -1
             }
-            if (height > 0) cmd.append("-vf scale=-2:$height ")
+            if (height > 0) filters.add("scale=-2:$height")
+        }
+
+        if (filters.isNotEmpty()) {
+            cmd.append("-vf ${filters.joinToString(",")} ")
         }
 
         // Frame rate
@@ -112,7 +156,7 @@ data class CompressConfig(
         val AUDIO_ENCODERS = listOf(
             "copy" to "复制原音频",
             "aac" to "AAC",
-            "mp3" to "MP3",
+            "libmp3lame" to "MP3",
             "flac" to "FLAC"
         )
 

@@ -6,6 +6,7 @@ import com.arthenica.ffmpegkit.FFprobeKit
 import com.arthenica.ffmpegkit.ReturnCode
 import com.arthenica.ffmpegkit.StatisticsCallback
 import com.pisces312.streamclip.util.LogCollector
+import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -341,35 +342,47 @@ object FFmpegService {
      */
     fun probeVideoInfo(inputPath: String): com.pisces312.streamclip.model.VideoInfo? {
         return try {
-            // Video stream: width, height, codec, frame rate, pixel format, bitrate
+            // Video stream: use JSON for reliable field extraction
             val session = FFprobeKit.execute(
-                "-v quiet -select_streams v:0 -show_entries stream=width,height,codec_name,r_frame_rate,pix_fmt,bit_rate -of csv=p=0 \"$inputPath\""
+                "-v quiet -select_streams v:0 -show_entries stream=width,height,codec_name,r_frame_rate,pix_fmt,bit_rate,color_space,color_primaries,color_transfer -of json \"$inputPath\""
             )
             if (!ReturnCode.isSuccess(session.returnCode)) return null
             val output = session.output.trim()
             if (output.isEmpty()) return null
-            val parts = output.split(",")
-            if (parts.size < 5) return null
 
-            val width = parts[0].trim().toIntOrNull() ?: 0
-            val height = parts[1].trim().toIntOrNull() ?: 0
-            val videoCodec = parts[2].trim()
-            val frameRate = parts[3].trim()
-            val pixelFormat = parts[4].trim()
-            val videoBitrate = parts.getOrNull(5)?.trim()?.toLongOrNull() ?: 0L
+            val json = org.json.JSONObject(output)
+            val streams = json.optJSONArray("streams") ?: return null
+            if (streams.length() == 0) return null
+            val stream = streams.getJSONObject(0)
 
-            // Audio stream: codec, sample rate, bitrate
+            val width = stream.optInt("width", 0)
+            val height = stream.optInt("height", 0)
+            val videoCodec = stream.optString("codec_name", "")
+            val frameRate = stream.optString("r_frame_rate", "")
+            val pixelFormat = stream.optString("pix_fmt", "")
+            val videoBitrate = stream.optString("bit_rate", "0").toLongOrNull() ?: 0L
+            val colorSpace = stream.optString("color_space", "")
+            val colorPrimaries = stream.optString("color_primaries", "")
+            val colorTransfer = stream.optString("color_transfer", "")
+
+            // Audio stream: use JSON for reliable field extraction
             val audioSession = FFprobeKit.execute(
-                "-v quiet -select_streams a:0 -show_entries stream=codec_name,sample_rate,bit_rate -of csv=p=0 \"$inputPath\""
+                "-v quiet -select_streams a:0 -show_entries stream=codec_name,sample_rate,bit_rate -of json \"$inputPath\""
             )
             val audioCodec: String
             var audioSampleRate = 0
             var audioBitrate = 0L
             if (ReturnCode.isSuccess(audioSession.returnCode)) {
-                val audioParts = audioSession.output.trim().split(",")
-                audioCodec = audioParts.getOrNull(0)?.trim()?.ifEmpty { "none" } ?: "none"
-                audioSampleRate = audioParts.getOrNull(1)?.trim()?.toIntOrNull() ?: 0
-                audioBitrate = audioParts.getOrNull(2)?.trim()?.toLongOrNull() ?: 0L
+                val audioJson = org.json.JSONObject(audioSession.output.trim())
+                val audioStreams = audioJson.optJSONArray("streams")
+                if (audioStreams != null && audioStreams.length() > 0) {
+                    val audioStream = audioStreams.getJSONObject(0)
+                    audioCodec = audioStream.optString("codec_name", "none")
+                    audioSampleRate = audioStream.optInt("sample_rate", 0)
+                    audioBitrate = audioStream.optString("bit_rate", "0").toLongOrNull() ?: 0L
+                } else {
+                    audioCodec = "none"
+                }
             } else {
                 audioCodec = "none"
             }
@@ -406,7 +419,10 @@ object FFmpegService {
                 audioSampleRate = audioSampleRate,
                 audioBitrate = audioBitrate,
                 creationTime = creationTime,
-                location = location
+                location = location,
+                colorSpace = colorSpace,
+                colorPrimaries = colorPrimaries,
+                colorTransfer = colorTransfer
             )
         } catch (e: Exception) {
             LogCollector.e("FFmpegService", "Probe video info failed: ${e.message}")

@@ -26,7 +26,8 @@
     <EditText
         android:id="@+id/etCommand"
         android:layout_width="match_parent"
-        android:layout_height="120dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:background="@drawable/bg_input"
         android:textColor="@color/white"
         android:textColorHint="@color/gray_500"
@@ -35,46 +36,6 @@
         android:padding="12dp"
         android:textSize="14sp"
         android:inputType="textMultiLine|textNoSuggestions" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="12dp">
-
-        <Button
-            android:id="@+id/btnSelectInput"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="选择输入"
-            android:layout_marginEnd="8dp" />
-
-        <Button
-            android:id="@+id/btnSelectOutput"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="选择输出目录" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvInputPath"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="@color/gray_400"
-        android:textSize="12sp"
-        android:layout_marginTop="8dp"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/tvOutputPath"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="@color/gray_400"
-        android:textSize="12sp"
-        android:layout_marginTop="4dp"
-        android:visibility="gone" />
 
     <Button
         android:id="@+id/btnExecute"

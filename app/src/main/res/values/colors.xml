@@ -7,14 +7,9 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="gray_800">#FF1F1F1F</color>
-    <color name="gray_700">#FF2D2D2D</color>
-    <color name="gray_600">#FF404040</color>
-    <color name="gray_500">#FF808080</color>
-    <color name="gray_400">#FFB0B0B0</color>
-    <color name="highlight_range">#33BB86FC</color>   <!-- 选中区域半透明紫 -->
-    <color name="playback_indicator">#FF03DAC5</color> <!-- 播放位置线 teal -->
-    <color name="overview_bg">#FF2D2D2D</color>       <!-- 总览条背景 -->
-    <color name="overview_range">#FF6200EE</color>    <!-- 总览条选中区域 -->
-    <color name="overview_viewport">#44FFFFFF</color> <!-- 总览条可见窗口框 -->
+    <color name="gray_400">#FFBDBDBD</color>
+    <color name="gray_500">#FF9E9E9E</color>
+    <color name="gray_600">#FF757575</color>
+    <color name="gray_700">#FF616161</color>
+    <color name="gray_800">#FF424242</color>
 </resources>

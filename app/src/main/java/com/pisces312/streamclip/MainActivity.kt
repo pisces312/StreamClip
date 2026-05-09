@@ -184,7 +184,8 @@ class MainActivity : BaseActivity() {
         binding.viewPager.adapter = adapter
 
         TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
-            tab.text = when (order[position]) {
+            val tabId = order[position]
+            tab.text = when (tabId) {
                 "trim" -> getString(R.string.title_trim)
                 "trim2" -> getString(R.string.title_trim2)
                 "merge" -> getString(R.string.title_merge)
@@ -193,6 +194,7 @@ class MainActivity : BaseActivity() {
                 "custom" -> getString(R.string.title_custom)
                 else -> ""
             }
+            TabOrderManager.TAB_ICONS[tabId]?.let { tab.setIcon(it) }
         }.attach()
     }
 

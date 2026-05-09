@@ -37,9 +37,9 @@ class Trim2Fragment : Fragment() {
     private var videoDurationMs: Long = 0
     private var sourceFileTimes: Pair<java.nio.file.attribute.FileTime?, java.nio.file.attribute.FileTime?>? = null
 
-    // 记录拖动前的值，用于判断拖的是哪个手柄
-    private var prevStartSec = 0f
-    private var prevEndSec = 1f
+    // 记录拖动前的值（毫秒），用于判断拖的是哪个手柄
+    private var prevStartMs = 0f
+    private var prevEndMs = 1f
 
     // 标记视频是否已初始化（防止 seek 后 READY 状态重置 slider）
     private var sliderInitialized = false
@@ -93,27 +93,27 @@ class Trim2Fragment : Fragment() {
             binding.tvStartTime.text = "开始: ${formatTime(startSec)}"
             binding.tvEndTime.text = "结束: ${formatTime(endSec)}"
 
-            // 实时预览：seek 到移动幅度更大的手柄位置
-            val startDelta = kotlin.math.abs(startSec - prevStartSec)
-            val endDelta = kotlin.math.abs(endSec - prevEndSec)
+            // 实时预览：seek 到移动幅度更大的手柄位置（seekTarget 已经是毫秒）
+            val startDelta = kotlin.math.abs(startSec - prevStartMs)
+            val endDelta = kotlin.math.abs(endSec - prevEndMs)
             val seekTarget = if (startDelta >= endDelta) startSec else endSec
-            player?.seekTo((seekTarget * 1000).toLong())
+            player?.seekTo(seekTarget.toLong())
         }
 
         // 记录拖动前的值
         binding.rangeSlider.addOnSliderTouchListener(object : com.google.android.material.slider.RangeSlider.OnSliderTouchListener {
             override fun onStartTrackingTouch(slider: com.google.android.material.slider.RangeSlider) {
                 val values = slider.values
-                prevStartSec = values[0]
-                prevEndSec = values[1]
+                prevStartMs = values[0]
+                prevEndMs = values[1]
                 // 拖动时暂停播放
                 player?.pause()
             }
             override fun onStopTrackingTouch(slider: com.google.android.material.slider.RangeSlider) {
                 // 松手后更新记录
                 val values = slider.values
-                prevStartSec = values[0]
-                prevEndSec = values[1]
+                prevStartMs = values[0]
+                prevEndMs = values[1]
             }
         })
     }
@@ -153,17 +153,19 @@ class Trim2Fragment : Fragment() {
                     if (playbackState == androidx.media3.common.Player.STATE_READY && !sliderInitialized) {
                         sliderInitialized = true
                         videoDurationMs = duration
-                        val durationSec = duration / 1000f
+                        // Round up to nearest second to satisfy stepSize constraint
+                        val durationRounded = ((duration + 999) / 1000) * 1000
 
-                        prevStartSec = 0f
-                        prevEndSec = durationSec
+                        prevStartMs = 0f
+                        prevEndMs = durationRounded.toFloat()
 
                         binding.rangeSlider.valueFrom = 0f
-                        binding.rangeSlider.valueTo = durationSec
-                        binding.rangeSlider.values = listOf(0f, durationSec)
+                        binding.rangeSlider.valueTo = durationRounded.toFloat()
+                        binding.rangeSlider.stepSize = 1000f  // 1-second precision
+                        binding.rangeSlider.values = listOf(0f, durationRounded.toFloat())
                         binding.tvDuration.text = formatDuration(duration)
-                        binding.tvStartTime.text = "${getString(R.string.start_time)}: 00:00.000"
-                        binding.tvEndTime.text = "结束: ${formatTime(durationSec)}"
+                        binding.tvStartTime.text = "${getString(R.string.start_time)}: 00:00"
+                        binding.tvEndTime.text = "结束: ${formatTime(duration.toFloat())}"
                     }
                 }
             })
@@ -180,10 +182,10 @@ class Trim2Fragment : Fragment() {
         }
 
         val values = binding.rangeSlider.values
-        val startSec = values[0]
-        val endSec = values[1]
+        val startMs = values[0]
+        val endMs = values[1]
 
-        if (endSec - startSec < 1) {
+        if (endMs - startMs < 1000) {
             Toast.makeText(requireContext(), getString(R.string.trim_duration_at_least_1s), Toast.LENGTH_SHORT).show()
             return
         }
@@ -221,8 +223,8 @@ class Trim2Fragment : Fragment() {
                 requireContext(),
                 inputPath,
                 outputFile.absolutePath,
-                startSec.toDouble(),
-                (endSec - startSec).toDouble()
+                startMs.toDouble() / 1000.0,
+                (endMs - startMs).toDouble() / 1000.0
             )
 
             withContext(Dispatchers.Main) {
@@ -266,13 +268,12 @@ class Trim2Fragment : Fragment() {
         return String.format("%02d:%02d", mins, secs)
     }
 
-    /** 毫秒精度格式化 */
-    private fun formatTime(seconds: Float): String {
-        val totalMs = (seconds * 1000).toLong()
+    // Precision: seconds only — ms-level seek is inaccurate and causes preview desync
+    private fun formatTime(ms: Float): String {
+        val totalMs = ms.toLong()
         val mins = totalMs / 60000
         val secs = (totalMs % 60000) / 1000
-        val ms = totalMs % 1000
-        return String.format("%02d:%02d.%03d", mins, secs, ms)
+        return String.format("%02d:%02d", mins, secs)
     }
 
     override fun onDestroyView() {

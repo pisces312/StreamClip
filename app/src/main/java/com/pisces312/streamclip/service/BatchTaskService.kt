@@ -230,7 +230,11 @@ class BatchTaskService : Service() {
     }
 
     private fun buildCompressCommand(task: BatchTaskItem): String {
-        return task.config.compressConfig.toFFmpegCommand(task.inputPath, task.outputPath)
+        val info = FFmpegService.probeVideoInfo(task.inputPath)
+        return task.config.compressConfig.toFFmpegCommand(
+            task.inputPath, task.outputPath,
+            info?.colorSpace ?: "", info?.colorPrimaries ?: "", info?.colorTransfer ?: ""
+        )
     }
 
     private fun buildExtractCommand(task: BatchTaskItem): String {

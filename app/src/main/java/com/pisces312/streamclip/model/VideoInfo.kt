@@ -13,7 +13,10 @@ data class VideoInfo(
     val audioSampleRate: Int = 0,    // Hz
     val audioBitrate: Long = 0,      // bits per second
     val creationTime: String = "",   // e.g. "2024-03-15 10:30:00"
-    val location: String = ""        // e.g. "+121.2345+031.6789/"
+    val location: String = "",       // e.g. "+121.2345+031.6789/"
+    val colorSpace: String = "",     // e.g. "bt2020nc"
+    val colorPrimaries: String = "", // e.g. "bt2020"
+    val colorTransfer: String = ""   // e.g. "arib-std-b67"
 ) {
     val resolution: String get() = "${width}x${height}"
     val videoBitrateKbps: String get() = if (videoBitrate > 0) "${videoBitrate / 1000}kbps" else "N/A"

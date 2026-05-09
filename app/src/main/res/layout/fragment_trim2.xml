@@ -76,7 +76,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:textColor="@color/white"
-                android:text="开始: 00:00.000" />
+                android:text="开始: 00:00" />
 
             <TextView
                 android:id="@+id/tvEndTime"
@@ -85,7 +85,7 @@
                 android:layout_weight="1"
                 android:gravity="end"
                 android:textColor="@color/white"
-                android:text="结束: 00:00.000" />
+                android:text="结束: 00:00" />
         </LinearLayout>
 
         <com.google.android.material.button.MaterialButton

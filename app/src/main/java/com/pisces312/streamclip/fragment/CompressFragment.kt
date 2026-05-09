@@ -49,6 +49,7 @@ class CompressFragment : Fragment() {
     private var _binding: FragmentCompressBinding? = null
     private val binding get() = _binding!!
     private var videoPath: String? = null
+    private var originalVideoInfo: com.pisces312.streamclip.model.VideoInfo? = null
     private var isHardwareTab = true
 
     private val batchVideoUris = mutableListOf<Uri>()
@@ -329,6 +330,7 @@ class CompressFragment : Fragment() {
                 val info = FFmpegService.probeVideoInfo(path)
                 withContext(Dispatchers.Main) {
                     if (info != null) {
+                        originalVideoInfo = info
                         showVideoInfoCard(
                             card = binding.cardOriginalInfo,
                             title = binding.tvOriginalInfoTitle,
@@ -356,9 +358,20 @@ class CompressFragment : Fragment() {
         info: com.pisces312.streamclip.model.VideoInfo
     ) {
         pathView.text = info.path
-        videoInfoView.text = "编码: ${info.videoCodec}  分辨率: ${info.resolution}  视频码率: ${info.videoBitrateKbps}"
+        val is10bit = info.pixelFormat.contains("10")
+        val isHdr = info.colorTransfer == "arib-std-b67" || info.colorTransfer == "smpte2084"
+        val hdrTag = when {
+            is10bit && isHdr -> " [10-bit HDR]"
+            is10bit -> " [10-bit]"
+            isHdr -> " [HDR]"
+            else -> ""
+        }
+        videoInfoView.text = "视频: ${info.videoCodec} ${info.resolution} ${info.frameRate} ${info.videoBitrateKbps}$hdrTag"
         audioInfoView.text = "音频: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}"
         val metaParts = mutableListOf<String>()
+        if (info.colorSpace.isNotEmpty()) metaParts.add("色彩空间: ${info.colorSpace}")
+        if (info.colorPrimaries.isNotEmpty()) metaParts.add("色域: ${info.colorPrimaries}")
+        if (info.colorTransfer.isNotEmpty()) metaParts.add("传输: ${info.colorTransfer}")
         if (info.creationTime.isNotEmpty()) metaParts.add("创建时间: ${info.creationTime}")
         if (info.location.isNotEmpty()) metaParts.add("地理位置: ${info.location}")
         metaInfoView.text = metaParts.joinToString("  ")
@@ -507,11 +520,14 @@ class CompressFragment : Fragment() {
             requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
 
-        val logDialog = showFfmpegLogDialog(config.toFFmpegCommand(path, outPath))
+        val colorArgs = originalVideoInfo?.let {
+            Triple(it.colorSpace, it.colorPrimaries, it.colorTransfer)
+        } ?: Triple("", "", "")
+        val logDialog = showFfmpegLogDialog(config.toFFmpegCommand(path, outPath, colorArgs.first, colorArgs.second, colorArgs.third))
 
         val compressJob = viewLifecycleOwner.lifecycleScope.launch {
             val totalTimeMs = withContext(Dispatchers.IO) { FFmpegService.getDurationMs(path) }
-            val command = config.toFFmpegCommand(path, outPath)
+            val command = config.toFFmpegCommand(path, outPath, colorArgs.first, colorArgs.second, colorArgs.third)
             LogCollector.d("Compress", "Command: $command")
 
             logDialog.onCancel = {

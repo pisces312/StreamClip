@@ -66,21 +66,24 @@
                     android:textSize="11sp"
                     android:maxLines="1"
                     android:ellipsize="middle"
-                    android:textColor="?android:textColorSecondary" />
+                    android:textColor="?android:textColorSecondary"
+                    android:textIsSelectable="true" />
 
                 <TextView
                     android:id="@+id/tvOriginalVideoInfo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    android:textIsSelectable="true" />
 
                 <TextView
                     android:id="@+id/tvOriginalAudioInfo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    android:textIsSelectable="true" />
 
                 <TextView
                     android:id="@+id/tvOriginalMetaInfo"
@@ -88,7 +91,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:textSize="11sp"
-                    android:textColor="?android:textColorSecondary" />
+                    android:textColor="?android:textColorSecondary"
+                    android:textIsSelectable="true" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -125,21 +129,24 @@
                     android:textSize="11sp"
                     android:maxLines="1"
                     android:ellipsize="middle"
-                    android:textColor="?android:textColorSecondary" />
+                    android:textColor="?android:textColorSecondary"
+                    android:textIsSelectable="true" />
 
                 <TextView
                     android:id="@+id/tvOutputVideoInfo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    android:textIsSelectable="true" />
 
                 <TextView
                     android:id="@+id/tvOutputAudioInfo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    android:textIsSelectable="true" />
 
                 <TextView
                     android:id="@+id/tvOutputMetaInfo"
@@ -147,7 +154,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:textSize="11sp"
-                    android:textColor="?android:textColorSecondary" />
+                    android:textColor="?android:textColorSecondary"
+                    android:textIsSelectable="true" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
