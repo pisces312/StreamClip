@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true">
@@ -32,15 +33,123 @@
                 style="?attr/materialButtonOutlinedStyle" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvSelectedFile"
+        <!-- Original video info card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardOriginalInfo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="@string/batch_no_files_selected"
-            android:textSize="12sp"
-            android:maxLines="2"
-            android:ellipsize="end" />
+            android:visibility="gone"
+            app:cardElevation="2dp"
+            app:cardCornerRadius="8dp"
+            style="?attr/materialCardViewOutlinedStyle">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:id="@+id/tvOriginalInfoTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/original_video_info"
+                    android:textStyle="bold"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvOriginalPath"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="11sp"
+                    android:maxLines="1"
+                    android:ellipsize="middle"
+                    android:textColor="?android:textColorSecondary" />
+
+                <TextView
+                    android:id="@+id/tvOriginalVideoInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvOriginalAudioInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvOriginalMetaInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textSize="11sp"
+                    android:textColor="?android:textColorSecondary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Output video info card (hidden until compression completes) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardOutputInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:cardElevation="2dp"
+            app:cardCornerRadius="8dp"
+            style="?attr/materialCardViewOutlinedStyle">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:id="@+id/tvOutputInfoTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/output_video_info"
+                    android:textStyle="bold"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvOutputPath"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="11sp"
+                    android:maxLines="1"
+                    android:ellipsize="middle"
+                    android:textColor="?android:textColorSecondary" />
+
+                <TextView
+                    android:id="@+id/tvOutputVideoInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvOutputAudioInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvOutputMetaInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textSize="11sp"
+                    android:textColor="?android:textColorSecondary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerSelectedVideos"

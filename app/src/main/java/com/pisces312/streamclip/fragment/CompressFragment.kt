@@ -72,7 +72,7 @@ class CompressFragment : Fragment() {
             // Clear single selection when entering batch mode
             if (batchVideoUris.isEmpty()) {
                 videoPath = null
-                binding.tvSelectedFile.text = getString(R.string.batch_no_files_selected)
+                binding.cardOriginalInfo.visibility = View.GONE
             }
             result.data?.clipData?.let { clipData ->
                 for (i in 0 until clipData.itemCount) {
@@ -320,7 +320,8 @@ class CompressFragment : Fragment() {
         val path = FileUtils.getPathFromUri(requireContext(), uri)
         if (path != null) {
             videoPath = path
-            binding.tvSelectedFile.text = java.io.File(path).name
+            binding.cardOriginalInfo.visibility = View.VISIBLE
+            binding.tvOriginalPath.text = path
             SettingsManager.setLastVideoDir(requireContext(), uri)
 
             // 读取原文件时间戳

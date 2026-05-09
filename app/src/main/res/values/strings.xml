@@ -175,4 +175,8 @@
     <string name="reset">恢复默认</string>
     <string name="cancelled">已取消</string>
     <string name="cancelling">取消中...</string>
+
+    <!-- Video Info Cards -->
+    <string name="original_video_info">原视频信息</string>
+    <string name="output_video_info">输出视频信息</string>
 </resources>

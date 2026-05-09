@@ -166,4 +166,8 @@
     <string name="batch_confirm_message">About to compress %d videos</string>
     <string name="start_batch_compress">Start Compression</string>
     <string name="remove">Remove</string>
+
+    <!-- Video Info Cards -->
+    <string name="original_video_info">Original Video Info</string>
+    <string name="output_video_info">Output Video Info</string>
 </resources>
