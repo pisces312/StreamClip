@@ -200,7 +200,42 @@ object FFmpegService {
     }
 
     /**
-     * Merge videos using concat demuxer (lossless, no re-encode)
+     * Extract format-level metadata tags to a sidecar file for later application.
+     * Uses ffprobe to dump tags, then writes KEY=VALUE lines.
+     */
+    private fun extractMetadataToFile(inputPath: String, metadataFile: File): Boolean {
+        return try {
+            val session = FFprobeKit.execute("-v quiet -show_format \"$inputPath\"")
+            if (!ReturnCode.isSuccess(session.returnCode)) return false
+
+            val tags = mutableListOf<String>()
+            var inTags = false
+            for (line in session.output.lines()) {
+                if (line == "[FORMAT_TAGS]") {
+                    inTags = true
+                    continue
+                }
+                if (line.startsWith("[") && line.endsWith("]")) {
+                    inTags = false
+                    continue
+                }
+                if (inTags && line.contains('=')) {
+                    tags.add(line)
+                }
+            }
+
+            if (tags.isEmpty()) return false
+            metadataFile.writeText(tags.joinToString("\n"))
+            true
+        } catch (e: Exception) {
+            LogCollector.e("FFmpegService", "Extract metadata failed: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Merge videos using concat demuxer (lossless, no re-encode).
+     * Preserves metadata (GPS etc.) from the first video.
      */
     suspend fun mergeVideos(
         context: Context,
@@ -219,6 +254,25 @@ object FFmpegService {
 
         val result = executeCommand(command, outputPath, onProgress = onProgress)
         concatFile.delete()
+
+        // Apply metadata from first video to merged output
+        if (result.success) {
+            val metadataFile = File.createTempFile("metadata", ".txt", context.cacheDir)
+            try {
+                if (extractMetadataToFile(inputPaths[0], metadataFile)) {
+                    val metadataCmd = "-y -i \"$outputPath\" -map_metadata 0 -i \"${metadataFile.absolutePath}\" -map_metadata 1 -c copy -f mov \"$outputPath.tmp\""
+                    val metadataResult = executeCommand(metadataCmd, "$outputPath.tmp")
+                    if (metadataResult.success) {
+                        java.io.File("$outputPath.tmp").renameTo(java.io.File(outputPath))
+                    }
+                }
+            } catch (e: Exception) {
+                LogCollector.e("FFmpegService", "Apply metadata failed: ${e.message}")
+            } finally {
+                metadataFile.delete()
+            }
+        }
+
         return result
     }
 
