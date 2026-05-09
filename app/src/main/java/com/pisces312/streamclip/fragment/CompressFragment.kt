@@ -320,15 +320,50 @@ class CompressFragment : Fragment() {
         val path = FileUtils.getPathFromUri(requireContext(), uri)
         if (path != null) {
             videoPath = path
-            binding.cardOriginalInfo.visibility = View.VISIBLE
-            binding.tvOriginalPath.text = path
+            binding.cardOutputInfo.visibility = View.GONE
             SettingsManager.setLastVideoDir(requireContext(), uri)
-
-            // 读取原文件时间戳
             sourceFileTimes = FileUtils.readFileTimes(path)
+
+            // Probe and display original video info
+            lifecycleScope.launch(Dispatchers.IO) {
+                val info = FFmpegService.probeVideoInfo(path)
+                withContext(Dispatchers.Main) {
+                    if (info != null) {
+                        showVideoInfoCard(
+                            card = binding.cardOriginalInfo,
+                            title = binding.tvOriginalInfoTitle,
+                            pathView = binding.tvOriginalPath,
+                            videoInfoView = binding.tvOriginalVideoInfo,
+                            audioInfoView = binding.tvOriginalAudioInfo,
+                            metaInfoView = binding.tvOriginalMetaInfo,
+                            info = info
+                        )
+                    }
+                }
+            }
         } else {
             Toast.makeText(requireContext(), getString(R.string.cannot_get_path), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun showVideoInfoCard(
+        card: android.view.View,
+        title: android.widget.TextView,
+        pathView: android.widget.TextView,
+        videoInfoView: android.widget.TextView,
+        audioInfoView: android.widget.TextView,
+        metaInfoView: android.widget.TextView,
+        info: com.pisces312.streamclip.model.VideoInfo
+    ) {
+        pathView.text = info.path
+        videoInfoView.text = "编码: ${info.videoCodec}  分辨率: ${info.resolution}  视频码率: ${info.videoBitrateKbps}"
+        audioInfoView.text = "音频: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}"
+        val metaParts = mutableListOf<String>()
+        if (info.creationTime.isNotEmpty()) metaParts.add("创建时间: ${info.creationTime}")
+        if (info.location.isNotEmpty()) metaParts.add("地理位置: ${info.location}")
+        metaInfoView.text = metaParts.joinToString("  ")
+        metaInfoView.visibility = if (metaParts.isNotEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+        card.visibility = android.view.View.VISIBLE
     }
 
     private fun setupButtons() {
@@ -525,13 +560,28 @@ class CompressFragment : Fragment() {
                     sourceFileTimes?.let { (creation, modified) ->
                         FileUtils.applyFileTimes(outPath, creation, modified)
                     }
-                    val sourceLocation = videoPath?.let { FFmpegService.probeLocation(it) }
-                    val outputLocation = FFmpegService.probeLocation(outPath)
-                    LogCollector.d("CompressFragment", "Source location: $sourceLocation")
-                    LogCollector.d("CompressFragment", "Output location: $outputLocation")
+
+                    // Probe and display output video info
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val outputInfo = FFmpegService.probeVideoInfo(outPath)
+                        withContext(Dispatchers.Main) {
+                            if (outputInfo != null) {
+                                showVideoInfoCard(
+                                    card = binding.cardOutputInfo,
+                                    title = binding.tvOutputInfoTitle,
+                                    pathView = binding.tvOutputPath,
+                                    videoInfoView = binding.tvOutputVideoInfo,
+                                    audioInfoView = binding.tvOutputAudioInfo,
+                                    metaInfoView = binding.tvOutputMetaInfo,
+                                    info = outputInfo
+                                )
+                            }
+                        }
+                    }
+
                     Toast.makeText(requireContext(), getString(R.string.compress_complete, outFileName), Toast.LENGTH_LONG).show()
                 } else {
-                    Toast.makeText(requireContext(), getString(R.string.compress_failed, result.error), Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), getString(R.string.compress_failed, result.error), Toast.LENGTH_SHORT).show()
                 }
             }
         }
