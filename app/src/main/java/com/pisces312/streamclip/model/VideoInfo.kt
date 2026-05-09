@@ -13,6 +13,7 @@ data class VideoInfo(
     val audioSampleRate: Int = 0,    // Hz
     val audioBitrate: Long = 0,      // bits per second
     val creationTime: String = "",   // e.g. "2024-03-15 10:30:00"
+    val fileCreationTime: String = "", // e.g. "2024-03-15 10:30:00"
     val location: String = "",       // e.g. "+121.2345+031.6789/"
     val colorSpace: String = "",     // e.g. "bt2020nc"
     val colorPrimaries: String = "", // e.g. "bt2020"
@@ -23,6 +24,7 @@ data class VideoInfo(
     val audioSampleRateStr: String get() = if (audioSampleRate > 0) "${audioSampleRate}Hz" else "N/A"
     val audioBitrateKbps: String get() = if (audioBitrate > 0) "${audioBitrate / 1000}kbps" else "N/A"
     val creationTimeStr: String get() = creationTime.ifEmpty { "N/A" }
+    val fileCreationTimeStr: String get() = fileCreationTime.ifEmpty { "N/A" }
     val locationStr: String get() = location.ifEmpty { "N/A" }
 
     fun isCompatibleWith(other: VideoInfo): Boolean {
