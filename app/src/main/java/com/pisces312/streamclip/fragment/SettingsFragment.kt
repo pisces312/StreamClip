@@ -199,24 +199,43 @@ class SettingsFragment : Fragment() {
             return
         }
 
-        // path 现在是文件路径而非 content URI
         try {
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(Uri.parse(path), "resource/folder")
-                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            }
-            startActivity(intent)
-        } catch (e: Exception) {
-            // 回退：用文件管理器打开
-            try {
-                val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-                    setDataAndType(Uri.parse(path), "resource/folder")
+            // Convert file path to SAF document URI to avoid file:// URI crash on Android 7+
+            val docUri = pathToDocumentUri(path)
+            if (docUri != null) {
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(docUri, android.provider.DocumentsContract.Document.MIME_TYPE_DIR)
+                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                 }
                 startActivity(intent)
-            } catch (e2: Exception) {
-                Toast.makeText(context, getString(R.string.cannot_open_dir, e.message), Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, R.string.error, Toast.LENGTH_SHORT).show()
             }
+        } catch (e: Exception) {
+            Toast.makeText(context, getString(R.string.cannot_open_dir, e.message), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    /**
+     * Convert file path to SAF document URI
+     * e.g. /storage/emulated/0/DCIM → content://com.android.externalstorage.documents/document/primary%3ADCIM
+     */
+    private fun pathToDocumentUri(path: String): Uri? {
+        val emulatedPrefix = "/storage/emulated/0/"
+        val storagePrefix = "/storage/"
+        val docId = when {
+            path.startsWith(emulatedPrefix) -> "primary:" + path.removePrefix(emulatedPrefix)
+            path.startsWith(storagePrefix) -> {
+                val rest = path.removePrefix(storagePrefix)
+                val slashIdx = rest.indexOf('/')
+                if (slashIdx > 0) rest.substring(0, slashIdx) + ":" + rest.substring(slashIdx + 1)
+                else return null
+            }
+            else -> return null
+        }
+        return android.provider.DocumentsContract.buildDocumentUri(
+            "com.android.externalstorage.documents", docId
+        )
     }
 
     private fun showClearCacheDialog() {

@@ -8,14 +8,14 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import com.pisces312.streamclip.BaseActivity
 import com.pisces312.streamclip.databinding.ActivityLogBinding
 import com.pisces312.streamclip.util.LogCollector
 
 /**
  * 日志查看页面
  */
-class LogActivity : AppCompatActivity() {
+class LogActivity : BaseActivity() {
 
     private lateinit var binding: ActivityLogBinding
 

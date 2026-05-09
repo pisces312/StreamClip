@@ -20,6 +20,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/gray_700"
+        app:tabMode="scrollable"
         app:tabTextColor="@color/white"
         app:tabSelectedTextColor="@color/purple_500"
         app:tabIndicatorColor="@color/purple_500" />

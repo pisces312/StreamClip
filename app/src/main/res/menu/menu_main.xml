@@ -23,6 +23,11 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_tab_order"
+        android:title="@string/title_tab_order"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_donate"
         android:title="@string/title_donate"
         app:showAsAction="never" />

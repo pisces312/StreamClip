@@ -216,6 +216,7 @@ class Trim2Fragment : Fragment() {
             )
             val outputFile = java.io.File(outputDir, outputName)
 
+            // Lossless trim (-c copy) completes instantly, no progress callback needed
             val result = FFmpegService.trimVideo(
                 requireContext(),
                 inputPath,

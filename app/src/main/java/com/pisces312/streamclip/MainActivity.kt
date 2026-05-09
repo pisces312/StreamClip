@@ -21,10 +21,12 @@ import com.google.android.material.tabs.TabLayoutMediator
 import com.pisces312.streamclip.adapter.MainPagerAdapter
 import com.pisces312.streamclip.databinding.ActivityMainBinding
 import com.pisces312.streamclip.fragment.SettingsFragment
+import com.pisces312.streamclip.util.TabOrderManager
 
 class MainActivity : BaseActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private var currentTabOrder: List<String> = emptyList()
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 100
@@ -47,6 +49,14 @@ class MainActivity : BaseActivity() {
 
         // 检查是否有崩溃日志
         checkCrashLog()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val newOrder = TabOrderManager.getOrder(this)
+        if (newOrder != currentTabOrder) {
+            setupViewPager()
+        }
     }
 
     private fun checkCrashLog() {
@@ -93,6 +103,10 @@ class MainActivity : BaseActivity() {
             }
             R.id.action_donate -> {
                 showDonateDialog()
+                true
+            }
+            R.id.action_tab_order -> {
+                startActivity(Intent(this, com.pisces312.streamclip.ui.TabOrderActivity::class.java))
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -164,17 +178,19 @@ class MainActivity : BaseActivity() {
     }
 
     private fun setupViewPager() {
-        val adapter = MainPagerAdapter(this)
+        val order = TabOrderManager.getOrder(this)
+        currentTabOrder = order
+        val adapter = MainPagerAdapter(this, order)
         binding.viewPager.adapter = adapter
 
         TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
-            tab.text = when (position) {
-                0 -> getString(R.string.title_trim)
-                1 -> getString(R.string.title_trim2)
-                2 -> getString(R.string.title_merge)
-                3 -> getString(R.string.title_extract)
-                4 -> getString(R.string.title_compress)
-                5 -> getString(R.string.title_custom)
+            tab.text = when (order[position]) {
+                "trim" -> getString(R.string.title_trim)
+                "trim2" -> getString(R.string.title_trim2)
+                "merge" -> getString(R.string.title_merge)
+                "extract" -> getString(R.string.title_extract)
+                "compress" -> getString(R.string.title_compress)
+                "custom" -> getString(R.string.title_custom)
                 else -> ""
             }
         }.attach()

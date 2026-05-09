@@ -12,28 +12,25 @@
         android:text="FFmpeg 命令"
         android:textStyle="bold"
         android:textSize="14sp"
+        android:textColor="#FFFFFF"
         android:layout_marginBottom="4dp" />
 
-    <HorizontalScrollView
+    <TextView
+        android:id="@+id/tvCommand"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#2D2D2D"
-        android:padding="8dp">
-
-        <TextView
-            android:id="@+id/tvCommand"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textIsSelectable="true"
-            android:textSize="12sp"
-            android:fontFamily="monospace"
-            android:textColor="#FFFFFF" />
-    </HorizontalScrollView>
+        android:padding="8dp"
+        android:textIsSelectable="true"
+        android:textSize="12sp"
+        android:fontFamily="monospace"
+        android:textColor="#FFFFFF"
+        android:breakStrategy="simple" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="实时日志"
+        android:text="任务监控"
         android:textStyle="bold"
         android:textSize="14sp"
         android:textColor="#FFFFFF"
@@ -100,6 +97,16 @@
         </LinearLayout>
     </LinearLayout>
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="实时日志"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        android:textColor="#FFFFFF"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="4dp" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerLogs"
         android:layout_width="match_parent"
@@ -127,11 +134,10 @@
             android:layout_height="wrap_content" />
 
         <Button
-            android:id="@+id/btnClose"
+            android:id="@+id/btnCancel"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="关闭"
-            android:enabled="false" />
+            android:text="取消" />
     </LinearLayout>
 </LinearLayout>

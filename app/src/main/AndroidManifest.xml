@@ -46,6 +46,12 @@
             android:theme="@style/Theme.StreamClip" />
 
         <activity
+            android:name=".ui.TabOrderActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.StreamClip" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.StreamClip">

@@ -10,19 +10,22 @@ import com.pisces312.streamclip.fragment.ExtractFragment
 import com.pisces312.streamclip.fragment.CompressFragment
 import com.pisces312.streamclip.fragment.CustomCommandFragment
 
-class MainPagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activity) {
+class MainPagerAdapter(
+    activity: FragmentActivity,
+    private val tabOrder: List<String>
+) : FragmentStateAdapter(activity) {
 
-    override fun getItemCount(): Int = 6
+    override fun getItemCount(): Int = tabOrder.size
 
     override fun createFragment(position: Int): Fragment {
-        return when (position) {
-            0 -> TrimSimpleFragment()
-            1 -> Trim2Fragment()
-            2 -> MergeFragment()
-            3 -> ExtractFragment()
-            4 -> CompressFragment()
-            5 -> CustomCommandFragment()
-            else -> throw IllegalArgumentException("Invalid position: $position")
+        return when (tabOrder[position]) {
+            "trim" -> TrimSimpleFragment()
+            "trim2" -> Trim2Fragment()
+            "merge" -> MergeFragment()
+            "extract" -> ExtractFragment()
+            "compress" -> CompressFragment()
+            "custom" -> CustomCommandFragment()
+            else -> throw IllegalArgumentException("Invalid tab: ${tabOrder[position]}")
         }
     }
 }

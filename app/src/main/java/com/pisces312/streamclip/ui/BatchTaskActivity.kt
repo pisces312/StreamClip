@@ -5,7 +5,7 @@ import com.pisces312.streamclip.R
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
+import com.pisces312.streamclip.BaseActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -15,7 +15,7 @@ import com.pisces312.streamclip.service.BatchTaskService
 import com.pisces312.streamclip.service.TaskQueueManager
 import kotlinx.coroutines.launch
 
-class BatchTaskActivity : AppCompatActivity() {
+class BatchTaskActivity : BaseActivity() {
 
     private lateinit var binding: ActivityBatchTaskBinding
     private lateinit var adapter: BatchTaskAdapter

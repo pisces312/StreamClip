@@ -8,11 +8,13 @@ data class CompressConfig(
     val frameRate: String = "original", // 帧率
     val preset: String = "medium",     // 软编码预设
     val audioEncoder: String = "copy",
+    val audioBitrate: String = "128",  // 音频码率 (kbps)
+    val audioSampleRate: String = "original", // 音频采样率
     val isHardware: Boolean = true,
     val copyMetadata: Boolean = true   // Copy all metadata from source
 ) : java.io.Serializable {
     fun toFFmpegCommand(inputPath: String, outputPath: String): String {
-        val cmd = StringBuilder("-i \"$inputPath\" ")
+        val cmd = StringBuilder("-y -i \"$inputPath\" ")
         
         // Copy all metadata first (before encoder settings)
         if (copyMetadata) {
@@ -48,6 +50,14 @@ data class CompressConfig(
         
         // Audio
         cmd.append("-c:a $audioEncoder ")
+        if (audioEncoder != "copy") {
+            if (audioBitrate != "original") {
+                cmd.append("-b:a ${audioBitrate}k ")
+            }
+            if (audioSampleRate != "original") {
+                cmd.append("-ar $audioSampleRate ")
+            }
+        }
 
         // Format: use MOV format to preserve GPS metadata (moov/udta/xyz atom)
         // Android MediaMetadataRetriever reads xyz atom, not loci
@@ -106,6 +116,22 @@ data class CompressConfig(
             "flac" to "FLAC"
         )
 
+        val AUDIO_BITRATES = listOf(
+            "original" to "原始",
+            "64" to "64 kbps",
+            "96" to "96 kbps",
+            "128" to "128 kbps",
+            "192" to "192 kbps",
+            "256" to "256 kbps"
+        )
+
+        val AUDIO_SAMPLE_RATES = listOf(
+            "original" to "原始",
+            "22050" to "22050 Hz",
+            "44100" to "44100 Hz",
+            "48000" to "48000 Hz"
+        )
+
         val FRAME_RATES = listOf(
             "original" to "原始",
             "24" to "24 fps",
@@ -122,7 +148,9 @@ data class CompressConfig(
             "preset" to "软件编码的预设速度。极快到极慢共9档，越慢压缩率越高文件越小。",
             "framerate" to "帧率控制每秒画面帧数。原始保持原帧率，降低帧率可减小文件但影响流畅度。",
             "resolution" to "输出视频分辨率。原始保持原尺寸，降低分辨率可大幅减小文件。",
-            "audio" to "音频编码。复制原音频不重新编码最快，AAC兼容性最好。"
+            "audio" to "音频编码。复制原音频不重新编码最快，AAC兼容性最好。",
+            "audioBitrate" to "音频码率。越高音质越好文件越大。128k为常用值。",
+            "audioSampleRate" to "音频采样率。原始保持原采样率，降低可减小文件。"
         )
     }
 }

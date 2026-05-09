@@ -15,10 +15,13 @@ import com.pisces312.streamclip.util.LogCollector
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 
 class BatchTaskService : Service() {
 
@@ -60,13 +63,13 @@ class BatchTaskService : Service() {
         }
     }
 
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var notificationManager: BatchNotificationManager
     @Volatile
     private var isQueueProcessing = false
 
     // Store running task jobs for individual cancellation
-    private val runningTaskJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
+    private val runningTaskJobs = ConcurrentHashMap<String, Job>()
 
     override fun onCreate() {
         super.onCreate()
@@ -100,6 +103,10 @@ class BatchTaskService : Service() {
         }
 
         isRunning = true
+        // Recreate scope if it was cancelled by a previous stop
+        if (!serviceScope.isActive) {
+            serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        }
         TaskQueueManager.enqueueAll(tasks)
 
         val notification = notificationManager.createForegroundNotification(
@@ -261,6 +268,9 @@ class BatchTaskService : Service() {
     private fun handleResume() {
         TaskQueueManager.resume()
         if (!isQueueProcessing) {
+            if (!serviceScope.isActive) {
+                serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            }
             serviceScope.launch { processQueue() }
         }
     }

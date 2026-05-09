@@ -14,6 +14,18 @@ import kotlin.coroutines.resume
 
 object FFmpegService {
 
+    @Volatile
+    private var currentSessionId: Long = -1
+
+    fun cancelCurrentSession() {
+        val id = currentSessionId
+        if (id != -1L) {
+            FFmpegKit.cancel(id)
+            currentSessionId = -1
+            LogCollector.d("FFmpegService", "Cancelled session $id")
+        }
+    }
+
     data class Result(
         val success: Boolean,
         val outputPath: String? = null,
@@ -76,6 +88,7 @@ object FFmpegService {
 
             val session = if (onProgress != null || onLog != null) {
                 FFmpegKit.executeAsync(command, { session ->
+                    currentSessionId = -1
                     val returnCode = session.returnCode
                     val success = ReturnCode.isSuccess(returnCode)
                     val error = if (success) null else (session.failStackTrace ?: session.output ?: "Unknown error")
@@ -129,6 +142,7 @@ object FFmpegService {
                 })
             } else {
                 FFmpegKit.executeAsync(command, { session ->
+                    currentSessionId = -1
                     val returnCode = session.returnCode
                     val success = ReturnCode.isSuccess(returnCode)
                     val error = if (success) null else (session.failStackTrace ?: session.output ?: "Unknown error")
@@ -145,8 +159,11 @@ object FFmpegService {
                 })
             }
 
+            currentSessionId = session.sessionId
+
             continuation.invokeOnCancellation {
                 FFmpegKit.cancel(session.sessionId)
+                currentSessionId = -1
             }
         }
     }

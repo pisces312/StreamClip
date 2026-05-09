@@ -52,10 +52,31 @@ class CustomCommandFragment : Fragment() {
                 uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             )
-            outputDir = uri.toString()
-            binding.tvOutputPath.text = "输出目录: $uri"
-            binding.tvOutputPath.visibility = View.VISIBLE
+            val path = uriToFilepath(uri)
+            if (path != null) {
+                outputDir = path
+                binding.tvOutputPath.text = "输出目录: $path"
+                binding.tvOutputPath.visibility = View.VISIBLE
+            } else {
+                Toast.makeText(requireContext(), getString(R.string.error), Toast.LENGTH_SHORT).show()
+            }
         }
+    }
+
+    // Convert SAF tree URI to file path (same logic as SettingsFragment)
+    private fun uriToFilepath(uri: Uri): String? {
+        if (uri.scheme == "file") return uri.path
+        if (uri.scheme != "content") return null
+        if (uri.authority == "com.android.externalstorage.documents") {
+            val docId = android.provider.DocumentsContract.getTreeDocumentId(uri)
+            val parts = docId.split(":")
+            if (parts.isEmpty()) return null
+            val storageId = parts[0]
+            val subPath = if (parts.size > 1) parts[1] else ""
+            val basePath = if (storageId == "primary") "/storage/emulated/0" else "/storage/$storageId"
+            return if (subPath.isNotEmpty()) "$basePath/$subPath" else basePath
+        }
+        return null
     }
 
     override fun onCreateView(
@@ -116,7 +137,7 @@ class CustomCommandFragment : Fragment() {
         // Show log dialog
         val logDialog = showFfmpegLogDialog(command)
 
-        viewLifecycleOwner.lifecycleScope.launch {
+        val job = viewLifecycleOwner.lifecycleScope.launch {
             LogCollector.d("CustomCommand", "Command: $command")
 
             val result = FFmpegService.executeCommand(
@@ -151,6 +172,11 @@ class CustomCommandFragment : Fragment() {
                 }
             }
         }
+
+        logDialog?.onCancel = {
+            job.cancel()
+            Toast.makeText(requireContext(), R.string.cancelled, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showFfmpegLogDialog(command: String): FfmpegLogDialog {
@@ -158,7 +184,7 @@ class CustomCommandFragment : Fragment() {
         val tvCommand = dialogView.findViewById<android.widget.TextView>(com.pisces312.streamclip.R.id.tvCommand)
         val recyclerLogs = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(com.pisces312.streamclip.R.id.recyclerLogs)
         val btnCopy = dialogView.findViewById<android.widget.Button>(com.pisces312.streamclip.R.id.btnCopy)
-        val btnClose = dialogView.findViewById<android.widget.Button>(com.pisces312.streamclip.R.id.btnClose)
+        val btnCancel = dialogView.findViewById<android.widget.Button>(com.pisces312.streamclip.R.id.btnCancel)
 
         tvCommand.text = command
 
@@ -178,8 +204,11 @@ class CustomCommandFragment : Fragment() {
             Toast.makeText(requireContext(), getString(R.string.copied_to_clipboard), Toast.LENGTH_SHORT).show()
         }
 
-        btnClose.setOnClickListener {
-            dialog.dismiss()
+        var onCancelCallback: (() -> Unit)? = null
+        btnCancel.setOnClickListener {
+            onCancelCallback?.invoke()
+            btnCancel.isEnabled = false
+            btnCancel.text = getString(R.string.cancelling)
         }
 
         dialog.show()
@@ -190,15 +219,20 @@ class CustomCommandFragment : Fragment() {
                 recyclerLogs.scrollToPosition(adapter.itemCount - 1)
             }
             override fun onComplete(success: Boolean) {
-                btnClose.isEnabled = true
-                btnClose.text = if (success) getString(R.string.done) else getString(R.string.close)
+                onCancelCallback = null
+                btnCancel.isEnabled = true
+                btnCancel.text = if (success) getString(R.string.done) else getString(R.string.close)
             }
+            override var onCancel: (() -> Unit)?
+                get() = onCancelCallback
+                set(value) { onCancelCallback = value }
         }
     }
 
     interface FfmpegLogDialog {
         fun addLog(log: FFmpegService.LogLine)
         fun onComplete(success: Boolean)
+        var onCancel: (() -> Unit)?
     }
 
     override fun onDestroyView() {

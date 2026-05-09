@@ -5,6 +5,8 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
@@ -27,6 +29,7 @@ import com.pisces312.streamclip.util.FileUtils
 import com.pisces312.streamclip.util.LogCollector
 import com.pisces312.streamclip.util.SettingsManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -35,6 +38,13 @@ import androidx.core.view.isVisible
 
 
 class CompressFragment : Fragment() {
+
+    interface FfmpegLogDialog {
+        fun addLog(log: FFmpegService.LogLine)
+        fun onComplete(success: Boolean)
+        fun updateProgress(progress: FFmpegService.Progress)
+        var onCancel: (() -> Unit)?
+    }
 
     private var _binding: FragmentCompressBinding? = null
     private val binding get() = _binding!!
@@ -153,6 +163,24 @@ class CompressFragment : Fragment() {
             CompressConfig.AUDIO_ENCODERS.map { it.second }
         )
         binding.spinnerAudioHw.setSelection(0) // copy
+
+        // Audio Bitrate
+        binding.spinnerAudioBitrateHw.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.AUDIO_BITRATES.map { it.second }
+        )
+        binding.spinnerAudioBitrateHw.setSelection(3) // 128k
+
+        // Audio Sample Rate
+        binding.spinnerAudioSampleRateHw.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.AUDIO_SAMPLE_RATES.map { it.second }
+        )
+        binding.spinnerAudioSampleRateHw.setSelection(0) // original
+
+        setupAudioVisibilityListener(binding.spinnerAudioHw, binding.panelAudioOptionsHw)
     }
 
     private fun setupSoftwarePanel() {
@@ -206,6 +234,36 @@ class CompressFragment : Fragment() {
             CompressConfig.AUDIO_ENCODERS.map { it.second }
         )
         binding.spinnerAudioSw.setSelection(0) // copy
+
+        // Audio Bitrate
+        binding.spinnerAudioBitrateSw.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.AUDIO_BITRATES.map { it.second }
+        )
+        binding.spinnerAudioBitrateSw.setSelection(3) // 128k
+
+        // Audio Sample Rate
+        binding.spinnerAudioSampleRateSw.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.AUDIO_SAMPLE_RATES.map { it.second }
+        )
+        binding.spinnerAudioSampleRateSw.setSelection(0) // original
+
+        setupAudioVisibilityListener(binding.spinnerAudioSw, binding.panelAudioOptionsSw)
+    }
+
+    private fun setupAudioVisibilityListener(spinner: android.widget.Spinner, panel: android.view.View) {
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                val encoder = CompressConfig.AUDIO_ENCODERS[position].first
+                panel.visibility = if (encoder == "copy") View.GONE else View.VISIBLE
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+        // Initial state
+        panel.visibility = if (CompressConfig.AUDIO_ENCODERS[0].first == "copy") View.GONE else View.VISIBLE
     }
 
     private fun setupHelpButtons() {
@@ -220,7 +278,11 @@ class CompressFragment : Fragment() {
             binding.btnHelpResolutionHw to "resolution",
             binding.btnHelpResolutionSw to "resolution",
             binding.btnHelpAudioHw to "audio",
-            binding.btnHelpAudioSw to "audio"
+            binding.btnHelpAudioSw to "audio",
+            binding.btnHelpAudioBitrateHw to "audioBitrate",
+            binding.btnHelpAudioBitrateSw to "audioBitrate",
+            binding.btnHelpAudioSampleRateHw to "audioSampleRate",
+            binding.btnHelpAudioSampleRateSw to "audioSampleRate"
         )
 
         helpMap.forEach { (view, key) ->
@@ -239,6 +301,8 @@ class CompressFragment : Fragment() {
             "framerate" -> "帧率"
             "resolution" -> "分辨率"
             "audio" -> "音频编码"
+            "audioBitrate" -> "音频码率"
+            "audioSampleRate" -> "音频采样率"
             else -> "帮助"
         }
         val message = CompressConfig.HELP_TEXTS[key] ?: "暂无说明"
@@ -407,12 +471,16 @@ class CompressFragment : Fragment() {
             requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
 
-        val totalTimeMs = FFmpegService.getDurationMs(path)
         val logDialog = showFfmpegLogDialog(config.toFFmpegCommand(path, outPath))
 
-        viewLifecycleOwner.lifecycleScope.launch {
+        val compressJob = viewLifecycleOwner.lifecycleScope.launch {
+            val totalTimeMs = withContext(Dispatchers.IO) { FFmpegService.getDurationMs(path) }
             val command = config.toFFmpegCommand(path, outPath)
             LogCollector.d("Compress", "Command: $command")
+
+            logDialog.onCancel = {
+                FFmpegService.cancelCurrentSession()
+            }
 
             val result = FFmpegService.executeCommand(
                 command,
@@ -476,6 +544,8 @@ class CompressFragment : Fragment() {
                 resolution = CompressConfig.RESOLUTIONS[binding.spinnerResolutionHw.selectedItemPosition].first,
                 frameRate = CompressConfig.FRAME_RATES[binding.spinnerFrameRateHw.selectedItemPosition].first,
                 audioEncoder = CompressConfig.AUDIO_ENCODERS[binding.spinnerAudioHw.selectedItemPosition].first,
+                audioBitrate = CompressConfig.AUDIO_BITRATES[binding.spinnerAudioBitrateHw.selectedItemPosition].first,
+                audioSampleRate = CompressConfig.AUDIO_SAMPLE_RATES[binding.spinnerAudioSampleRateHw.selectedItemPosition].first,
                 isHardware = true
             )
         } else {
@@ -486,6 +556,8 @@ class CompressFragment : Fragment() {
                 preset = CompressConfig.PRESETS[binding.spinnerPresetSw.selectedItemPosition].first,
                 frameRate = CompressConfig.FRAME_RATES[binding.spinnerFrameRateSw.selectedItemPosition].first,
                 audioEncoder = CompressConfig.AUDIO_ENCODERS[binding.spinnerAudioSw.selectedItemPosition].first,
+                audioBitrate = CompressConfig.AUDIO_BITRATES[binding.spinnerAudioBitrateSw.selectedItemPosition].first,
+                audioSampleRate = CompressConfig.AUDIO_SAMPLE_RATES[binding.spinnerAudioSampleRateSw.selectedItemPosition].first,
                 isHardware = false
             )
         }
@@ -501,7 +573,7 @@ class CompressFragment : Fragment() {
         val tvCommand = dialogView.findViewById<TextView>(com.pisces312.streamclip.R.id.tvCommand)
         val recyclerLogs = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(com.pisces312.streamclip.R.id.recyclerLogs)
         val btnCopy = dialogView.findViewById<Button>(com.pisces312.streamclip.R.id.btnCopy)
-        val btnClose = dialogView.findViewById<Button>(com.pisces312.streamclip.R.id.btnClose)
+        val btnCancel = dialogView.findViewById<Button>(com.pisces312.streamclip.R.id.btnCancel)
         val progressBar = dialogView.findViewById<android.widget.ProgressBar>(com.pisces312.streamclip.R.id.progressBar)
         val tvPercent = dialogView.findViewById<TextView>(com.pisces312.streamclip.R.id.tvPercent)
         val tvTimeInfo = dialogView.findViewById<TextView>(com.pisces312.streamclip.R.id.tvTimeInfo)
@@ -527,8 +599,26 @@ class CompressFragment : Fragment() {
             Toast.makeText(requireContext(), getString(R.string.copied_to_clipboard), Toast.LENGTH_SHORT).show()
         }
 
-        btnClose.setOnClickListener {
-            dialog.dismiss()
+        var onCancelCallback: (() -> Unit)? = null
+        val cancelHandler = Handler(Looper.getMainLooper())
+        btnCancel.setOnClickListener {
+            val callback = onCancelCallback
+            if (callback != null) {
+                // Task is running — cancel it
+                callback()
+                onCancelCallback = null
+                btnCancel.isEnabled = false
+                btnCancel.text = getString(R.string.cancelling)
+                cancelHandler.postDelayed({
+                    if (dialog.isShowing) {
+                        btnCancel.isEnabled = true
+                        btnCancel.text = getString(R.string.close)
+                    }
+                }, 500)
+            } else {
+                // Task is done — dismiss dialog
+                dialog.dismiss()
+            }
         }
 
         dialog.show()
@@ -539,9 +629,13 @@ class CompressFragment : Fragment() {
                 recyclerLogs.scrollToPosition(adapter.itemCount - 1)
             }
             override fun onComplete(success: Boolean) {
-                btnClose.isEnabled = true
-                btnClose.text = if (success) getString(R.string.done) else getString(R.string.close)
+                onCancelCallback = null
+                btnCancel.isEnabled = true
+                btnCancel.text = if (success) getString(R.string.done) else getString(R.string.close)
             }
+            override var onCancel: (() -> Unit)?
+                get() = onCancelCallback
+                set(value) { onCancelCallback = value }
             override fun updateProgress(progress: FFmpegService.Progress) {
                 // percent 为 -1 表示未知总时长
                 if (progress.percent >= 0) {
@@ -570,22 +664,18 @@ class CompressFragment : Fragment() {
                 tvOutputSize?.text = "输出: %.1f MB".format(sizeMB)
             }
 
-            private fun formatTime(seconds: Long): String {
-                val h = seconds / 3600
-                val m = (seconds % 3600) / 60
-                val s = seconds % 60
-                return if (h > 0) {
-                    "%d:%02d:%02d".format(h, m, s)
-                } else {
-                    "%02d:%02d".format(m, s)
-                }
-            }
         }
     }
 
-    interface FfmpegLogDialog {
-        fun addLog(log: FFmpegService.LogLine)
-        fun onComplete(success: Boolean)
-        fun updateProgress(progress: FFmpegService.Progress)
+    private fun formatTime(seconds: Long): String {
+        val h = seconds / 3600
+        val m = (seconds % 3600) / 60
+        val s = seconds % 60
+        return if (h > 0) {
+            "%d:%02d:%02d".format(h, m, s)
+        } else {
+            "%02d:%02d".format(m, s)
+        }
     }
+
 }

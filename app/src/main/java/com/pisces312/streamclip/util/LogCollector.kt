@@ -3,8 +3,9 @@ package com.pisces312.streamclip.util
 import android.content.Context
 import android.util.Log
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
@@ -21,7 +22,9 @@ object LogCollector {
 
     private val memoryLogs = ConcurrentLinkedQueue<LogEntry>()
     private var fileLogger: File? = null
-    private val dateFormat = SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.getDefault())
+    // DateTimeFormatter is immutable and thread-safe, single global format
+    private val dateFormat = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss.SSS")
+        .withZone(ZoneId.systemDefault())
 
     data class LogEntry(
         val timestamp: Long,
@@ -30,7 +33,7 @@ object LogCollector {
         val message: String
     ) {
         fun format(): String {
-            return "${dateFormat.format(Date(timestamp))} [$level/$tag] $message"
+            return "${dateFormat.format(Instant.ofEpochMilli(timestamp))} [$level/$tag] $message"
         }
     }
 
@@ -146,7 +149,7 @@ object LogCollector {
      */
     fun saveCrashLog(context: Context, throwable: Throwable) {
         val crashFile = File(context.getExternalFilesDir(null), "logs/$CRASH_LOG_FILE_NAME")
-        val timestamp = dateFormat.format(Date())
+        val timestamp = dateFormat.format(Instant.now())
         val crashInfo = buildString {
             appendLine("=== 崩溃日志 $timestamp ===")
             appendLine("异常: ${throwable.javaClass.name}")
