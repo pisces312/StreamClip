@@ -335,9 +335,7 @@ class CompressFragment : Fragment() {
                             card = binding.cardOriginalInfo,
                             title = binding.tvOriginalInfoTitle,
                             pathView = binding.tvOriginalPath,
-                            videoInfoView = binding.tvOriginalVideoInfo,
-                            audioInfoView = binding.tvOriginalAudioInfo,
-                            metaInfoView = binding.tvOriginalMetaInfo,
+                            infoView = binding.tvOriginalInfo,
                             info = info
                         )
                     }
@@ -352,9 +350,7 @@ class CompressFragment : Fragment() {
         card: android.view.View,
         title: android.widget.TextView,
         pathView: android.widget.TextView,
-        videoInfoView: android.widget.TextView,
-        audioInfoView: android.widget.TextView,
-        metaInfoView: android.widget.TextView,
+        infoView: android.widget.TextView,
         info: com.pisces312.streamclip.model.VideoInfo
     ) {
         pathView.text = info.path
@@ -366,8 +362,9 @@ class CompressFragment : Fragment() {
             isHdr -> " [HDR]"
             else -> ""
         }
-        videoInfoView.text = "视频: ${info.videoCodec} ${info.resolution} ${info.frameRate} ${info.videoBitrateKbps}$hdrTag"
-        audioInfoView.text = "音频: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}"
+        val lines = mutableListOf<String>()
+        lines.add("视频: ${info.videoCodec} ${info.resolution} ${info.frameRate} ${info.videoBitrateKbps}$hdrTag")
+        lines.add("音频: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
         val metaParts = mutableListOf<String>()
         if (info.colorSpace.isNotEmpty()) metaParts.add("色彩空间: ${info.colorSpace}")
         if (info.colorPrimaries.isNotEmpty()) metaParts.add("色域: ${info.colorPrimaries}")
@@ -375,8 +372,8 @@ class CompressFragment : Fragment() {
         if (info.creationTime.isNotEmpty()) metaParts.add("拍摄日期: ${info.creationTime}")
         if (info.fileCreationTime.isNotEmpty()) metaParts.add("创建日期: ${info.fileCreationTime}")
         if (info.location.isNotEmpty()) metaParts.add("地理位置: ${info.location}")
-        metaInfoView.text = metaParts.joinToString("  ")
-        metaInfoView.visibility = if (metaParts.isNotEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+        if (metaParts.isNotEmpty()) lines.add(metaParts.joinToString("  "))
+        infoView.text = lines.joinToString("\n")
         card.visibility = android.view.View.VISIBLE
     }
 
@@ -587,9 +584,7 @@ class CompressFragment : Fragment() {
                                     card = binding.cardOutputInfo,
                                     title = binding.tvOutputInfoTitle,
                                     pathView = binding.tvOutputPath,
-                                    videoInfoView = binding.tvOutputVideoInfo,
-                                    audioInfoView = binding.tvOutputAudioInfo,
-                                    metaInfoView = binding.tvOutputMetaInfo,
+                                    infoView = binding.tvOutputInfo,
                                     info = outputInfo
                                 )
                             }

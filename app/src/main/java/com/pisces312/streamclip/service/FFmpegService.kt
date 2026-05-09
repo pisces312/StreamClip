@@ -406,16 +406,20 @@ object FFmpegService {
             // GPS location (reuse existing probeLocation)
             val location = probeLocation(inputPath) ?: ""
 
-            // File creation time from filesystem
-            val fileCreationTime = try {
-                val p = java.nio.file.Paths.get(inputPath)
-                val fileTime = java.nio.file.Files.getAttribute(p, "creationTime") as? java.nio.file.attribute.FileTime
-                fileTime?.let {
-                    java.time.Instant.ofEpochMilli(it.toMillis())
-                        .atZone(java.time.ZoneId.systemDefault())
-                        .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                } ?: ""
-            } catch (e: Exception) { "" }
+            // File creation time: prefer shooting date if available, fallback to filesystem
+            val fileCreationTime = if (creationTime.isNotEmpty()) {
+                creationTime
+            } else {
+                try {
+                    val p = java.nio.file.Paths.get(inputPath)
+                    val fileTime = java.nio.file.Files.getAttribute(p, "creationTime") as? java.nio.file.attribute.FileTime
+                    fileTime?.let {
+                        java.time.Instant.ofEpochMilli(it.toMillis())
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                    } ?: ""
+                } catch (e: Exception) { "" }
+            }
 
             com.pisces312.streamclip.model.VideoInfo(
                 path = inputPath,
