@@ -85,3 +85,24 @@ Uses SAF (Storage Access Framework) via `ActivityResultContracts`. `FileUtils` h
 - View Binding — no Data Binding
 - No MVVM — fragments manage state directly
 - Kotlin DSL for Gradle (`build.gradle.kts`)
+
+## Known Issues
+
+### 色彩元数据读取问题
+
+**现象**：部分视频的 MOV 容器 nclx box 与 HEVC bitstream VUI 中的色彩信息不一致（如 nclx=BT.601 但 VUI=BT.709）。
+
+**根因**：
+- `hevc_mediacodec` 不写 bitstream VUI，只写容器 nclx box
+- ffmpeg-kit 6.0 的旧版 ffprobe 只读 bitstream VUI（无 VUI 时显示默认 bt470bg）
+- Android `MediaMetadataRetriever` 读 nclx box，但对某些视频返回错误值（如 BT.601）
+
+**解决方案**：使用 ffprobe 读取 bitstream VUI 的色彩信息（`color_primaries`, `color_transfer`, `colorspace`）。虽然 ffmpeg-kit 6.0 版本较旧，但对 bitstream VUI 的读取是准确的。见 `FFmpegService.kt` 中 `probeVideoInfo()`。
+
+**影响范围**：
+- 压缩时色彩参数基于 bitstream VUI，确保编码正确
+- `hevc_mediacodec` 压缩后的视频在 ffprobe（桌面新版）中显示正确色彩信息
+
+**相关文件**：
+- `FFmpegService.kt` — `probeVideoInfo()` 使用 ffprobe 读取色彩信息
+- `CompressConfig.kt` — `toFFmpegCommand()` 包含色彩参数写入逻辑

@@ -7,7 +7,7 @@ data class CompressConfig(
     val resolution: String = "original",
     val frameRate: String = "original", // 帧率
     val preset: String = "medium",     // 软编码预设
-    val audioEncoder: String = "aac",
+    val audioEncoder: String = "copy",
     val audioBitrate: String = "128",  // 音频码率 (kbps)
     val audioSampleRate: String = "44100", // 音频采样率
     val isHardware: Boolean = true,
@@ -34,7 +34,12 @@ data class CompressConfig(
 
         val isHdr = colorTransfer == "arib-std-b67" || colorTransfer == "smpte2084"
 
-        // Always specify color parameters matching source video
+        // Write color metadata to MOV container (nclx box).
+        // hevc_mediacodec does NOT write color info to bitstream VUI — only the container nclx box gets set.
+        // Players (including Android MediaCodec decoder) read nclx box, so these flags are necessary.
+        // Note: hevc_metadata BSF was tested to also write VUI, but it causes playback issues (video freezes).
+        // As a result, ffprobe on Android (ffmpeg-kit 6.0, only reads VUI) shows bt470bg for compressed videos.
+        // Desktop ffprobe (reads both VUI and nclx box) shows the correct value.
         if (colorPrimaries.isNotEmpty()) cmd.append("-color_primaries $colorPrimaries ")
         if (colorTransfer.isNotEmpty()) cmd.append("-color_trc $colorTransfer ")
         if (colorSpace.isNotEmpty()) cmd.append("-colorspace $colorSpace ")
@@ -92,6 +97,11 @@ data class CompressConfig(
                 cmd.append("-ar $audioSampleRate ")
             }
         }
+
+        // Note: hevc_metadata BSF to write VUI was tested but causes playback issues
+        // (video freezes on one frame). Only container-level nclx box flags are used.
+        // On Android, ffprobe reads bitstream VUI (empty → bt470bg default),
+        // while desktop ffprobe reads both VUI and nclx box → correct values.
 
         // Format: use MOV format to preserve GPS metadata (moov/udta/xyz atom)
         // Android MediaMetadataRetriever reads xyz atom, not loci

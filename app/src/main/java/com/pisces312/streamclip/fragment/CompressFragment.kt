@@ -163,7 +163,7 @@ class CompressFragment : Fragment() {
             android.R.layout.simple_spinner_dropdown_item,
             CompressConfig.AUDIO_ENCODERS.map { it.second }
         )
-        binding.spinnerAudioHw.setSelection(1) // AAC default
+        binding.spinnerAudioHw.setSelection(0) // copy default
 
         // Audio Bitrate
         binding.spinnerAudioBitrateHw.adapter = ArrayAdapter(
@@ -234,7 +234,7 @@ class CompressFragment : Fragment() {
             android.R.layout.simple_spinner_dropdown_item,
             CompressConfig.AUDIO_ENCODERS.map { it.second }
         )
-        binding.spinnerAudioSw.setSelection(1) // AAC default
+        binding.spinnerAudioSw.setSelection(0) // copy default
 
         // Audio Bitrate
         binding.spinnerAudioBitrateSw.adapter = ArrayAdapter(

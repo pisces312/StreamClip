@@ -344,7 +344,7 @@ object FFmpegService {
         return try {
             // Video stream: use JSON for reliable field extraction
             val session = FFprobeKit.execute(
-                "-v quiet -select_streams v:0 -show_entries stream=width,height,codec_name,r_frame_rate,pix_fmt,bit_rate,color_space,color_primaries,color_transfer -of json \"$inputPath\""
+                "-v quiet -select_streams v:0 -show_entries stream=width,height,codec_name,r_frame_rate,pix_fmt,bit_rate,color_primaries,color_transfer,colorspace,color_range -of json \"$inputPath\""
             )
             if (!ReturnCode.isSuccess(session.returnCode)) return null
             val output = session.output.trim()
@@ -361,9 +361,16 @@ object FFmpegService {
             val frameRate = stream.optString("r_frame_rate", "")
             val pixelFormat = stream.optString("pix_fmt", "")
             val videoBitrate = stream.optString("bit_rate", "0").toLongOrNull() ?: 0L
-            val colorSpace = stream.optString("color_space", "")
-            val colorPrimaries = stream.optString("color_primaries", "")
-            val colorTransfer = stream.optString("color_transfer", "")
+
+            // Use ffprobe for color info (reads bitstream VUI).
+            // MediaMetadataRetriever reads container nclx box but returns incorrect values
+            // (e.g. BT.601 instead of BT.709) for some videos, so we don't use it.
+            // Note: for hevc_mediacodec compressed videos, ffprobe returns bt470bg (no VUI written).
+            // This is a known limitation — desktop ffprobe reads both VUI and nclx box, so it shows correctly.
+            val colorPrimaries = stream.optString("color_primaries", "").takeIf { it.isNotEmpty() && it != "unknown" } ?: ""
+            val colorTransfer = stream.optString("color_transfer", "").takeIf { it.isNotEmpty() && it != "unknown" } ?: ""
+            val colorSpace = stream.optString("colorspace", "").takeIf { it.isNotEmpty() && it != "unknown" } ?: ""
+            LogCollector.d("FFmpegService", "Color from ffprobe: primaries=$colorPrimaries, transfer=$colorTransfer, space=$colorSpace")
 
             // Audio stream: use JSON for reliable field extraction
             val audioSession = FFprobeKit.execute(
