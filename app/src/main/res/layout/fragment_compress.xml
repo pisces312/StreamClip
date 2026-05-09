@@ -33,6 +33,13 @@
                 style="?attr/materialButtonOutlinedStyle" />
         </LinearLayout>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCompress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/start_batch_compress" />
+
         <!-- Original video info card -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardOriginalInfo"
@@ -625,13 +632,6 @@
                     android:layout_marginTop="4dp" />
             </LinearLayout>
         </LinearLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnCompress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/start_batch_compress" />
 
         <ProgressBar
             android:id="@+id/progressBar"

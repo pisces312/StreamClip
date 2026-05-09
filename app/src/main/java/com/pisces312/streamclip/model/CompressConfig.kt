@@ -14,9 +14,9 @@ data class CompressConfig(
     val copyMetadata: Boolean = true   // Copy all metadata from source
 ) : java.io.Serializable {
     /**
-     * @param colorSpace color_space from probe (e.g. "bt2020nc"), empty for SDR
-     * @param colorPrimaries color_primaries from probe (e.g. "bt2020"), empty for SDR
-     * @param colorTransfer color_transfer from probe (e.g. "arib-std-b67"/"smpte2084"), empty for SDR
+     * @param colorSpace color_space from probe (e.g. "bt709"), empty for SDR
+     * @param colorPrimaries color_primaries from probe (e.g. "bt709"), empty for SDR
+     * @param colorTransfer color_transfer from probe (e.g. "bt709"/"arib-std-b67"/"smpte2084"), empty for SDR
      */
     fun toFFmpegCommand(
         inputPath: String,
@@ -34,8 +34,8 @@ data class CompressConfig(
 
         val isHdr = colorTransfer == "arib-std-b67" || colorTransfer == "smpte2084"
 
-        // Copy color metadata from source to preserve original color rendering.
-        // Without explicit flags, FFmpeg may infer different defaults (e.g. bt709 vs source values).
+        // Preserve source color metadata with explicit values (probed from input).
+        // "same" keyword is not supported by hardware encoders (hevc_mediacodec).
         if (colorSpace.isNotEmpty()) cmd.append("-colorspace $colorSpace ")
         if (colorPrimaries.isNotEmpty()) cmd.append("-color_primaries $colorPrimaries ")
         if (colorTransfer.isNotEmpty()) cmd.append("-color_trc $colorTransfer ")
@@ -44,16 +44,11 @@ data class CompressConfig(
             cmd.append("-color_range tv ")
 
             if (isHardware) {
-                // hevc_mediacodec defaults to Main profile (8-bit); Main10 is required for 10-bit HDR
                 cmd.append("-profile:v main10 ")
-                // Tag stream as HDR10 for player detection
                 cmd.append("-metadata:s:v:0 hdr10=1 ")
-                // Write HDR metadata into HEVC bitstream (bsf values: primaries=9→BT.2020,
-                // transfer=18→HLG/16→PQ, matrix=9→BT.2020nc)
                 val tcValue = if (colorTransfer == "arib-std-b67") 18 else 16
                 cmd.append("-bsf:v hevc_metadata=video_full_range_flag=0:colour_primaries=9:transfer_characteristics=$tcValue:matrix_coefficients=9 ")
             } else {
-                // Software encoder (libx265/libx264) needs explicit 10-bit pixel format
                 cmd.append("-pix_fmt yuv420p10le ")
             }
         }

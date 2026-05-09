@@ -107,13 +107,23 @@
         android:layout_marginTop="12dp"
         android:layout_marginBottom="4dp" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerLogs"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:background="#1a1a1a"
-        android:padding="8dp" />
+        android:padding="8dp">
+
+        <TextView
+            android:id="@+id/tvLogs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:fontFamily="monospace"
+            android:textColor="#00FF00"
+            android:textIsSelectable="true"
+            android:breakStrategy="simple" />
+    </ScrollView>
 
     <LinearLayout
         android:layout_width="match_parent"

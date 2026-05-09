@@ -106,24 +106,22 @@ class CustomCommandFragment : Fragment() {
     private fun showFfmpegLogDialog(command: String): FfmpegLogDialog {
         val dialogView = layoutInflater.inflate(com.pisces312.streamclip.R.layout.dialog_ffmpeg_log, null)
         val tvCommand = dialogView.findViewById<android.widget.TextView>(com.pisces312.streamclip.R.id.tvCommand)
-        val recyclerLogs = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(com.pisces312.streamclip.R.id.recyclerLogs)
+        val tvLogs = dialogView.findViewById<android.widget.TextView>(com.pisces312.streamclip.R.id.tvLogs)
         val btnCopy = dialogView.findViewById<android.widget.Button>(com.pisces312.streamclip.R.id.btnCopy)
         val btnCancel = dialogView.findViewById<android.widget.Button>(com.pisces312.streamclip.R.id.btnCancel)
 
         tvCommand.text = command
-
-        val adapter = com.pisces312.streamclip.adapter.FfmpegLogAdapter()
-        recyclerLogs.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
-        recyclerLogs.adapter = adapter
 
         val dialog = androidx.appcompat.app.AlertDialog.Builder(requireContext())
             .setView(dialogView)
             .setCancelable(false)
             .create()
 
+        val logBuilder = StringBuilder()
+
         btnCopy.setOnClickListener {
             val clipboard = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-            val clip = android.content.ClipData.newPlainText("FFmpeg Log", "Command:\n$command\n\nLogs:\n${adapter.getAllLogs()}")
+            val clip = android.content.ClipData.newPlainText("FFmpeg Log", "Command:\n$command\n\nLogs:\n$logBuilder")
             clipboard.setPrimaryClip(clip)
             Toast.makeText(requireContext(), getString(R.string.copied_to_clipboard), Toast.LENGTH_SHORT).show()
         }
@@ -139,8 +137,11 @@ class CustomCommandFragment : Fragment() {
 
         return object : FfmpegLogDialog {
             override fun addLog(log: FFmpegService.LogLine) {
-                adapter.addLog(log)
-                recyclerLogs.scrollToPosition(adapter.itemCount - 1)
+                logBuilder.append(log.text).append("\n")
+                tvLogs.text = logBuilder.toString()
+                (tvLogs.parent as? android.widget.ScrollView)?.post {
+                    (tvLogs.parent as? android.widget.ScrollView)?.fullScroll(android.view.View.FOCUS_DOWN)
+                }
             }
             override fun onComplete(success: Boolean) {
                 onCancelCallback = null
