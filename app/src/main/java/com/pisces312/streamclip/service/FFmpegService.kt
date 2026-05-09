@@ -341,14 +341,13 @@ object FFmpegService {
      */
     fun probeVideoInfo(inputPath: String): com.pisces312.streamclip.model.VideoInfo? {
         return try {
+            // Video stream: width, height, codec, frame rate, pixel format, bitrate
             val session = FFprobeKit.execute(
-                "-v quiet -select_streams v:0 -show_entries stream=width,height,codec_name,r_frame_rate,pix_fmt -of csv=p=0 \"$inputPath\""
+                "-v quiet -select_streams v:0 -show_entries stream=width,height,codec_name,r_frame_rate,pix_fmt,bit_rate -of csv=p=0 \"$inputPath\""
             )
             if (!ReturnCode.isSuccess(session.returnCode)) return null
-
             val output = session.output.trim()
             if (output.isEmpty()) return null
-
             val parts = output.split(",")
             if (parts.size < 5) return null
 
@@ -357,21 +356,42 @@ object FFmpegService {
             val videoCodec = parts[2].trim()
             val frameRate = parts[3].trim()
             val pixelFormat = parts[4].trim()
+            val videoBitrate = parts.getOrNull(5)?.trim()?.toLongOrNull() ?: 0L
 
+            // Audio stream: codec, sample rate, bitrate
             val audioSession = FFprobeKit.execute(
-                "-v quiet -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 \"$inputPath\""
+                "-v quiet -select_streams a:0 -show_entries stream=codec_name,sample_rate,bit_rate -of csv=p=0 \"$inputPath\""
             )
-            val audioCodec = if (ReturnCode.isSuccess(audioSession.returnCode)) {
-                audioSession.output.trim().ifEmpty { "none" }
-            } else "none"
+            val audioCodec: String
+            var audioSampleRate = 0
+            var audioBitrate = 0L
+            if (ReturnCode.isSuccess(audioSession.returnCode)) {
+                val audioParts = audioSession.output.trim().split(",")
+                audioCodec = audioParts.getOrNull(0)?.trim()?.ifEmpty { "none" } ?: "none"
+                audioSampleRate = audioParts.getOrNull(1)?.trim()?.toIntOrNull() ?: 0
+                audioBitrate = audioParts.getOrNull(2)?.trim()?.toLongOrNull() ?: 0L
+            } else {
+                audioCodec = "none"
+            }
 
-            // Probe rotation from side_data
+            // Rotation from side_data
             val rotationSession = FFprobeKit.execute(
                 "-v quiet -select_streams v:0 -show_entries stream_side_data=rotation -of csv=p=0 \"$inputPath\""
             )
             val rotation = if (ReturnCode.isSuccess(rotationSession.returnCode)) {
                 rotationSession.output.trim().toIntOrNull() ?: 0
             } else 0
+
+            // Creation time from format tags
+            val formatSession = FFprobeKit.execute(
+                "-v quiet -show_entries format_tags=creation_time -of csv=p=0 \"$inputPath\""
+            )
+            val creationTime = if (ReturnCode.isSuccess(formatSession.returnCode)) {
+                formatSession.output.trim().ifEmpty { "" }
+            } else ""
+
+            // GPS location (reuse existing probeLocation)
+            val location = probeLocation(inputPath) ?: ""
 
             com.pisces312.streamclip.model.VideoInfo(
                 path = inputPath,
@@ -381,7 +401,12 @@ object FFmpegService {
                 audioCodec = audioCodec,
                 frameRate = frameRate,
                 pixelFormat = pixelFormat,
-                rotation = rotation
+                rotation = rotation,
+                videoBitrate = videoBitrate,
+                audioSampleRate = audioSampleRate,
+                audioBitrate = audioBitrate,
+                creationTime = creationTime,
+                location = location
             )
         } catch (e: Exception) {
             LogCollector.e("FFmpegService", "Probe video info failed: ${e.message}")
