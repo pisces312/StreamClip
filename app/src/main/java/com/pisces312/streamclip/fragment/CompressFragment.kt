@@ -163,7 +163,7 @@ class CompressFragment : Fragment() {
             android.R.layout.simple_spinner_dropdown_item,
             CompressConfig.AUDIO_ENCODERS.map { it.second }
         )
-        binding.spinnerAudioHw.setSelection(0) // copy
+        binding.spinnerAudioHw.setSelection(1) // AAC default
 
         // Audio Bitrate
         binding.spinnerAudioBitrateHw.adapter = ArrayAdapter(
@@ -179,7 +179,7 @@ class CompressFragment : Fragment() {
             android.R.layout.simple_spinner_dropdown_item,
             CompressConfig.AUDIO_SAMPLE_RATES.map { it.second }
         )
-        binding.spinnerAudioSampleRateHw.setSelection(0) // original
+        binding.spinnerAudioSampleRateHw.setSelection(2) // 44100 default
 
         setupAudioVisibilityListener(binding.spinnerAudioHw, binding.panelAudioOptionsHw)
     }
@@ -234,7 +234,7 @@ class CompressFragment : Fragment() {
             android.R.layout.simple_spinner_dropdown_item,
             CompressConfig.AUDIO_ENCODERS.map { it.second }
         )
-        binding.spinnerAudioSw.setSelection(0) // copy
+        binding.spinnerAudioSw.setSelection(1) // AAC default
 
         // Audio Bitrate
         binding.spinnerAudioBitrateSw.adapter = ArrayAdapter(
@@ -250,7 +250,7 @@ class CompressFragment : Fragment() {
             android.R.layout.simple_spinner_dropdown_item,
             CompressConfig.AUDIO_SAMPLE_RATES.map { it.second }
         )
-        binding.spinnerAudioSampleRateSw.setSelection(0) // original
+        binding.spinnerAudioSampleRateSw.setSelection(2) // 44100 default
 
         setupAudioVisibilityListener(binding.spinnerAudioSw, binding.panelAudioOptionsSw)
     }
@@ -263,8 +263,8 @@ class CompressFragment : Fragment() {
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
-        // Initial state
-        panel.visibility = if (CompressConfig.AUDIO_ENCODERS[0].first == "copy") View.GONE else View.VISIBLE
+        // Initial state: AAC default (index 1), so panel visible
+        panel.visibility = View.VISIBLE
     }
 
     private fun setupHelpButtons() {

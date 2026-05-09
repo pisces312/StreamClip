@@ -5,6 +5,7 @@
     <string name="title_merge">无损合并</string>
     <string name="title_extract">提取音频</string>
     <string name="title_compress">视频压缩</string>
+    <string name="title_audio_compress">音频压缩</string>
     <string name="title_custom">自定义命令</string>
     <string name="select_video">选择视频</string>
     <string name="start_time">开始时间</string>
@@ -179,4 +180,8 @@
     <!-- Video Info Cards -->
     <string name="original_video_info">原视频信息</string>
     <string name="output_video_info">输出视频信息</string>
+    <string name="audio_encoder">音频编码</string>
+    <string name="audio_bitrate">音频码率</string>
+    <string name="audio_sample_rate">音频采样率</string>
+    <string name="start_audio_compress">开始音频压缩</string>
 </resources>

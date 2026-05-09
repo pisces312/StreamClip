@@ -7,9 +7,9 @@ data class CompressConfig(
     val resolution: String = "original",
     val frameRate: String = "original", // 帧率
     val preset: String = "medium",     // 软编码预设
-    val audioEncoder: String = "copy",
+    val audioEncoder: String = "aac",
     val audioBitrate: String = "128",  // 音频码率 (kbps)
-    val audioSampleRate: String = "original", // 音频采样率
+    val audioSampleRate: String = "44100", // 音频采样率
     val isHardware: Boolean = true,
     val copyMetadata: Boolean = true   // Copy all metadata from source
 ) : java.io.Serializable {
@@ -34,20 +34,17 @@ data class CompressConfig(
 
         val isHdr = colorTransfer == "arib-std-b67" || colorTransfer == "smpte2084"
 
-        // Preserve source color metadata with explicit values (probed from input).
-        // "same" keyword is not supported by hardware encoders (hevc_mediacodec).
-        if (colorSpace.isNotEmpty()) cmd.append("-colorspace $colorSpace ")
+        // Always specify color parameters matching source video
         if (colorPrimaries.isNotEmpty()) cmd.append("-color_primaries $colorPrimaries ")
         if (colorTransfer.isNotEmpty()) cmd.append("-color_trc $colorTransfer ")
+        if (colorSpace.isNotEmpty()) cmd.append("-colorspace $colorSpace ")
+        cmd.append("-color_range tv ")
 
         if (isHdr) {
-            cmd.append("-color_range tv ")
 
             if (isHardware) {
                 cmd.append("-profile:v main10 ")
                 cmd.append("-metadata:s:v:0 hdr10=1 ")
-                val tcValue = if (colorTransfer == "arib-std-b67") 18 else 16
-                cmd.append("-bsf:v hevc_metadata=video_full_range_flag=0:colour_primaries=9:transfer_characteristics=$tcValue:matrix_coefficients=9 ")
             } else {
                 cmd.append("-pix_fmt yuv420p10le ")
             }
@@ -88,10 +85,10 @@ data class CompressConfig(
         // Audio
         cmd.append("-c:a $audioEncoder ")
         if (audioEncoder != "copy") {
-            if (audioBitrate != "original") {
+            if (audioBitrate != "copy") {
                 cmd.append("-b:a ${audioBitrate}k ")
             }
-            if (audioSampleRate != "original") {
+            if (audioSampleRate != "copy") {
                 cmd.append("-ar $audioSampleRate ")
             }
         }
@@ -147,23 +144,24 @@ data class CompressConfig(
         )
         
         val AUDIO_ENCODERS = listOf(
-            "copy" to "复制原音频",
+            "copy" to "复制",
             "aac" to "AAC",
             "libmp3lame" to "MP3",
             "flac" to "FLAC"
         )
 
         val AUDIO_BITRATES = listOf(
-            "original" to "原始",
+            "copy" to "复制",
             "64" to "64 kbps",
             "96" to "96 kbps",
             "128" to "128 kbps",
             "192" to "192 kbps",
-            "256" to "256 kbps"
+            "256" to "256 kbps",
+            "320" to "320 kbps"
         )
 
         val AUDIO_SAMPLE_RATES = listOf(
-            "original" to "原始",
+            "copy" to "复制",
             "22050" to "22050 Hz",
             "44100" to "44100 Hz",
             "48000" to "48000 Hz"

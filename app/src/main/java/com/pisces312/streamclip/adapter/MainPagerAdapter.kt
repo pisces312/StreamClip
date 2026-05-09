@@ -8,6 +8,7 @@ import com.pisces312.streamclip.fragment.Trim2Fragment
 import com.pisces312.streamclip.fragment.MergeFragment
 import com.pisces312.streamclip.fragment.ExtractFragment
 import com.pisces312.streamclip.fragment.CompressFragment
+import com.pisces312.streamclip.fragment.AudioCompressFragment
 import com.pisces312.streamclip.fragment.CustomCommandFragment
 
 class MainPagerAdapter(
@@ -24,6 +25,7 @@ class MainPagerAdapter(
             "merge" -> MergeFragment()
             "extract" -> ExtractFragment()
             "compress" -> CompressFragment()
+            "audio_compress" -> AudioCompressFragment()
             "custom" -> CustomCommandFragment()
             else -> throw IllegalArgumentException("Invalid tab: ${tabOrder[position]}")
         }

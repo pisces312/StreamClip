@@ -191,6 +191,7 @@ class MainActivity : BaseActivity() {
                 "merge" -> getString(R.string.title_merge)
                 "extract" -> getString(R.string.title_extract)
                 "compress" -> getString(R.string.title_compress)
+                "audio_compress" -> getString(R.string.title_audio_compress)
                 "custom" -> getString(R.string.title_custom)
                 else -> ""
             }

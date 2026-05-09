@@ -6,7 +6,12 @@ REM 无线ADB安装脚本
 REM 用法：将APK文件拖到此脚本图标上
 
 set APK_PATH=%~1
-set DEVICE="192.168.1.57:40957"
+
+if not defined DEVICE (
+    echo 错误：环境变量 DEVICE 未定义，脚本退出！
+    exit /b 1
+)
+
 
 if "%~1"=="" (
     echo 用法：将APK文件拖到此脚本上

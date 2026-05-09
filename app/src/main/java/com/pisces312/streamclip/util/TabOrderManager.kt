@@ -9,7 +9,7 @@ object TabOrderManager {
     private const val KEY_ORDER = "tab_order"
     
     // Default tab order: trim, trim2, merge, extract, compress, custom
-    val DEFAULT_ORDER = listOf("trim", "trim2", "merge", "extract", "compress", "custom")
+    val DEFAULT_ORDER = listOf("trim", "trim2", "merge", "extract", "compress", "audio_compress", "custom")
     
     val TAB_ICONS = mapOf(
         "trim" to R.drawable.ic_video,
@@ -17,6 +17,7 @@ object TabOrderManager {
         "merge" to R.drawable.ic_merge,
         "extract" to R.drawable.ic_extract,
         "compress" to R.drawable.ic_compress,
+        "audio_compress" to R.drawable.ic_compress,
         "custom" to R.drawable.ic_terminal
     )
     
