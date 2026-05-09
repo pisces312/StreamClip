@@ -372,7 +372,8 @@ class CompressFragment : Fragment() {
         if (info.colorSpace.isNotEmpty()) metaParts.add("色彩空间: ${info.colorSpace}")
         if (info.colorPrimaries.isNotEmpty()) metaParts.add("色域: ${info.colorPrimaries}")
         if (info.colorTransfer.isNotEmpty()) metaParts.add("传输: ${info.colorTransfer}")
-        if (info.creationTime.isNotEmpty()) metaParts.add("创建时间: ${info.creationTime}")
+        if (info.creationTime.isNotEmpty()) metaParts.add("拍摄日期: ${info.creationTime}")
+        if (info.fileCreationTime.isNotEmpty()) metaParts.add("创建日期: ${info.fileCreationTime}")
         if (info.location.isNotEmpty()) metaParts.add("地理位置: ${info.location}")
         metaInfoView.text = metaParts.joinToString("  ")
         metaInfoView.visibility = if (metaParts.isNotEmpty()) android.view.View.VISIBLE else android.view.View.GONE
