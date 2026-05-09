@@ -571,8 +571,13 @@ class CompressFragment : Fragment() {
                 if (result.success) {
                     val outFileName = outPath.substring(outPath.lastIndexOf('/') + 1)
                     FileUtils.scanFile(requireContext(), java.io.File(outPath))
-                    sourceFileTimes?.let { (creation, modified) ->
-                        FileUtils.applyFileTimes(outPath, creation, modified)
+                    val shootingDate = originalVideoInfo?.creationTime
+                    if (!shootingDate.isNullOrEmpty()) {
+                        FileUtils.applyShootingDate(outPath, shootingDate)
+                    } else {
+                        sourceFileTimes?.let { (creation, modified) ->
+                            FileUtils.applyFileTimes(outPath, creation, modified)
+                        }
                     }
 
                     // Probe and display output video info

@@ -4,6 +4,10 @@
 -keep class com.arthenica.ffmpegkit.** { *; }
 -dontwarn com.arthenica.ffmpegkit.**
 
+# Media3
+-keep class androidx.media3.** { *; }
+-dontwarn androidx.media3.**
+
 # AndroidX
 -keep class androidx.** { *; }
 -dontwarn androidx.**
@@ -17,3 +21,11 @@
     public static *** bind(android.view.View);
     public static *** inflate(android.view.LayoutInflater);
 }
+
+# Keep classes with JNI / reflection
+-keepclassmembers class * {
+    native <methods>;
+}
+
+# Keep exceptions for crash reporting
+-keep public class * extends java.lang.Exception

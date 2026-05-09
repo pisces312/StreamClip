@@ -1,16 +1,26 @@
 #!/usr/bin/env bash
 # StreamClip Build Script
-# Usage: ./build.sh [debug|release] [arm64]
+# Usage: ./build.sh [debug|release] [arm64] [--no-minify]
 #   (default: release arm64; only arm64 supported due to local AAR)
 #
 # Examples:
-#   ./build.sh                  # Build release, arm64
+#   ./build.sh                  # Build release, arm64, with minify
 #   ./build.sh debug            # Build debug, arm64
+#   ./build.sh release arm64 --no-minify   # Build release without minify/shrink
 
 set -e
 
 BUILD_TYPE="${1:-release}"
 ABI="${2:-arm64}"
+NO_MINIFY=false
+
+# Parse optional flags
+for arg in "$@"; do
+    case "$arg" in
+        --no-minify) NO_MINIFY=true ;;
+    esac
+done
+
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_DIR="$PROJECT_DIR/app"
 BUILD_TOOLS="D:/nili/dev/android_sdk/build-tools/34.0.0"
@@ -32,7 +42,7 @@ VERSION="v$VERSION"
 # Validate BUILD_TYPE
 case "$BUILD_TYPE" in
     debug|release) ;;
-    *) echo "Usage: $0 [debug|release] [arm64]"; exit 1 ;;
+    *) echo "Usage: $0 [debug|release] [arm64] [--no-minify]"; exit 1 ;;
 esac
 
 # Only arm64 supported (local AAR is arm64-only)
@@ -57,7 +67,12 @@ fi
 
 # Build
 cd "$PROJECT_DIR"
-./gradlew "$GRADLE_TASK" -PbuildAbi="$ABI_FILTER"
+GRADLE_ARGS="-PbuildAbi=$ABI_FILTER"
+if [[ "$NO_MINIFY" == true ]]; then
+    GRADLE_ARGS="$GRADLE_ARGS -PenableMinify=false -PenableShrinkResources=false"
+    echo "=== Minify/ShrinkResources disabled ==="
+fi
+./gradlew "$GRADLE_TASK" $GRADLE_ARGS
 
 # Find APK
 BUILD_DIR="$APP_DIR/build/outputs/apk/$BUILD_TYPE"

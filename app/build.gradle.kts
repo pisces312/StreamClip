@@ -20,8 +20,12 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = project.findProperty("enableMinify")?.toString()?.toBoolean() ?: true
+            isShrinkResources = project.findProperty("enableShrinkResources")?.toString()?.toBoolean() ?: true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 

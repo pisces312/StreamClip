@@ -12,6 +12,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.FileTime
+import com.pisces312.streamclip.util.LogCollector
 
 object FileUtils {
 
@@ -283,8 +284,10 @@ object FileUtils {
                 val p = Paths.get(path)
                 val creationTime = Files.getAttribute(p, "creationTime") as? FileTime
                 val modifiedTime = Files.getLastModifiedTime(p)
+                LogCollector.d("FileUtils", "readFileTimes: creation=$creationTime, modified=$modifiedTime, path=$path")
                 Pair(creationTime, modifiedTime)
             } catch (e: Exception) {
+                LogCollector.w("FileUtils", "readFileTimes failed: ${e.message}, path=$path")
                 null
             }
         } else {
@@ -301,9 +304,58 @@ object FileUtils {
                 val p = Paths.get(outputPath)
                 modifiedTime?.let { Files.setLastModifiedTime(p, it) }
                 creationTime?.let { Files.setAttribute(p, "creationTime", it) }
+                LogCollector.d("FileUtils", "applyFileTimes: success, creation=$creationTime, modified=$modifiedTime, path=$outputPath")
             } catch (e: Exception) {
-                // Silently ignore
+                LogCollector.w("FileUtils", "applyFileTimes failed: ${e.message}, path=$outputPath")
             }
         }
+    }
+
+    /**
+     * Apply shooting date (from metadata) as both creation and modification time.
+     * Handles ISO 8601 and common date formats.
+     */
+    fun applyShootingDate(outputPath: String, shootingDate: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val instant = parseDateToInstant(shootingDate) ?: return
+                val fileTime = FileTime.fromMillis(instant.toEpochMilli())
+                val p = Paths.get(outputPath)
+                Files.setAttribute(p, "creationTime", fileTime)
+                Files.setLastModifiedTime(p, fileTime)
+                LogCollector.d("FileUtils", "applyShootingDate: $shootingDate -> $fileTime, path=$outputPath")
+            } catch (e: Exception) {
+                LogCollector.w("FileUtils", "applyShootingDate failed: ${e.message}, path=$outputPath")
+            }
+        }
+    }
+
+    private fun parseDateToInstant(dateStr: String): java.time.Instant? {
+        // Try ISO 8601 formats first
+        val isoFormats = listOf(
+            java.time.format.DateTimeFormatter.ISO_INSTANT,
+            java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME,
+            java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
+        )
+        for (fmt in isoFormats) {
+            try {
+                return java.time.Instant.from(java.time.ZonedDateTime.parse(dateStr, fmt))
+            } catch (_: Exception) { }
+        }
+        // Try common patterns: "yyyy-MM-dd HH:mm:ss" and "yyyy-MM-dd HH:mm:ss.SSSSSS"
+        val patterns = listOf(
+            "yyyy-MM-dd HH:mm:ss.SSSSSS",
+            "yyyy-MM-dd HH:mm:ss.SSS",
+            "yyyy-MM-dd HH:mm:ss"
+        )
+        for (pattern in patterns) {
+            try {
+                val formatter = java.time.format.DateTimeFormatter.ofPattern(pattern)
+                val ldt = java.time.LocalDateTime.parse(dateStr, formatter)
+                return ldt.atZone(java.time.ZoneId.systemDefault()).toInstant()
+            } catch (_: Exception) { }
+        }
+        LogCollector.w("FileUtils", "parseDateToInstant: cannot parse '$dateStr'")
+        return null
     }
 }

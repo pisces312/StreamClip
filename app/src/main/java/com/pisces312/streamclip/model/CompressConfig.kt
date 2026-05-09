@@ -34,15 +34,13 @@ data class CompressConfig(
 
         val isHdr = colorTransfer == "arib-std-b67" || colorTransfer == "smpte2084"
 
-        // HDR handling — do NOT remove these parameters for HDR sources.
-        // Without them, hardware encoder (hevc_mediacodec) will produce washed-out colors
-        // because it silently converts 10-bit HDR to 8-bit SDR without proper tonemapping.
-        // For SDR sources, FFmpeg infers correct defaults — no explicit flags needed.
+        // Copy color metadata from source to preserve original color rendering.
+        // Without explicit flags, FFmpeg may infer different defaults (e.g. bt709 vs source values).
+        if (colorSpace.isNotEmpty()) cmd.append("-colorspace $colorSpace ")
+        if (colorPrimaries.isNotEmpty()) cmd.append("-color_primaries $colorPrimaries ")
+        if (colorTransfer.isNotEmpty()) cmd.append("-color_trc $colorTransfer ")
+
         if (isHdr) {
-            // Container-level color metadata (players read these to apply correct color rendering)
-            if (colorSpace.isNotEmpty()) cmd.append("-colorspace $colorSpace ")
-            if (colorPrimaries.isNotEmpty()) cmd.append("-color_primaries $colorPrimaries ")
-            if (colorTransfer.isNotEmpty()) cmd.append("-color_trc $colorTransfer ")
             cmd.append("-color_range tv ")
 
             if (isHardware) {

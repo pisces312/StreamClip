@@ -180,8 +180,13 @@ class BatchTaskService : Service() {
 
     private suspend fun executeTask(task: BatchTaskItem): TaskResult {
         return try {
+            var probedInfo: com.pisces312.streamclip.model.VideoInfo? = null
             val command = when (task.config.taskType) {
-                TaskType.COMPRESS -> buildCompressCommand(task)
+                TaskType.COMPRESS -> {
+                    val (cmd, info) = buildCompressCommand(task)
+                    probedInfo = info
+                    cmd
+                }
                 TaskType.EXTRACT_AUDIO -> buildExtractCommand(task)
                 TaskType.CUSTOM_COMMAND -> task.config.customCommand ?: return TaskResult(success = false, error = "Custom command is null", isCancelled = false)
             }
@@ -208,8 +213,13 @@ class BatchTaskService : Service() {
                         this,
                         java.io.File(task.outputPath)
                     )
-                    sourceFileTimes?.let { (creation, modified) ->
-                        com.pisces312.streamclip.util.FileUtils.applyFileTimes(task.outputPath, creation, modified)
+                    val shootingDate = probedInfo?.creationTime
+                    if (!shootingDate.isNullOrEmpty()) {
+                        com.pisces312.streamclip.util.FileUtils.applyShootingDate(task.outputPath, shootingDate)
+                    } else {
+                        sourceFileTimes?.let { (creation, modified) ->
+                            com.pisces312.streamclip.util.FileUtils.applyFileTimes(task.outputPath, creation, modified)
+                        }
                     }
                 } else {
                     cleanupOnFailure(task.outputPath)
@@ -229,12 +239,13 @@ class BatchTaskService : Service() {
         }
     }
 
-    private fun buildCompressCommand(task: BatchTaskItem): String {
+    private fun buildCompressCommand(task: BatchTaskItem): Pair<String, com.pisces312.streamclip.model.VideoInfo?> {
         val info = FFmpegService.probeVideoInfo(task.inputPath)
-        return task.config.compressConfig.toFFmpegCommand(
+        val command = task.config.compressConfig.toFFmpegCommand(
             task.inputPath, task.outputPath,
             info?.colorSpace ?: "", info?.colorPrimaries ?: "", info?.colorTransfer ?: ""
         )
+        return Pair(command, info)
     }
 
     private fun buildExtractCommand(task: BatchTaskItem): String {
