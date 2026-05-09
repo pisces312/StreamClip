@@ -185,11 +185,13 @@ object FFmpegService {
             append("-y ")
             append("-i ")
             append("\"$inputPath\" ")
+            append("-map_metadata 0 ")
             append("-ss $startSec ")
             append("-t $durationSec ")
             append("-c copy ")
             append("-avoid_negative_ts make_zero ")
             append("-fflags +genpts ")
+            append("-f mov ")
             append("\"$outputPath\"")
         }
 
