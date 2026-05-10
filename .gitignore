@@ -45,3 +45,4 @@ obj/
 # Uncomment if you want to exclude them from git:
 # app/libs/*.aar
 # app/libs/*.jar
+.workbuddy/

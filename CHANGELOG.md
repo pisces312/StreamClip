@@ -1,5 +1,15 @@
 # StreamClip 更新日志
 
+## [1.5.0] - 2026-05-10
+
+### 升级
+- **FFmpeg Kit 升级至 8.0.0**：从 `com.arthenica` 迁移到 `com.antonkarpenko` fork，包含更多编解码器支持和 bug 修复
+- **移除 smart-exception 依赖**：FFmpeg Kit 8.0.0 不再依赖此库，减少包体积
+
+### 调整
+- **ProGuard 规则同步更新**：混淆规则中的包名从 `com.arthenica.ffmpegkit` 更新为 `com.antonkarpenko.ffmpegkit`
+- **错误处理调整**：适配新版本的 API 变更（移除 `failStackTrace`，使用 `output` 替代）
+
 ## [1.3.0] - 2026-05-08
 
 ### 修复

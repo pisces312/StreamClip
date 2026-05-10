@@ -1,10 +1,17 @@
-## 更新内容
+## StreamClip v1.5.0
 
-### 修复
-- **GPS 元数据丢失**：移除 `-movflags use_metadata_tags` 参数，改用 `-f mov` 强制格式，确保 Android 图库正确识别 GPS 信息
+### 重大升级
+- **FFmpeg Kit 升级至 8.0.0**：从 `com.arthenica` 迁移到 `com.antonkarpenko` fork
+  - 包含更多编解码器支持
+  - 内置 bug 修复和改进
+  - 包名变更：`com.arthenica.ffmpegkit` → `com.antonkarpenko.ffmpegkit`
 
-### 新增
-- **自定义 FFmpeg 命令**：新增"自定义命令"页面，支持输入任意 FFmpeg 参数，选择输入文件和输出目录，带实时日志弹窗
+### 依赖清理
+- **移除 smart-exception 依赖**：FFmpeg Kit 8.0.0 不再依赖此库，有效减少 APK 体积
 
-### 优化
-- 日志弹窗适配暗色主题
+### 适配调整
+- 同步更新 ProGuard 混淆规则
+- 适配 FFmpeg Kit 8.0.0 API 变更（错误处理）
+
+### 下载
+- `StreamClip-v1.5.0-arm64-signed.apk`：适用于 arm64-v8a 设备的签名 Release 版本
