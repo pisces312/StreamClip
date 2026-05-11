@@ -39,7 +39,6 @@
     <string name="add_timestamp_desc">Avoid overwriting original files</string>
     <string name="current_path">Current Path</string>
     <string name="scroll_to_bottom">Scroll to Bottom</string>
-    <string name="title_guide">User Guide</string>
     <string name="title_donate">Support Developer</string>
     <string name="guide_title">Encoding Settings Guide</string>
     <string name="guide_h264_title">H.264 (Best Compatibility)</string>
