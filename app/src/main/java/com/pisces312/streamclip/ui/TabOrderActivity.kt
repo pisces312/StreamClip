@@ -22,6 +22,7 @@ class TabOrderActivity : BaseActivity() {
         "merge" to R.string.title_merge,
         "extract" to R.string.title_extract,
         "compress" to R.string.title_compress,
+        "audio_compress" to R.string.title_audio_compress,
         "custom" to R.string.title_custom
     )
 
