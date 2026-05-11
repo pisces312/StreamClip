@@ -1,8 +1,8 @@
 # ProGuard rules for StreamClip
 
-# FFmpeg Kit (antonkarpenko fork v8.0.0)
--keep class com.antonkarpenko.ffmpegkit.** { *; }
--dontwarn com.antonkarpenko.ffmpegkit.**
+# FFmpeg Kit (arthenica v8.1)
+-keep class com.arthenica.ffmpegkit.** { *; }
+-dontwarn com.arthenica.ffmpegkit.**
 
 # Media3
 -keep class androidx.media3.** { *; }

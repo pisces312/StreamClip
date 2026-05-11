@@ -1,10 +1,10 @@
 package com.pisces312.streamclip.service
 
 import android.content.Context
-import com.antonkarpenko.ffmpegkit.FFmpegKit
-import com.antonkarpenko.ffmpegkit.FFprobeKit
-import com.antonkarpenko.ffmpegkit.ReturnCode
-import com.antonkarpenko.ffmpegkit.StatisticsCallback
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFprobeKit
+import com.arthenica.ffmpegkit.ReturnCode
+import com.arthenica.ffmpegkit.StatisticsCallback
 import com.pisces312.streamclip.util.LogCollector
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers

@@ -54,8 +54,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0")
     
-    // FFmpeg Kit with MediaCodec + libx264 + libx265
-    implementation(files("libs/ffmpeg-kit-full-gpl-arm64v8a-8.0.0.aar"))
+    // FFmpeg Kit 8.1 (arthenica)
+    implementation(files("libs/ffmpeg-kit-8.1.aar"))
 
     // Media3 for video preview
     implementation("androidx.media3:media3-exoplayer:1.6.1")
