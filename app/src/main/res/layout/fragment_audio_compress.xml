@@ -16,7 +16,7 @@
             android:id="@+id/btnSelectVideo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/select_video"
+            android:text="@string/select_media"
             app:cornerRadius="8dp" />
 
         <!-- 原视频信息卡片 -->

@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">剪流</string>
+    <string name="app_name_with_version">剪流 v%1$s</string>
     <string name="title_trim">无损截取</string>
     <string name="title_trim2">无损截取2</string>
     <string name="title_merge">无损合并</string>
@@ -8,6 +9,7 @@
     <string name="title_audio_compress">音频压缩</string>
     <string name="title_custom">自定义命令</string>
     <string name="select_video">选择视频</string>
+    <string name="select_media">选择文件</string>
     <string name="start_time">开始时间</string>
     <string name="end_time">结束时间</string>
     <string name="execute">执行</string>
@@ -39,7 +41,14 @@
     <string name="add_timestamp_desc">避免覆盖原文件</string>
     <string name="current_path">当前路径</string>
     <string name="scroll_to_bottom">滚动到底部</string>
-    <string name="title_guide">使用指南</string>
+    <string name="title_help">帮助</string>
+    <string name="title_about">关于</string>
+    <string name="about_version">版本 %s</string>
+    <string name="about_changelog">更新日志</string>
+    <string name="about_close">关闭</string>
+    <string name="about_licenses">开源许可</string>
+    <string name="about_license_summary">本应用使用 FFmpeg 及相关开源库，受 GPL v3.0 许可</string>
+    <string name="about_license_not_found">许可证文件未找到</string>
     <string name="title_donate">支持开发者</string>
     <string name="guide_title">编码设置推荐</string>
     <string name="guide_h264_title">H.264（兼容性最好）</string>

@@ -43,6 +43,7 @@ class MainActivity : BaseActivity() {
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
+        updateToolbarTitle()
 
         checkPermissions()
         setupViewPager()
@@ -97,8 +98,12 @@ class MainActivity : BaseActivity() {
                 startActivity(Intent(this, LogActivity::class.java))
                 true
             }
-            R.id.action_guide -> {
+            R.id.action_help -> {
                 showGuideDialog()
+                true
+            }
+            R.id.action_about -> {
+                showAboutDialog()
                 true
             }
             R.id.action_donate -> {
@@ -174,6 +179,75 @@ class MainActivity : BaseActivity() {
             .setTitle(R.string.guide_title)
             .setMessage(message)
             .setPositiveButton(R.string.guide_ok, null)
+            .show()
+    }
+
+    private fun updateToolbarTitle() {
+        val versionName = try {
+            packageManager.getPackageInfo(packageName, 0).versionName ?: ""
+        } catch (e: Exception) {
+            ""
+        }
+        supportActionBar?.title = getString(R.string.app_name_with_version, versionName)
+    }
+
+    private fun showAboutDialog() {
+        val versionName = try {
+            packageManager.getPackageInfo(packageName, 0).versionName ?: "Unknown"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+        val message = buildString {
+            appendLine(getString(R.string.app_name))
+            appendLine(getString(R.string.about_version, versionName))
+            appendLine()
+            appendLine("v1.3.0 - 初始版本")
+            appendLine("v1.3.1 - 修复GPS元数据，添加自定义命令")
+            appendLine("v1.3.2 - 添加音频压缩，标签排序")
+            appendLine("v1.4.0 - 添加二进制FFmpeg支持")
+            appendLine()
+            appendLine(getString(R.string.about_license_summary))
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.title_about)
+            .setMessage(message)
+            .setPositiveButton(R.string.about_close, null)
+            .setNeutralButton(R.string.about_licenses) { _, _ ->
+                showLicensesDialog()
+            }
+            .show()
+    }
+
+    private fun showLicensesDialog() {
+        val licenses = arrayOf(
+            "FFmpeg (GPL v3.0)" to R.raw.license_ffmpeg,
+            "FFmpegKit (GPL v3.0)" to R.raw.license_ffmpegkit,
+            "x264 (GPL v2.0+)" to R.raw.license_x264,
+            "x265 (GPL v2.0+)" to R.raw.license_x265,
+            "cpu_features (Apache 2.0)" to R.raw.license_cpu_features
+        )
+
+        val items = licenses.map { it.first }.toTypedArray()
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.about_licenses)
+            .setItems(items) { _, which ->
+                showLicenseText(licenses[which].second)
+            }
+            .setPositiveButton(R.string.about_close, null)
+            .show()
+    }
+
+    private fun showLicenseText(resId: Int) {
+        val text = try {
+            resources.openRawResource(resId).bufferedReader().use { it.readText() }
+        } catch (e: Exception) {
+            getString(R.string.about_license_not_found)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.about_licenses)
+            .setMessage(text)
+            .setPositiveButton(R.string.about_close, null)
             .show()
     }
 

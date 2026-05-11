@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@color/gray_700"
-        app:title="@string/app_name"
+        app:title="@string/app_name_with_version"
         app:titleTextColor="@color/white" />
 
     <com.google.android.material.tabs.TabLayout

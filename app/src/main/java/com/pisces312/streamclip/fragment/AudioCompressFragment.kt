@@ -43,6 +43,8 @@ class AudioCompressFragment : Fragment() {
     private val binding get() = _binding!!
     private var videoPath: String? = null
     private var originalVideoInfo: com.pisces312.streamclip.model.VideoInfo? = null
+    private var originalAudioInfo: FFmpegService.AudioInfo? = null
+    private var isAudioOnlyInput: Boolean = false
     private var sourceFileTimes: Pair<java.nio.file.attribute.FileTime?, java.nio.file.attribute.FileTime?>? = null
 
     private val pickVideo = registerForActivityResult(
@@ -140,13 +142,15 @@ class AudioCompressFragment : Fragment() {
         binding.btnSelectVideo.setOnClickListener {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
-                type = "video/*"
+                type = "audio/*"
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                     SettingsManager.getLastVideoDir(requireContext())?.let { uri ->
                         putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, uri)
                     }
                 }
             }
+            // Also allow video files
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("video/*", "audio/*"))
             pickVideo.launch(intent)
         }
 
@@ -168,19 +172,44 @@ class AudioCompressFragment : Fragment() {
             binding.cardOutputInfo.visibility = View.GONE
             SettingsManager.setLastVideoDir(requireContext(), uri)
             sourceFileTimes = FileUtils.readFileTimes(path)
+            isAudioOnlyInput = false
+            originalVideoInfo = null
+            originalAudioInfo = null
 
             lifecycleScope.launch(Dispatchers.IO) {
-                val info = FFmpegService.probeVideoInfo(path)
-                withContext(Dispatchers.Main) {
-                    if (info != null) {
-                        originalVideoInfo = info
+                // Try video probe first
+                val videoInfo = FFmpegService.probeVideoInfo(path)
+                if (videoInfo != null && videoInfo.videoCodec.isNotEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        originalVideoInfo = videoInfo
+                        isAudioOnlyInput = false
                         showVideoInfo()
+                    }
+                } else {
+                    // Try audio-only probe
+                    val audioInfo = FFmpegService.probeAudioInfo(path)
+                    withContext(Dispatchers.Main) {
+                        if (audioInfo != null) {
+                            originalAudioInfo = audioInfo
+                            isAudioOnlyInput = true
+                            showAudioInfo(path, audioInfo)
+                        } else {
+                            Toast.makeText(requireContext(), "无法识别文件格式", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
         } else {
             Toast.makeText(requireContext(), getString(R.string.cannot_get_path), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun showAudioInfo(path: String, info: FFmpegService.AudioInfo) {
+        binding.tvOriginalPath.text = path
+        val lines = mutableListOf<String>()
+        lines.add("音频: ${info.codecName} ${info.sampleRate}Hz ${info.channelLayout}")
+        binding.tvOriginalInfo.text = lines.joinToString("\n")
+        binding.cardOriginalInfo.visibility = View.VISIBLE
     }
 
     private fun showVideoInfo() {
@@ -202,13 +231,31 @@ class AudioCompressFragment : Fragment() {
 
         val sourceFile = java.io.File(path)
         val outputDir = SettingsManager.getOutputDir(requireContext(), sourceFile)
+
+        // Determine output extension based on input type and encoder
+        val outputExt = if (isAudioOnlyInput) {
+            when (audioEncoder) {
+                "aac" -> "m4a"
+                "libmp3lame" -> "mp3"
+                "flac" -> "flac"
+                "libopus" -> "opus"
+                else -> originalAudioInfo?.extension ?: "m4a"
+            }
+        } else {
+            "mp4"
+        }
+
         val outputName = SettingsManager.getOutputFileName(
-            requireContext(), sourceFile.name, "audio_compressed", "mp4"
+            requireContext(), sourceFile.name, "audio_compressed", outputExt
         )
         val outPath = java.io.File(outputDir, outputName).absolutePath
 
         val cmd = buildString {
-            append("-y -i \"$path\" -c:v copy -c:a $audioEncoder ")
+            append("-y -i \"$path\" ")
+            if (!isAudioOnlyInput) {
+                append("-c:v copy ")
+            }
+            append("-c:a $audioEncoder ")
             if (audioEncoder != "copy") {
                 if (audioBitrate != "copy") {
                     append("-b:a ${audioBitrate}k ")
@@ -217,7 +264,10 @@ class AudioCompressFragment : Fragment() {
                     append("-ar $audioSampleRate ")
                 }
             }
-            append("-f mov \"$outPath\"")
+            if (isAudioOnlyInput) {
+                append("-vn ")
+            }
+            append("\"$outPath\"")
         }
 
         binding.progressBar.visibility = View.VISIBLE
