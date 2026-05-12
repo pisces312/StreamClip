@@ -3,8 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/action_batch_tasks"
-        android:title="@string/batch_tasks"
+        android:id="@+id/action_donate"
+        android:title="@string/title_donate"
         app:showAsAction="never" />
 
     <item
@@ -13,8 +13,18 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_tab_order"
+        android:title="@string/title_tab_order"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_logs"
         android:title="@string/title_logs"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_batch_tasks"
+        android:title="@string/batch_tasks"
         app:showAsAction="never" />
 
     <item
@@ -27,13 +37,4 @@
         android:title="@string/title_about"
         app:showAsAction="never" />
 
-    <item
-        android:id="@+id/action_tab_order"
-        android:title="@string/title_tab_order"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_donate"
-        android:title="@string/title_donate"
-        app:showAsAction="never" />
 </menu>
