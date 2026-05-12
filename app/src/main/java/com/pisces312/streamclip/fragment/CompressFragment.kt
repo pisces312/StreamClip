@@ -354,17 +354,17 @@ class CompressFragment : Fragment() {
         info: com.pisces312.streamclip.model.MediaInfo
     ) {
         pathView.text = info.path
+        val fileSizeMB = java.io.File(info.path).let { f -> if (f.exists()) "%.1f MB".format(f.length() / (1024.0 * 1024.0)) else "N/A" }
         val lines = mutableListOf<String>()
+        lines.add("大小: $fileSizeMB")
         lines.add("视频: ${info.videoCodec} ${info.resolution} ${info.frameRate} ${info.videoBitrateKbps}${info.hdrTag}")
-        lines.add("音频: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
-        val metaParts = mutableListOf<String>()
-        if (info.colorSpace.isNotEmpty()) metaParts.add("色彩空间: ${info.colorSpace}")
-        if (info.colorPrimaries.isNotEmpty()) metaParts.add("色域: ${info.colorPrimaries}")
-        if (info.colorTransfer.isNotEmpty()) metaParts.add("传输: ${info.colorTransfer}")
-        if (info.creationTime.isNotEmpty()) metaParts.add("拍摄日期: ${info.creationTime}")
-        if (info.fileCreationTime.isNotEmpty()) metaParts.add("创建日期: ${info.fileCreationTime}")
-        if (info.location.isNotEmpty()) metaParts.add("地理位置: ${info.location}")
-        if (metaParts.isNotEmpty()) lines.add(metaParts.joinToString("  "))
+        if (info.audioCodec.isNotEmpty()) lines.add("音频: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
+        if (info.colorSpace.isNotEmpty()) lines.add("色彩空间: ${info.colorSpace}")
+        if (info.colorPrimaries.isNotEmpty()) lines.add("色域: ${info.colorPrimaries}")
+        if (info.colorTransfer.isNotEmpty()) lines.add("传输: ${info.colorTransfer}")
+        if (info.creationTime.isNotEmpty()) lines.add("拍摄日期: ${info.creationTime}")
+        if (info.fileCreationTime.isNotEmpty()) lines.add("创建日期: ${info.fileCreationTime}")
+        if (info.location.isNotEmpty()) lines.add("地理位置: ${info.location}")
         infoView.text = lines.joinToString("\n")
         card.visibility = android.view.View.VISIBLE
     }

@@ -206,7 +206,7 @@
     <string name="metadata_save_failed">保存失败: %s</string>
 
     <!-- Video Info Cards -->
-    <string name="original_video_info">原视频信息</string>
+    <string name="original_video_info">输入视频信息</string>
     <string name="output_video_info">输出视频信息</string>
     <string name="audio_encoder">音频编码</string>
     <string name="audio_bitrate">音频码率</string>

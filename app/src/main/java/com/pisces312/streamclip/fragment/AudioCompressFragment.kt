@@ -197,9 +197,12 @@ class AudioCompressFragment : Fragment() {
 
     private fun showAudioInfo(path: String, info: com.pisces312.streamclip.model.MediaInfo) {
         binding.tvOriginalPath.text = path
+        val fileSizeMB = java.io.File(path).let { f -> if (f.exists()) "%.1f MB".format(f.length() / (1024.0 * 1024.0)) else "N/A" }
         val lines = mutableListOf<String>()
+        lines.add("大小: $fileSizeMB")
         val audio = info.audio
         lines.add("音频: ${audio?.codec ?: ""} ${info.audioSampleRate}Hz ${audio?.channelLayout ?: ""}")
+        if (info.creationTime.isNotEmpty()) lines.add("拍摄日期: ${info.creationTime}")
         binding.tvOriginalInfo.text = lines.joinToString("\n")
         binding.cardOriginalInfo.visibility = View.VISIBLE
     }
@@ -207,9 +210,11 @@ class AudioCompressFragment : Fragment() {
     private fun showVideoInfo() {
         val info = originalMediaInfo ?: return
         binding.tvOriginalPath.text = info.path
+        val fileSizeMB = java.io.File(info.path).let { f -> if (f.exists()) "%.1f MB".format(f.length() / (1024.0 * 1024.0)) else "N/A" }
         val lines = mutableListOf<String>()
+        lines.add("大小: $fileSizeMB")
         lines.add("视频: ${info.videoCodec} ${info.resolution} ${info.frameRate}")
-        lines.add("音频: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
+        if (info.audioCodec.isNotEmpty()) lines.add("音频: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
         binding.tvOriginalInfo.text = lines.joinToString("\n")
         binding.cardOriginalInfo.visibility = View.VISIBLE
     }
