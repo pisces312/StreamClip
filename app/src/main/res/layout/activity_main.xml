@@ -7,23 +7,32 @@
     android:background="@color/gray_800"
     android:fitsSystemWindows="true">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/gray_700"
-        app:title="@string/app_name_with_version"
-        app:titleTextColor="@color/white" />
-
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabLayout"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/gray_700"
-        app:tabMode="scrollable"
-        app:tabTextColor="@color/white"
-        app:tabSelectedTextColor="@color/purple_500"
-        app:tabIndicatorColor="@color/purple_500" />
+        android:background="@color/gray_700">
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="48dp"
+            app:tabMode="scrollable"
+            app:tabTextColor="@color/white"
+            app:tabSelectedTextColor="@color/purple_500"
+            app:tabIndicatorColor="@color/purple_500" />
+
+        <ImageButton
+            android:id="@+id/btnMenu"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="end|center_vertical"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/menu"
+            android:src="@drawable/ic_menu_more"
+            app:tint="@color/white" />
+
+    </FrameLayout>
 
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/viewPager"

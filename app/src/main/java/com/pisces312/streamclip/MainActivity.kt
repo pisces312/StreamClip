@@ -42,9 +42,7 @@ class MainActivity : BaseActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setSupportActionBar(binding.toolbar)
-        updateToolbarTitle()
-
+        setupMenuButton()
         checkPermissions()
         setupViewPager()
 
@@ -57,6 +55,15 @@ class MainActivity : BaseActivity() {
         val newOrder = TabOrderManager.getOrder(this)
         if (newOrder != currentTabOrder) {
             setupViewPager()
+        }
+    }
+
+    private fun setupMenuButton() {
+        binding.btnMenu.setOnClickListener { view ->
+            val popup = android.widget.PopupMenu(this, view, android.view.Gravity.END)
+            popup.menuInflater.inflate(R.menu.menu_main, popup.menu)
+            popup.setOnMenuItemClickListener { item -> handleMenuItem(item) }
+            popup.show()
         }
     }
 
@@ -76,12 +83,7 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    private fun handleMenuItem(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_batch_tasks -> {
                 startActivity(Intent(this, com.pisces312.streamclip.ui.BatchTaskActivity::class.java))
@@ -114,7 +116,7 @@ class MainActivity : BaseActivity() {
                 startActivity(Intent(this, com.pisces312.streamclip.ui.TabOrderActivity::class.java))
                 true
             }
-            else -> super.onOptionsItemSelected(item)
+            else -> false
         }
     }
 
@@ -180,15 +182,6 @@ class MainActivity : BaseActivity() {
             .setMessage(message)
             .setPositiveButton(R.string.guide_ok, null)
             .show()
-    }
-
-    private fun updateToolbarTitle() {
-        val versionName = try {
-            packageManager.getPackageInfo(packageName, 0).versionName ?: ""
-        } catch (e: Exception) {
-            ""
-        }
-        supportActionBar?.title = getString(R.string.app_name_with_version, versionName)
     }
 
     private fun showAboutDialog() {

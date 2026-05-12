@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">剪流</string>
     <string name="app_name_with_version">剪流 v%1$s</string>
+    <string name="menu">菜单</string>
     <string name="title_trim">无损截取</string>
     <string name="title_trim2">无损截取2</string>
     <string name="title_merge">无损合并</string>
