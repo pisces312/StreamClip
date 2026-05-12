@@ -253,14 +253,14 @@ class MainActivity : BaseActivity() {
         TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
             val tabId = order[position]
             tab.text = when (tabId) {
-                "trim" -> getString(R.string.title_trim)
-                "trim2" -> getString(R.string.title_trim2)
-                "merge" -> getString(R.string.title_merge)
-                "extract" -> getString(R.string.title_extract)
-                "compress" -> getString(R.string.title_compress)
-                "audio_compress" -> getString(R.string.title_audio_compress)
-                "custom" -> getString(R.string.title_custom)
-                "metadata" -> getString(R.string.title_metadata)
+                "trim" -> "无损\n截取"
+                "trim2" -> "截取\n2"
+                "merge" -> "无损\n合并"
+                "extract" -> "提取\n音频"
+                "compress" -> "视频\n压缩"
+                "audio_compress" -> "音频\n压缩"
+                "custom" -> "自定义\n命令"
+                "metadata" -> "元\n数据"
                 else -> ""
             }
             TabOrderManager.TAB_ICONS[tabId]?.let { tab.setIcon(it) }
