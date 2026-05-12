@@ -22,6 +22,7 @@ import com.pisces312.streamclip.adapter.MainPagerAdapter
 import com.pisces312.streamclip.databinding.ActivityMainBinding
 import com.pisces312.streamclip.fragment.SettingsFragment
 import com.pisces312.streamclip.util.TabOrderManager
+import androidx.viewpager2.widget.ViewPager2
 
 class MainActivity : BaseActivity() {
 
@@ -265,6 +266,15 @@ class MainActivity : BaseActivity() {
             }
             TabOrderManager.TAB_ICONS[tabId]?.let { tab.setIcon(it) }
         }.attach()
+
+        // 位置指示器
+        val totalCount = order.size
+        binding.tvTabIndicator.text = "1/$totalCount"
+        binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                binding.tvTabIndicator.text = "${position + 1}/$totalCount"
+            }
+        })
     }
 
     private fun checkPermissions() {

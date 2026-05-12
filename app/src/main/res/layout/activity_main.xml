@@ -16,7 +16,7 @@
             android:id="@+id/tabLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="44dp"
+            android:layout_marginEnd="36dp"
             app:tabMode="scrollable"
             app:tabTextColor="@color/white"
             app:tabSelectedTextColor="@color/purple_500"
@@ -27,15 +27,43 @@
 
         <ImageButton
             android:id="@+id/btnMenu"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="2dp"
+            android:padding="6dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/menu"
             android:src="@drawable/ic_menu_more"
-            app:tint="@color/white" />
+            app:tint="@color/gray_400" />
 
     </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="1dp"
+        android:paddingBottom="1dp"
+        android:background="@color/gray_700">
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/tvTabIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/gray_500"
+            android:textSize="10sp"
+            android:text="1/8" />
+
+    </LinearLayout>
 
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/viewPager"
