@@ -7,6 +7,7 @@
     <string name="title_extract">Extract Audio</string>
     <string name="title_compress">Video Compress</string>
     <string name="title_custom">Custom Command</string>
+    <string name="title_audio_compress">Audio Compress</string>
     <string name="select_video">Select Video</string>
     <string name="start_time">Start Time</string>
     <string name="end_time">End Time</string>
@@ -165,6 +166,26 @@
     <string name="batch_confirm_message">About to compress %d videos</string>
     <string name="start_batch_compress">Start Compression</string>
     <string name="remove">Remove</string>
+
+    <!-- Metadata -->
+    <string name="title_metadata">Metadata</string>
+    <string name="metadata_select_video_hint">Select a video to edit metadata</string>
+    <string name="metadata_fields">Editable Fields</string>
+    <string name="metadata_title">Title</string>
+    <string name="metadata_title_hint">Video title</string>
+    <string name="metadata_artist">Artist</string>
+    <string name="metadata_artist_hint">Author/Creator</string>
+    <string name="metadata_creation_time">Creation Time</string>
+    <string name="metadata_creation_time_hint">Format: YYYY-MM-DDTHH:MM:SS</string>
+    <string name="metadata_location">GPS Location</string>
+    <string name="metadata_location_hint">Format: +lat+lon/ (e.g. +31.2304+121.4737/)</string>
+    <string name="metadata_comment">Comment</string>
+    <string name="metadata_comment_hint">Notes or description</string>
+    <string name="metadata_save">Save Metadata</string>
+    <string name="metadata_read_failed">Failed to read metadata: %s</string>
+    <string name="metadata_no_changes">No changes to save</string>
+    <string name="metadata_save_success">Saved: %s</string>
+    <string name="metadata_save_failed">Save failed: %s</string>
 
     <!-- Video Info Cards -->
     <string name="original_video_info">Original Video Info</string>

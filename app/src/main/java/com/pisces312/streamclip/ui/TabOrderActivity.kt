@@ -23,7 +23,8 @@ class TabOrderActivity : BaseActivity() {
         "extract" to R.string.title_extract,
         "compress" to R.string.title_compress,
         "audio_compress" to R.string.title_audio_compress,
-        "custom" to R.string.title_custom
+        "custom" to R.string.title_custom,
+        "metadata" to R.string.title_metadata
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {

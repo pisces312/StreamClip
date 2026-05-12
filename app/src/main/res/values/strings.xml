@@ -186,6 +186,25 @@
     <string name="cancelled">已取消</string>
     <string name="cancelling">取消中...</string>
 
+    <string name="title_metadata">元数据</string>
+    <string name="metadata_select_video_hint">选择要编辑元数据的视频</string>
+    <string name="metadata_fields">可编辑字段</string>
+    <string name="metadata_title">标题</string>
+    <string name="metadata_title_hint">视频标题</string>
+    <string name="metadata_artist">作者</string>
+    <string name="metadata_artist_hint">作者/创作者</string>
+    <string name="metadata_creation_time">创建时间</string>
+    <string name="metadata_creation_time_hint">格式: YYYY-MM-DDTHH:MM:SS</string>
+    <string name="metadata_location">GPS 位置</string>
+    <string name="metadata_location_hint">格式: +纬度+经度/ (如 +31.2304+121.4737/)</string>
+    <string name="metadata_comment">评论</string>
+    <string name="metadata_comment_hint">备注或描述</string>
+    <string name="metadata_save">保存元数据</string>
+    <string name="metadata_read_failed">读取元数据失败: %s</string>
+    <string name="metadata_no_changes">没有修改</string>
+    <string name="metadata_save_success">已保存: %s</string>
+    <string name="metadata_save_failed">保存失败: %s</string>
+
     <!-- Video Info Cards -->
     <string name="original_video_info">原视频信息</string>
     <string name="output_video_info">输出视频信息</string>

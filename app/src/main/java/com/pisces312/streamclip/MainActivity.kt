@@ -267,6 +267,7 @@ class MainActivity : BaseActivity() {
                 "compress" -> getString(R.string.title_compress)
                 "audio_compress" -> getString(R.string.title_audio_compress)
                 "custom" -> getString(R.string.title_custom)
+                "metadata" -> getString(R.string.title_metadata)
                 else -> ""
             }
             TabOrderManager.TAB_ICONS[tabId]?.let { tab.setIcon(it) }
