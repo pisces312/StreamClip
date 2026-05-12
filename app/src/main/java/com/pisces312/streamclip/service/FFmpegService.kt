@@ -63,6 +63,7 @@ object FFmpegService {
     fun getDurationMs(inputPath: String): Long {
         return try {
             val session = FFprobeKit.execute("-v quiet -show_entries format=duration -of csv=p=0 \"$inputPath\"")
+            LogCollector.d("FFmpegService", "getDurationMs: returnCode=${session.returnCode}, output='${session.output.trim()}'")
             if (!ReturnCode.isSuccess(session.returnCode)) return -1
             val output = session.output.trim()
             val seconds = output.toDoubleOrNull() ?: return -1
@@ -297,11 +298,12 @@ object FFmpegService {
             // ffprobe -show_format output format: TAG:key=value
             val patterns = listOf(
                 // Standard location tag (TAG:location=value or TAG:location-eng=value)
-                Regex("""TAG:location(?:-eng)?=(\S+)""", RegexOption.MULTILINE),
+                // Location format: +lat+lon/ (ends with /)
+                Regex("""TAG:location(?:-eng)?=([+-][\d.]+[+-][\d.]+/)""", RegexOption.MULTILINE),
                 // GPS coordinates in different formats
-                Regex("""TAG:(?:gps|GPS)_?(?:location|position|coordinates)?=(\S+)""", RegexOption.MULTILINE),
+                Regex("""TAG:(?:gps|GPS)_?(?:location|position|coordinates)?=(\S+?)""", RegexOption.MULTILINE),
                 // com.apple.quicktime.location (MOV/MP4)
-                Regex("""TAG:com\.apple\.quicktime\.location=(\S+)""", RegexOption.MULTILINE),
+                Regex("""TAG:com\.apple\.quicktime\.location=(\S+?)""", RegexOption.MULTILINE),
                 // Any tag containing lat/long
                 Regex("""TAG:(?:latitude|longitude|lat|long|lng)=([+-]?\d+\.?\d*)""", RegexOption.MULTILINE)
             )
@@ -342,17 +344,34 @@ object FFmpegService {
      */
     fun probeVideoInfo(inputPath: String): com.pisces312.streamclip.model.VideoInfo? {
         return try {
+            LogCollector.d("FFmpegService", "probeVideoInfo: path=$inputPath")
+
             // Video stream: use JSON for reliable field extraction
             val session = FFprobeKit.execute(
                 "-v quiet -select_streams v:0 -show_entries stream=width,height,codec_name,r_frame_rate,pix_fmt,bit_rate,color_primaries,color_transfer,colorspace,color_range -of json \"$inputPath\""
             )
-            if (!ReturnCode.isSuccess(session.returnCode)) return null
+            LogCollector.d("FFmpegService", "probeVideoInfo: returnCode=${session.returnCode}, output length=${session.output.length}")
+            if (!ReturnCode.isSuccess(session.returnCode)) {
+                LogCollector.e("FFmpegService", "probeVideoInfo: video stream probe failed, returnCode=${session.returnCode}")
+                return null
+            }
             val output = session.output.trim()
-            if (output.isEmpty()) return null
+            if (output.isEmpty()) {
+                LogCollector.e("FFmpegService", "probeVideoInfo: video stream output is empty")
+                return null
+            }
+            LogCollector.d("FFmpegService", "probeVideoInfo: video stream output=$output")
 
             val json = org.json.JSONObject(output)
-            val streams = json.optJSONArray("streams") ?: return null
-            if (streams.length() == 0) return null
+            val streams = json.optJSONArray("streams")
+            if (streams == null) {
+                LogCollector.e("FFmpegService", "probeVideoInfo: no 'streams' array in JSON, raw output=$output")
+                return null
+            }
+            if (streams.length() == 0) {
+                LogCollector.e("FFmpegService", "probeVideoInfo: 'streams' array is empty")
+                return null
+            }
             val stream = streams.getJSONObject(0)
 
             val width = stream.optInt("width", 0)
@@ -376,6 +395,7 @@ object FFmpegService {
             val audioSession = FFprobeKit.execute(
                 "-v quiet -select_streams a:0 -show_entries stream=codec_name,sample_rate,bit_rate -of json \"$inputPath\""
             )
+            LogCollector.d("FFmpegService", "probeVideoInfo: audio returnCode=${audioSession.returnCode}, output length=${audioSession.output.length}")
             val audioCodec: String
             var audioSampleRate = 0
             var audioBitrate = 0L
@@ -399,7 +419,9 @@ object FFmpegService {
                 "-v quiet -select_streams v:0 -show_entries stream_side_data=rotation -of csv=p=0 \"$inputPath\""
             )
             val rotation = if (ReturnCode.isSuccess(rotationSession.returnCode)) {
-                rotationSession.output.trim().toIntOrNull() ?: 0
+                // Take only last line due to potential session output accumulation
+                val lines = rotationSession.output.trim().lines().filter { it.isNotEmpty() }
+                lines.lastOrNull()?.toIntOrNull() ?: 0
             } else 0
 
             // Creation time from format tags
@@ -407,7 +429,12 @@ object FFmpegService {
                 "-v quiet -show_entries format_tags=creation_time -of csv=p=0 \"$inputPath\""
             )
             val creationTime = if (ReturnCode.isSuccess(formatSession.returnCode)) {
-                formatSession.output.trim().ifEmpty { "" }
+                // session.output may accumulate previous sessions' output in custom ffmpeg-kit builds
+                // Take only the last line which is the actual result for this command
+                val lines = formatSession.output.trim().lines().filter { it.isNotEmpty() }
+                val rawTime = lines.lastOrNull()?.ifEmpty { null }
+                // Validate: must look like a timestamp (YYYY- or digits)
+                if (rawTime != null && rawTime.matches(Regex(".*\\d{4}.*"))) rawTime else ""
             } else ""
 
             // GPS location (reuse existing probeLocation)
@@ -446,7 +473,9 @@ object FFmpegService {
                 colorSpace = colorSpace,
                 colorPrimaries = colorPrimaries,
                 colorTransfer = colorTransfer
-            )
+            ).also {
+                LogCollector.d("FFmpegService", "probeVideoInfo: success -> ${it.videoCodec} ${it.resolution} ${it.audioCodec}")
+            }
         } catch (e: Exception) {
             LogCollector.e("FFmpegService", "Probe video info failed: ${e.message}")
             null
