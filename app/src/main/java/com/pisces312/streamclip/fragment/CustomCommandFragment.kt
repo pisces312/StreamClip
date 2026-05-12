@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -15,6 +16,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.pisces312.streamclip.databinding.FragmentCustomCommandBinding
+import com.arthenica.ffmpegkit.FFprobeKit
+import com.arthenica.ffmpegkit.ReturnCode
 import com.pisces312.streamclip.service.FFmpegService
 import com.pisces312.streamclip.util.LogCollector
 import com.pisces312.streamclip.util.SettingsManager
@@ -23,6 +26,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class CustomCommandFragment : Fragment() {
+
+    enum class CommandType(val displayName: String) {
+        FFMPEG("FFmpeg"),
+        FFPROBE("FFprobe")
+    }
 
     private var _binding: FragmentCustomCommandBinding? = null
     private val binding get() = _binding!!
@@ -39,9 +47,44 @@ class CustomCommandFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setupCommandTypeSpinner()
+
         binding.btnExecute.setOnClickListener {
             executeCustomCommand()
         }
+    }
+
+    private fun setupCommandTypeSpinner() {
+        val adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CommandType.entries.map { it.displayName }
+        )
+        binding.spinnerCommandType.adapter = adapter
+        binding.spinnerCommandType.onItemSelectedListener =
+            object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: android.widget.AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                        val hint = when (CommandType.entries[position]) {
+                        CommandType.FFMPEG -> "输入完整的 FFmpeg 参数（不含 ffmpeg 前缀）"
+                        CommandType.FFPROBE -> "输入完整的 FFprobe 参数（不含 ffprobe 前缀）"
+                    }
+                    binding.tvCommandHint.text = hint
+
+                    // 切换到 FFprobe 时填入示例命令
+                    if (CommandType.entries[position] == CommandType.FFPROBE) {
+                        binding.etCommand.setText("-v quiet -print_format json -show_format -show_streams /sdcard/DCIM/Camera/video.mp4")
+                    } else {
+                        binding.etCommand.text.clear()
+                    }
+                }
+
+                override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+            }
     }
 
     private fun executeCustomCommand() {
@@ -59,48 +102,77 @@ class CustomCommandFragment : Fragment() {
             requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
 
+        val commandType = CommandType.entries[binding.spinnerCommandType.selectedItemPosition]
         val inputPath = parseInputPath(command)
-        val outputPath = parseOutputPath(command)
+        val outputPath = if (commandType == CommandType.FFMPEG) parseOutputPath(command) else null
 
-        val logDialog = showFfmpegLogDialog(command)
+        val logDialog = showFfmpegLogDialog("${commandType.displayName}: $command")
 
         val job = viewLifecycleOwner.lifecycleScope.launch {
-            val totalTimeMs = if (inputPath != null) {
+            val totalTimeMs = if (inputPath != null && commandType == CommandType.FFMPEG) {
                 withContext(Dispatchers.IO) { FFmpegService.getDurationMs(inputPath) }
             } else -1L
 
-            logDialog.updateProgress(FFmpegService.Progress(percent = 0, totalTimeMs = totalTimeMs))
+            if (commandType == CommandType.FFMPEG) {
+                logDialog.updateProgress(FFmpegService.Progress(percent = 0, totalTimeMs = totalTimeMs))
+            }
 
-            LogCollector.d("CustomCommand", "Command: $command")
+            LogCollector.d("CustomCommand", "Type=$commandType, Command: $command")
 
             logDialog.onCancel = {
                 FFmpegService.cancelCurrentSession()
             }
 
-            val result = FFmpegService.executeCommand(
-                command,
-                outputPath = outputPath,
-                totalTimeMs = totalTimeMs,
-                onProgress = { progress ->
-                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                        if (_binding == null) return@launch
-                        val percent = if (progress.percent >= 0) progress.percent else 0
-                        binding.progressBar.progress = percent
-                        binding.tvProgress.text = if (progress.percent >= 0) {
-                            "${progress.percent}% - ${progress.message}"
-                        } else {
-                            progress.message
+            val result = when (commandType) {
+                CommandType.FFMPEG -> FFmpegService.executeCommand(
+                    command,
+                    outputPath = outputPath,
+                    totalTimeMs = totalTimeMs,
+                    onProgress = { progress ->
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            if (_binding == null) return@launch
+                            val percent = if (progress.percent >= 0) progress.percent else 0
+                            binding.progressBar.progress = percent
+                            binding.tvProgress.text = if (progress.percent >= 0) {
+                                "${progress.percent}% - ${progress.message}"
+                            } else {
+                                progress.message
+                            }
+                            logDialog.updateProgress(progress)
                         }
-                        logDialog.updateProgress(progress)
+                    },
+                    onLog = { logLine ->
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            if (_binding == null) return@launch
+                            logDialog.addLog(logLine)
+                        }
                     }
-                },
-                onLog = { logLine ->
-                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                        if (_binding == null) return@launch
-                        logDialog?.addLog(logLine)
+                )
+                CommandType.FFPROBE -> withContext(Dispatchers.IO) {
+                    val session = FFprobeKit.execute(command)
+                    val success = ReturnCode.isSuccess(session.returnCode)
+                    val output = session.output
+                    val logs = session.allLogsAsString
+
+                    withContext(Dispatchers.Main) {
+                        logDialog.addLog(FFmpegService.LogLine("ReturnCode: ${session.returnCode}"))
+                        if (output.isNotEmpty()) {
+                            logDialog.addLog(FFmpegService.LogLine("=== OUTPUT ==="))
+                            output.lines().forEach { logDialog.addLog(FFmpegService.LogLine(it)) }
+                        }
+                        if (logs.isNotEmpty() && logs != output) {
+                            logDialog.addLog(FFmpegService.LogLine("=== LOGS ==="))
+                            logs.lines().forEach { logDialog.addLog(FFmpegService.LogLine(it)) }
+                        }
                     }
+
+                    FFmpegService.Result(
+                        success = success,
+                        outputPath = null,
+                        error = if (!success) (logs.ifEmpty { "FFprobe failed" }) else null
+                    )
                 }
-            )
+            }
 
             withContext(Dispatchers.Main) {
                 binding.progressBar.visibility = View.GONE
@@ -108,7 +180,7 @@ class CustomCommandFragment : Fragment() {
                 binding.btnExecute.isEnabled = true
                 binding.progressBar.progress = 100
                 requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                logDialog?.updateProgress(
+                if (commandType == CommandType.FFMPEG) logDialog.updateProgress(
                     FFmpegService.Progress(
                         percent = 100,
                         processedTimeMs = totalTimeMs.coerceAtLeast(0),
