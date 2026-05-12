@@ -42,8 +42,7 @@ class AudioCompressFragment : Fragment() {
     private var _binding: FragmentAudioCompressBinding? = null
     private val binding get() = _binding!!
     private var videoPath: String? = null
-    private var originalVideoInfo: com.pisces312.streamclip.model.VideoInfo? = null
-    private var originalAudioInfo: FFmpegService.AudioInfo? = null
+    private var originalMediaInfo: com.pisces312.streamclip.model.MediaInfo? = null
     private var isAudioOnlyInput: Boolean = false
     private var sourceFileTimes: Pair<java.nio.file.attribute.FileTime?, java.nio.file.attribute.FileTime?>? = null
 
@@ -173,26 +172,18 @@ class AudioCompressFragment : Fragment() {
             SettingsManager.setLastVideoDir(requireContext(), uri)
             sourceFileTimes = FileUtils.readFileTimes(path)
             isAudioOnlyInput = false
-            originalVideoInfo = null
-            originalAudioInfo = null
+            originalMediaInfo = null
 
             lifecycleScope.launch(Dispatchers.IO) {
-                // Try video probe first
-                val videoInfo = FFmpegService.probeVideoInfo(path)
-                if (videoInfo != null && videoInfo.videoCodec.isNotEmpty()) {
-                    withContext(Dispatchers.Main) {
-                        originalVideoInfo = videoInfo
-                        isAudioOnlyInput = false
-                        showVideoInfo()
-                    }
-                } else {
-                    // Try audio-only probe
-                    val audioInfo = FFmpegService.probeAudioInfo(path)
-                    withContext(Dispatchers.Main) {
-                        if (audioInfo != null) {
-                            originalAudioInfo = audioInfo
-                            isAudioOnlyInput = true
-                            showAudioInfo(path, audioInfo)
+                val info = FFmpegService.probeMediaInfo(path)
+                withContext(Dispatchers.Main) {
+                    if (info != null) {
+                        originalMediaInfo = info
+                        isAudioOnlyInput = info.video == null
+                        if (info.video != null) {
+                            showVideoInfo()
+                        } else if (info.audio != null) {
+                            showAudioInfo(path, info)
                         } else {
                             Toast.makeText(requireContext(), "无法识别文件格式", Toast.LENGTH_SHORT).show()
                         }
@@ -204,16 +195,17 @@ class AudioCompressFragment : Fragment() {
         }
     }
 
-    private fun showAudioInfo(path: String, info: FFmpegService.AudioInfo) {
+    private fun showAudioInfo(path: String, info: com.pisces312.streamclip.model.MediaInfo) {
         binding.tvOriginalPath.text = path
         val lines = mutableListOf<String>()
-        lines.add("音频: ${info.codecName} ${info.sampleRate}Hz ${info.channelLayout}")
+        val audio = info.audio
+        lines.add("音频: ${audio?.codec ?: ""} ${info.audioSampleRate}Hz ${audio?.channelLayout ?: ""}")
         binding.tvOriginalInfo.text = lines.joinToString("\n")
         binding.cardOriginalInfo.visibility = View.VISIBLE
     }
 
     private fun showVideoInfo() {
-        val info = originalVideoInfo ?: return
+        val info = originalMediaInfo ?: return
         binding.tvOriginalPath.text = info.path
         val lines = mutableListOf<String>()
         lines.add("视频: ${info.videoCodec} ${info.resolution} ${info.frameRate}")
@@ -239,7 +231,7 @@ class AudioCompressFragment : Fragment() {
                 "libmp3lame" -> "mp3"
                 "flac" -> "flac"
                 "libopus" -> "opus"
-                else -> originalAudioInfo?.extension ?: "m4a"
+                else -> originalMediaInfo?.audioExtension ?: "m4a"
             }
         } else {
             "mp4"
@@ -282,7 +274,7 @@ class AudioCompressFragment : Fragment() {
         val logDialog = showFfmpegLogDialog(cmd)
 
         val compressJob = viewLifecycleOwner.lifecycleScope.launch {
-            val totalTimeMs = withContext(Dispatchers.IO) { FFmpegService.getDurationMs(path) }
+            val totalTimeMs = originalMediaInfo?.durationMs ?: -1L
             LogCollector.d("AudioCompress", "Command: $cmd")
 
             logDialog.onCancel = {
@@ -328,8 +320,8 @@ class AudioCompressFragment : Fragment() {
                 if (result.success) {
                     val outFileName = outPath.substring(outPath.lastIndexOf('/') + 1)
                     FileUtils.scanFile(requireContext(), java.io.File(outPath))
-                    val shootingDate = originalVideoInfo?.creationTime
-                    if (!shootingDate.isNullOrEmpty()) {
+                    val shootingDate = originalMediaInfo?.creationTime.orEmpty()
+                    if (shootingDate.isNotEmpty()) {
                         FileUtils.applyShootingDate(outPath, shootingDate)
                     } else {
                         sourceFileTimes?.let { (creation, modified) ->

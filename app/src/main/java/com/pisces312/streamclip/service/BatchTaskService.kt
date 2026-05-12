@@ -180,7 +180,7 @@ class BatchTaskService : Service() {
 
     private suspend fun executeTask(task: BatchTaskItem): TaskResult {
         return try {
-            var probedInfo: com.pisces312.streamclip.model.VideoInfo? = null
+            var probedInfo: com.pisces312.streamclip.model.MediaInfo? = null
             val command = when (task.config.taskType) {
                 TaskType.COMPRESS -> {
                     val (cmd, info) = buildCompressCommand(task)
@@ -191,7 +191,7 @@ class BatchTaskService : Service() {
                 TaskType.CUSTOM_COMMAND -> task.config.customCommand ?: return TaskResult(success = false, error = "Custom command is null", isCancelled = false)
             }
 
-            val totalTimeMs = FFmpegService.getDurationMs(task.inputPath)
+            val totalTimeMs = probedInfo?.durationMs ?: FFmpegService.probeMediaInfo(task.inputPath)?.durationMs ?: -1L
             val sourceFileTimes = com.pisces312.streamclip.util.FileUtils.readFileTimes(task.inputPath)
 
             FFmpegService.executeCommand(
@@ -213,8 +213,8 @@ class BatchTaskService : Service() {
                         this,
                         java.io.File(task.outputPath)
                     )
-                    val shootingDate = probedInfo?.creationTime
-                    if (!shootingDate.isNullOrEmpty()) {
+                    val shootingDate = probedInfo?.creationTime.orEmpty()
+                    if (shootingDate.isNotEmpty()) {
                         com.pisces312.streamclip.util.FileUtils.applyShootingDate(task.outputPath, shootingDate)
                     } else {
                         sourceFileTimes?.let { (creation, modified) ->
@@ -239,8 +239,8 @@ class BatchTaskService : Service() {
         }
     }
 
-    private fun buildCompressCommand(task: BatchTaskItem): Pair<String, com.pisces312.streamclip.model.VideoInfo?> {
-        val info = FFmpegService.probeVideoInfo(task.inputPath)
+    private fun buildCompressCommand(task: BatchTaskItem): Pair<String, com.pisces312.streamclip.model.MediaInfo?> {
+        val info = FFmpegService.probeMediaInfo(task.inputPath)
         val command = task.config.compressConfig.toFFmpegCommand(
             task.inputPath, task.outputPath,
             info?.colorSpace ?: "", info?.colorPrimaries ?: "", info?.colorTransfer ?: ""

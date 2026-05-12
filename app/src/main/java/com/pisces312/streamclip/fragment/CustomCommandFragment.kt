@@ -110,7 +110,7 @@ class CustomCommandFragment : Fragment() {
 
         val job = viewLifecycleOwner.lifecycleScope.launch {
             val totalTimeMs = if (inputPath != null && commandType == CommandType.FFMPEG) {
-                withContext(Dispatchers.IO) { FFmpegService.getDurationMs(inputPath) }
+                FFmpegService.probeMediaInfo(inputPath)?.durationMs ?: -1L
             } else -1L
 
             if (commandType == CommandType.FFMPEG) {

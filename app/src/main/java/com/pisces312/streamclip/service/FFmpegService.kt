@@ -6,6 +6,9 @@ import com.arthenica.ffmpegkit.FFprobeKit
 import com.arthenica.ffmpegkit.ReturnCode
 import com.arthenica.ffmpegkit.StatisticsCallback
 import com.pisces312.streamclip.util.LogCollector
+import com.pisces312.streamclip.model.AudioStreamInfo
+import com.pisces312.streamclip.model.MediaInfo
+import com.pisces312.streamclip.model.VideoStreamInfo
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -47,30 +50,99 @@ object FFmpegService {
     )
 
     /**
-     * Audio stream info from ffprobe
+     * Probe all media info in a single ffprobe JSON call.
+     * Returns MediaInfo with video/audio streams, format tags, duration, etc.
      */
-    data class AudioInfo(
-        val codecName: String,
-        val sampleRate: String,
-        val channelLayout: String,
-        val extension: String
-    )
-
-    /**
-     * Get video duration in milliseconds using ffprobe
-     * Returns -1 if failed
-     */
-    fun getDurationMs(inputPath: String): Long {
+    fun probeMediaInfo(path: String): MediaInfo? {
         return try {
-            val session = FFprobeKit.execute("-v quiet -show_entries format=duration -of csv=p=0 \"$inputPath\"")
-            LogCollector.d("FFmpegService", "getDurationMs: returnCode=${session.returnCode}, output='${session.output.trim()}'")
-            if (!ReturnCode.isSuccess(session.returnCode)) return -1
+            val session = FFprobeKit.execute(
+                "-v quiet -print_format json -show_format -show_streams \"$path\""
+            )
+            if (!ReturnCode.isSuccess(session.returnCode)) {
+                LogCollector.e("FFmpegService", "probeMediaInfo: ffprobe failed, rc=${session.returnCode}")
+                return null
+            }
+
             val output = session.output.trim()
-            val seconds = output.toDoubleOrNull() ?: return -1
-            (seconds * 1000).toLong()
+            if (output.isEmpty()) {
+                LogCollector.e("FFmpegService", "probeMediaInfo: empty output")
+                return null
+            }
+
+            val json = JSONObject(output)
+
+            // Parse format
+            val format = json.optJSONObject("format")
+            val durationMs = format?.optString("duration", "-1")?.toDoubleOrNull()
+                ?.let { (it * 1000).toLong() } ?: -1L
+            val formatName = format?.optString("format_name", "") ?: ""
+            val tags = format?.optJSONObject("tags") ?: JSONObject()
+
+            // Parse streams
+            val streams = json.optJSONArray("streams") ?: return null
+            var videoStream: VideoStreamInfo? = null
+            var audioStream: AudioStreamInfo? = null
+
+            for (i in 0 until streams.length()) {
+                val s = streams.getJSONObject(i)
+                val codecType = s.optString("codec_type", "")
+
+                if (codecType == "video" && videoStream == null) {
+                    val cp = s.optString("color_primaries", "")
+                        .takeIf { it.isNotEmpty() && it != "unknown" } ?: ""
+                    val ct = s.optString("color_transfer", "")
+                        .takeIf { it.isNotEmpty() && it != "unknown" } ?: ""
+                    val cs = s.optString("colorspace", "")
+                        .takeIf { it.isNotEmpty() && it != "unknown" } ?: ""
+
+                    // Rotation from side_data
+                    var rotation = 0
+                    val sideDataList = s.optJSONArray("side_data")
+                    if (sideDataList != null) {
+                        for (j in 0 until sideDataList.length()) {
+                            val sd = sideDataList.getJSONObject(j)
+                            if (sd.has("rotation")) {
+                                rotation = sd.optInt("rotation", 0)
+                                break
+                            }
+                        }
+                    }
+
+                    videoStream = VideoStreamInfo(
+                        width = s.optInt("width", 0),
+                        height = s.optInt("height", 0),
+                        codec = s.optString("codec_name", ""),
+                        frameRate = s.optString("r_frame_rate", ""),
+                        pixelFormat = s.optString("pix_fmt", ""),
+                        bitRate = s.optString("bit_rate", "0").toLongOrNull() ?: 0L,
+                        rotation = rotation,
+                        colorPrimaries = cp,
+                        colorTransfer = ct,
+                        colorSpace = cs
+                    )
+                } else if (codecType == "audio" && audioStream == null) {
+                    audioStream = AudioStreamInfo(
+                        codec = s.optString("codec_name", ""),
+                        sampleRate = s.optInt("sample_rate", 0),
+                        bitRate = s.optString("bit_rate", "0").toLongOrNull() ?: 0L,
+                        channelLayout = s.optString("channel_layout", "")
+                    )
+                }
+            }
+
+            MediaInfo(
+                path = path,
+                durationMs = durationMs,
+                formatName = formatName,
+                formatTags = tags,
+                video = videoStream,
+                audio = audioStream
+            ).also {
+                LogCollector.d("FFmpegService", "probeMediaInfo: ${it.videoCodec} ${it.resolution} ${it.audioCodec} dur=${it.durationMs}ms")
+            }
         } catch (e: Exception) {
-            LogCollector.e("FFmpegService", "Get duration failed: ${e.message}")
-            -1
+            LogCollector.e("FFmpegService", "probeMediaInfo failed: ${e.message}")
+            null
         }
     }
 
@@ -110,7 +182,6 @@ object FFmpegService {
                 }, StatisticsCallback { statistics ->
                     val time = statistics.time.toLong()
                     if (time > 0) {
-                        // 只有在有总时长时才计算有效百分比，否则返回 -1 表示未知
                         val percent = if (totalTimeMs > 0) {
                             ((time.toDouble() / totalTimeMs) * 100).toInt().coerceIn(0, 100)
                         } else {
@@ -118,7 +189,6 @@ object FFmpegService {
                         }
 
                         val elapsedMs = System.currentTimeMillis() - startTime
-                        // 预估剩余时间：只有百分比有效时才计算
                         val estimatedRemainingMs = if (percent > 0 && percent < 100) {
                             (elapsedMs / percent.toDouble() * (100 - percent)).toLong()
                         } else {
@@ -202,35 +272,20 @@ object FFmpegService {
     }
 
     /**
-     * Extract format-level metadata tags to a sidecar file for later application.
-     * Uses ffprobe to dump tags, then writes KEY=VALUE lines.
+     * Write format tags to a sidecar file for ffmpeg -map_metadata.
+     * Uses probeMediaInfo JSON result.
      */
-    private fun extractMetadataToFile(inputPath: String, metadataFile: File): Boolean {
+    private fun extractTagsToFile(inputPath: String, metadataFile: File): Boolean {
         return try {
-            val session = FFprobeKit.execute("-v quiet -show_format \"$inputPath\"")
-            if (!ReturnCode.isSuccess(session.returnCode)) return false
-
-            val tags = mutableListOf<String>()
-            var inTags = false
-            for (line in session.output.lines()) {
-                if (line == "[FORMAT_TAGS]") {
-                    inTags = true
-                    continue
-                }
-                if (line.startsWith("[") && line.endsWith("]")) {
-                    inTags = false
-                    continue
-                }
-                if (inTags && line.contains('=')) {
-                    tags.add(line)
-                }
-            }
-
-            if (tags.isEmpty()) return false
-            metadataFile.writeText(tags.joinToString("\n"))
+            val info = probeMediaInfo(inputPath) ?: return false
+            val tags = info.formatTags
+            if (tags.length() == 0) return false
+            val lines = tags.keys().asSequence().map { key -> "$key=${tags.getString(key)}" }.toList()
+            if (lines.isEmpty()) return false
+            metadataFile.writeText(lines.joinToString("\n"))
             true
         } catch (e: Exception) {
-            LogCollector.e("FFmpegService", "Extract metadata failed: ${e.message}")
+            LogCollector.e("FFmpegService", "Extract tags failed: ${e.message}")
             false
         }
     }
@@ -261,7 +316,7 @@ object FFmpegService {
         if (result.success) {
             val metadataFile = File.createTempFile("metadata", ".txt", context.cacheDir)
             try {
-                if (extractMetadataToFile(inputPaths[0], metadataFile)) {
+                if (extractTagsToFile(inputPaths[0], metadataFile)) {
                     val metadataCmd = "-y -i \"$outputPath\" -map_metadata 0 -i \"${metadataFile.absolutePath}\" -map_metadata 1 -c copy -f mov \"$outputPath.tmp\""
                     val metadataResult = executeCommand(metadataCmd, "$outputPath.tmp")
                     if (metadataResult.success) {
@@ -276,51 +331,6 @@ object FFmpegService {
         }
 
         return result
-    }
-
-    /**
-     * Probe video location/GPS metadata using ffprobe
-     * Returns location string like "+121.2345+031.6789/" or null
-     */
-    fun probeLocation(inputPath: String): String? {
-        return try {
-            // Get all metadata: format + streams
-            val session = FFprobeKit.execute("-v quiet -show_format -show_streams \"$inputPath\"")
-            if (!ReturnCode.isSuccess(session.returnCode)) return null
-
-            val output = session.output
-            // Log full metadata for debugging
-            LogCollector.d("FFmpegService", "=== Full metadata for $inputPath ===")
-            LogCollector.d("FFmpegService", output)
-            LogCollector.d("FFmpegService", "=== End metadata ===")
-
-            // Try multiple patterns for GPS location
-            // ffprobe -show_format output format: TAG:key=value
-            val patterns = listOf(
-                // Standard location tag (TAG:location=value or TAG:location-eng=value)
-                // Location format: +lat+lon/ (ends with /)
-                Regex("""TAG:location(?:-eng)?=([+-][\d.]+[+-][\d.]+/)""", RegexOption.MULTILINE),
-                // GPS coordinates in different formats
-                Regex("""TAG:(?:gps|GPS)_?(?:location|position|coordinates)?=(\S+?)""", RegexOption.MULTILINE),
-                // com.apple.quicktime.location (MOV/MP4)
-                Regex("""TAG:com\.apple\.quicktime\.location=(\S+?)""", RegexOption.MULTILINE),
-                // Any tag containing lat/long
-                Regex("""TAG:(?:latitude|longitude|lat|long|lng)=([+-]?\d+\.?\d*)""", RegexOption.MULTILINE)
-            )
-
-            for (regex in patterns) {
-                val match = regex.find(output)
-                val value = match?.groupValues?.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() && it != "N/A" }
-                if (value != null) {
-                    LogCollector.d("FFmpegService", "Found location via pattern ${regex.pattern}: $value")
-                    return value
-                }
-            }
-            null
-        } catch (e: Exception) {
-            LogCollector.e("FFmpegService", "Probe location failed: ${e.message}")
-            null
-        }
     }
 
     /**
@@ -340,200 +350,70 @@ object FFmpegService {
     }
 
     /**
-     * Probe video stream info from a video file using ffprobe
+     * Compress video with hardware or software encoder
      */
-    fun probeVideoInfo(inputPath: String): com.pisces312.streamclip.model.VideoInfo? {
-        return try {
-            LogCollector.d("FFmpegService", "probeVideoInfo: path=$inputPath")
+    suspend fun compressVideo(
+        context: Context,
+        inputPath: String,
+        outputPath: String,
+        width: Int,
+        height: Int,
+        videoBitrate: Int,
+        audioBitrate: Int,
+        useHwEncoder: Boolean = true,
+        onProgress: ((Progress) -> Unit)? = null
+    ): Result {
+        File(outputPath).parentFile?.mkdirs()
 
-            // Video stream: use JSON for reliable field extraction
-            val session = FFprobeKit.execute(
-                "-v quiet -select_streams v:0 -show_entries stream=width,height,codec_name,r_frame_rate,pix_fmt,bit_rate,color_primaries,color_transfer,colorspace,color_range -of json \"$inputPath\""
-            )
-            LogCollector.d("FFmpegService", "probeVideoInfo: returnCode=${session.returnCode}, output length=${session.output.length}")
-            if (!ReturnCode.isSuccess(session.returnCode)) {
-                LogCollector.e("FFmpegService", "probeVideoInfo: video stream probe failed, returnCode=${session.returnCode}")
-                return null
-            }
-            val output = session.output.trim()
-            if (output.isEmpty()) {
-                LogCollector.e("FFmpegService", "probeVideoInfo: video stream output is empty")
-                return null
-            }
-            LogCollector.d("FFmpegService", "probeVideoInfo: video stream output=$output")
+        val command = buildString {
+            append("-y -i \"$inputPath\"")
+            append(" -map_metadata 0")
 
-            val json = org.json.JSONObject(output)
-            val streams = json.optJSONArray("streams")
-            if (streams == null) {
-                LogCollector.e("FFmpegService", "probeVideoInfo: no 'streams' array in JSON, raw output=$output")
-                return null
-            }
-            if (streams.length() == 0) {
-                LogCollector.e("FFmpegService", "probeVideoInfo: 'streams' array is empty")
-                return null
-            }
-            val stream = streams.getJSONObject(0)
-
-            val width = stream.optInt("width", 0)
-            val height = stream.optInt("height", 0)
-            val videoCodec = stream.optString("codec_name", "")
-            val frameRate = stream.optString("r_frame_rate", "")
-            val pixelFormat = stream.optString("pix_fmt", "")
-            val videoBitrate = stream.optString("bit_rate", "0").toLongOrNull() ?: 0L
-
-            // Use ffprobe for color info (reads bitstream VUI).
-            // MediaMetadataRetriever reads container nclx box but returns incorrect values
-            // (e.g. BT.601 instead of BT.709) for some videos, so we don't use it.
-            // Note: for hevc_mediacodec compressed videos, ffprobe returns bt470bg (no VUI written).
-            // This is a known limitation — desktop ffprobe reads both VUI and nclx box, so it shows correctly.
-            val colorPrimaries = stream.optString("color_primaries", "").takeIf { it.isNotEmpty() && it != "unknown" } ?: ""
-            val colorTransfer = stream.optString("color_transfer", "").takeIf { it.isNotEmpty() && it != "unknown" } ?: ""
-            val colorSpace = stream.optString("colorspace", "").takeIf { it.isNotEmpty() && it != "unknown" } ?: ""
-            LogCollector.d("FFmpegService", "Color from ffprobe: primaries=$colorPrimaries, transfer=$colorTransfer, space=$colorSpace")
-
-            // Audio stream: use JSON for reliable field extraction
-            val audioSession = FFprobeKit.execute(
-                "-v quiet -select_streams a:0 -show_entries stream=codec_name,sample_rate,bit_rate -of json \"$inputPath\""
-            )
-            LogCollector.d("FFmpegService", "probeVideoInfo: audio returnCode=${audioSession.returnCode}, output length=${audioSession.output.length}")
-            val audioCodec: String
-            var audioSampleRate = 0
-            var audioBitrate = 0L
-            if (ReturnCode.isSuccess(audioSession.returnCode)) {
-                val audioJson = org.json.JSONObject(audioSession.output.trim())
-                val audioStreams = audioJson.optJSONArray("streams")
-                if (audioStreams != null && audioStreams.length() > 0) {
-                    val audioStream = audioStreams.getJSONObject(0)
-                    audioCodec = audioStream.optString("codec_name", "none")
-                    audioSampleRate = audioStream.optInt("sample_rate", 0)
-                    audioBitrate = audioStream.optString("bit_rate", "0").toLongOrNull() ?: 0L
-                } else {
-                    audioCodec = "none"
-                }
+            if (useHwEncoder) {
+                append(" -c:v hevc_mediacodec -vendor.hevc-mediacodec.bitrate-mode 1")
+                append(" -b:v ${videoBitrate}k -maxrate ${videoBitrate}k")
+                append(" -bufsize ${(videoBitrate * 2)}k")
             } else {
-                audioCodec = "none"
+                append(" -c:v libx265")
+                append(" -b:v ${videoBitrate}k -maxrate ${videoBitrate}k")
+                append(" -bufsize ${(videoBitrate * 2)}k")
+                append(" -preset fast -tune ssim")
             }
 
-            // Rotation from side_data
-            val rotationSession = FFprobeKit.execute(
-                "-v quiet -select_streams v:0 -show_entries stream_side_data=rotation -of csv=p=0 \"$inputPath\""
-            )
-            val rotation = if (ReturnCode.isSuccess(rotationSession.returnCode)) {
-                // Take only last line due to potential session output accumulation
-                val lines = rotationSession.output.trim().lines().filter { it.isNotEmpty() }
-                lines.lastOrNull()?.toIntOrNull() ?: 0
-            } else 0
-
-            // Creation time from format tags
-            val formatSession = FFprobeKit.execute(
-                "-v quiet -show_entries format_tags=creation_time -of csv=p=0 \"$inputPath\""
-            )
-            val creationTime = if (ReturnCode.isSuccess(formatSession.returnCode)) {
-                // session.output may accumulate previous sessions' output in custom ffmpeg-kit builds
-                // Take only the last line which is the actual result for this command
-                val lines = formatSession.output.trim().lines().filter { it.isNotEmpty() }
-                val rawTime = lines.lastOrNull()?.ifEmpty { null }
-                // Validate: must look like a timestamp (YYYY- or digits)
-                if (rawTime != null && rawTime.matches(Regex(".*\\d{4}.*"))) rawTime else ""
-            } else ""
-
-            // GPS location (reuse existing probeLocation)
-            val location = probeLocation(inputPath) ?: ""
-
-            // File creation time: prefer shooting date if available, fallback to filesystem
-            val fileCreationTime = if (creationTime.isNotEmpty()) {
-                creationTime
-            } else {
-                try {
-                    val p = java.nio.file.Paths.get(inputPath)
-                    val fileTime = java.nio.file.Files.getAttribute(p, "creationTime") as? java.nio.file.attribute.FileTime
-                    fileTime?.let {
-                        java.time.Instant.ofEpochMilli(it.toMillis())
-                            .atZone(java.time.ZoneId.systemDefault())
-                            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                    } ?: ""
-                } catch (e: Exception) { "" }
-            }
-
-            com.pisces312.streamclip.model.VideoInfo(
-                path = inputPath,
-                width = width,
-                height = height,
-                videoCodec = videoCodec,
-                audioCodec = audioCodec,
-                frameRate = frameRate,
-                pixelFormat = pixelFormat,
-                rotation = rotation,
-                videoBitrate = videoBitrate,
-                audioSampleRate = audioSampleRate,
-                audioBitrate = audioBitrate,
-                creationTime = creationTime,
-                fileCreationTime = fileCreationTime,
-                location = location,
-                colorSpace = colorSpace,
-                colorPrimaries = colorPrimaries,
-                colorTransfer = colorTransfer
-            ).also {
-                LogCollector.d("FFmpegService", "probeVideoInfo: success -> ${it.videoCodec} ${it.resolution} ${it.audioCodec}")
-            }
-        } catch (e: Exception) {
-            LogCollector.e("FFmpegService", "Probe video info failed: ${e.message}")
-            null
+            append(" -vf \"scale=$width:$height:flags=lanczos\"")
+            append(" -c:a aac -b:a ${audioBitrate}k")
+            append(" -movflags +faststart")
+            append(" -tag:v hvc1")
+            append(" \"$outputPath\"")
         }
+
+        LogCollector.d("FFmpegService", "Command: $command")
+        val totalTimeMs = probeMediaInfo(inputPath)?.durationMs ?: -1L
+        return executeCommand(command, outputPath, totalTimeMs, onProgress = onProgress)
     }
 
     /**
-     * Probe audio stream info from a video file using ffprobe
+     * Compress audio (re-encode to lower bitrate)
      */
-    fun probeAudioInfo(inputPath: String): AudioInfo? {
-        return try {
-            val session = FFprobeKit.execute("-v quiet -select_streams a:0 -show_entries stream=codec_name,sample_rate,channel_layout -of csv=p=0 \"$inputPath\"")
-            if (!ReturnCode.isSuccess(session.returnCode)) return null
+    suspend fun compressAudio(
+        context: Context,
+        inputPath: String,
+        outputPath: String,
+        audioBitrate: Int,
+        onProgress: ((Progress) -> Unit)? = null
+    ): Result {
+        File(outputPath).parentFile?.mkdirs()
 
-            val output = session.output.trim()
-            if (output.isEmpty()) return null
-
-            // Output format: codec_name,sample_rate,channel_layout
-            val parts = output.split(",")
-            if (parts.isEmpty()) return null
-
-            val codecName = parts.getOrNull(0)?.trim() ?: "unknown"
-            val sampleRate = parts.getOrNull(1)?.trim() ?: "unknown"
-            val channelLayout = parts.getOrNull(2)?.trim() ?: "unknown"
-
-            // Map codec name to file extension
-            val extension = codecToExtension(codecName)
-
-            AudioInfo(
-                codecName = codecName,
-                sampleRate = sampleRate,
-                channelLayout = channelLayout,
-                extension = extension
-            )
-        } catch (e: Exception) {
-            LogCollector.e("FFmpegService", "Probe failed: ${e.message}")
-            null
+        val command = buildString {
+            append("-y -i \"$inputPath\"")
+            append(" -map_metadata 0")
+            append(" -c:a aac -b:a ${audioBitrate}k")
+            append(" -vn")
+            append(" \"$outputPath\"")
         }
-    }
 
-    /**
-     * Map audio codec name to file extension
-     */
-    private fun codecToExtension(codec: String): String {
-        return when (codec.lowercase()) {
-            "aac" -> "aac"
-            "mp3float", "mp3" -> "mp3"
-            "flac" -> "flac"
-            "pcm_s16le", "pcm_s24le", "pcm_s32le", "pcm_f32le" -> "wav"
-            "opus" -> "opus"
-            "vorbis" -> "ogg"
-            "ac3" -> "ac3"
-            "eac3" -> "eac3"
-            "dts" -> "dts"
-            "truehd" -> "thd"
-            "alac" -> "m4a"
-            "wmav2", "wmapro" -> "wma"
-            else -> "audio"
-        }
+        LogCollector.d("FFmpegService", "Command: $command")
+        val totalTimeMs = probeMediaInfo(inputPath)?.durationMs ?: -1L
+        return executeCommand(command, outputPath, totalTimeMs, onProgress = onProgress)
     }
 }

@@ -49,7 +49,7 @@ class CompressFragment : Fragment() {
     private var _binding: FragmentCompressBinding? = null
     private val binding get() = _binding!!
     private var videoPath: String? = null
-    private var originalVideoInfo: com.pisces312.streamclip.model.VideoInfo? = null
+    private var originalVideoInfo: com.pisces312.streamclip.model.MediaInfo? = null
     private var isHardwareTab = true
 
     private val batchVideoUris = mutableListOf<Uri>()
@@ -327,7 +327,7 @@ class CompressFragment : Fragment() {
 
             // Probe and display original video info
             lifecycleScope.launch(Dispatchers.IO) {
-                val info = FFmpegService.probeVideoInfo(path)
+                val info = FFmpegService.probeMediaInfo(path)
                 withContext(Dispatchers.Main) {
                     if (info != null) {
                         originalVideoInfo = info
@@ -351,19 +351,11 @@ class CompressFragment : Fragment() {
         title: android.widget.TextView,
         pathView: android.widget.TextView,
         infoView: android.widget.TextView,
-        info: com.pisces312.streamclip.model.VideoInfo
+        info: com.pisces312.streamclip.model.MediaInfo
     ) {
         pathView.text = info.path
-        val is10bit = info.pixelFormat.contains("10")
-        val isHdr = info.colorTransfer == "arib-std-b67" || info.colorTransfer == "smpte2084"
-        val hdrTag = when {
-            is10bit && isHdr -> " [10-bit HDR]"
-            is10bit -> " [10-bit]"
-            isHdr -> " [HDR]"
-            else -> ""
-        }
         val lines = mutableListOf<String>()
-        lines.add("视频: ${info.videoCodec} ${info.resolution} ${info.frameRate} ${info.videoBitrateKbps}$hdrTag")
+        lines.add("视频: ${info.videoCodec} ${info.resolution} ${info.frameRate} ${info.videoBitrateKbps}${info.hdrTag}")
         lines.add("音频: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
         val metaParts = mutableListOf<String>()
         if (info.colorSpace.isNotEmpty()) metaParts.add("色彩空间: ${info.colorSpace}")
@@ -524,7 +516,7 @@ class CompressFragment : Fragment() {
         val logDialog = showFfmpegLogDialog(config.toFFmpegCommand(path, outPath, colorArgs.first, colorArgs.second, colorArgs.third))
 
         val compressJob = viewLifecycleOwner.lifecycleScope.launch {
-            val totalTimeMs = withContext(Dispatchers.IO) { FFmpegService.getDurationMs(path) }
+            val totalTimeMs = originalVideoInfo?.durationMs ?: -1L
             val command = config.toFFmpegCommand(path, outPath, colorArgs.first, colorArgs.second, colorArgs.third)
             LogCollector.d("Compress", "Command: $command")
 
@@ -571,8 +563,8 @@ class CompressFragment : Fragment() {
                 if (result.success) {
                     val outFileName = outPath.substring(outPath.lastIndexOf('/') + 1)
                     FileUtils.scanFile(requireContext(), java.io.File(outPath))
-                    val shootingDate = originalVideoInfo?.creationTime
-                    if (!shootingDate.isNullOrEmpty()) {
+                    val shootingDate = originalVideoInfo?.creationTime.orEmpty()
+                    if (shootingDate.isNotEmpty()) {
                         FileUtils.applyShootingDate(outPath, shootingDate)
                     } else {
                         sourceFileTimes?.let { (creation, modified) ->
@@ -582,7 +574,7 @@ class CompressFragment : Fragment() {
 
                     // Probe and display output video info
                     lifecycleScope.launch(Dispatchers.IO) {
-                        val outputInfo = FFmpegService.probeVideoInfo(outPath)
+                        val outputInfo = FFmpegService.probeMediaInfo(outPath)
                         withContext(Dispatchers.Main) {
                             if (outputInfo != null) {
                                 showVideoInfoCard(

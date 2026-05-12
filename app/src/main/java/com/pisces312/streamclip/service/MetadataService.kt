@@ -1,34 +1,23 @@
 package com.pisces312.streamclip.service
 
 import com.arthenica.ffmpegkit.FFmpegKit
-import com.arthenica.ffmpegkit.FFprobeKit
 import com.arthenica.ffmpegkit.ReturnCode
 import com.pisces312.streamclip.model.VideoMetadata
 import com.pisces312.streamclip.util.LogCollector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 
 object MetadataService {
 
     /**
-     * Read metadata from a video file using ffprobe.
+     * Read metadata from a video file using probeMediaInfo.
      */
     suspend fun readMetadata(path: String): Result<VideoMetadata> = withContext(Dispatchers.IO) {
         try {
-            val session = FFprobeKit.execute(
-                "-v quiet -print_format json -show_format \"$path\""
-            )
+            val info = FFmpegService.probeMediaInfo(path)
+                ?: return@withContext Result.failure("FFprobe failed")
 
-            if (!ReturnCode.isSuccess(session.returnCode)) {
-                return@withContext Result.failure("FFprobe failed: ${session.allLogsAsString}")
-            }
-
-            val json = JSONObject(session.output)
-            val format = json.optJSONObject("format") ?: return@withContext Result.failure("No format info")
-            val tags = format.optJSONObject("tags") ?: JSONObject()
-
-            val metadata = VideoMetadata.fromTags(tags)
+            val metadata = info.toVideoMetadata()
             LogCollector.d("MetadataService", "Read metadata: title=${metadata.title}, creationTime=${metadata.creationTime}")
 
             Result.success(metadata)

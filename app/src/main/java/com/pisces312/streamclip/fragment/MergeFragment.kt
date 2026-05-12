@@ -17,7 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.appcompat.app.AlertDialog
 import com.pisces312.streamclip.adapter.VideoListAdapter
 import com.pisces312.streamclip.databinding.FragmentMergeBinding
-import com.pisces312.streamclip.model.VideoInfo
+import com.pisces312.streamclip.model.MediaInfo
 import com.pisces312.streamclip.service.FFmpegService
 import com.pisces312.streamclip.util.FileUtils
 import com.pisces312.streamclip.util.SettingsManager
@@ -162,9 +162,9 @@ class MergeFragment : Fragment() {
             }
 
             // Probe video info for all files
-            val videoInfos = mutableListOf<VideoInfo>()
+            val mediaInfos = mutableListOf<MediaInfo>()
             for (path in paths) {
-                val info = FFmpegService.probeVideoInfo(path)
+                val info = FFmpegService.probeMediaInfo(path)
                 if (info == null) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(requireContext(), getString(R.string.cannot_probe_video, java.io.File(path).name), Toast.LENGTH_SHORT).show()
@@ -174,14 +174,14 @@ class MergeFragment : Fragment() {
                     }
                     return@launch
                 }
-                videoInfos.add(info)
+                mediaInfos.add(info)
             }
 
             // Check compatibility
-            val firstInfo = videoInfos[0]
+            val firstInfo = mediaInfos[0]
             val incompatibleFiles = mutableListOf<Pair<String, List<String>>>()
-            for (i in 1 until videoInfos.size) {
-                val info = videoInfos[i]
+            for (i in 1 until mediaInfos.size) {
+                val info = mediaInfos[i]
                 if (!firstInfo.isCompatibleWith(info)) {
                     val fields = firstInfo.getIncompatibleFields(info)
                     incompatibleFiles.add(java.io.File(info.path).name to fields)
@@ -228,7 +228,7 @@ class MergeFragment : Fragment() {
     }
 
     private fun showIncompatibleDialog(
-        firstInfo: VideoInfo,
+        firstInfo: MediaInfo,
         incompatibleFiles: List<Pair<String, List<String>>>
     ) {
         val message = buildString {

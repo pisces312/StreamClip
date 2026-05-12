@@ -27,6 +27,7 @@ class ExtractFragment : Fragment() {
     private var _binding: FragmentExtractBinding? = null
     private val binding get() = _binding!!
     private var selectedVideoUri: Uri? = null
+    private var mediaInfo: com.pisces312.streamclip.model.MediaInfo? = null
 
     private val pickVideo = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -37,7 +38,7 @@ class ExtractFragment : Fragment() {
                 binding.tvFileName.text = fileName
                 binding.btnExecute.isEnabled = true
                 updateInputStatus(uri)
-                probeAudioInfo(uri)
+                probeMediaInfo(uri)
             }
         }
     }
@@ -94,15 +95,19 @@ class ExtractFragment : Fragment() {
     /**
      * 用 ffprobe 获取音频信息并显示
      */
-    private fun probeAudioInfo(uri: Uri) {
+    private fun probeMediaInfo(uri: Uri) {
         viewLifecycleOwner.lifecycleScope.launch {
             val pathResult = FileUtils.getPathResultFromUri(requireContext(), uri) ?: return@launch
             val info = withContext(Dispatchers.IO) {
-                FFmpegService.probeAudioInfo(pathResult.path)
+                FFmpegService.probeMediaInfo(pathResult.path)
             }
             if (info != null) {
-                binding.tvAudioInfo.visibility = View.VISIBLE
-                binding.tvAudioInfo.text = "🎵 音频: ${info.codecName} | ${info.sampleRate}Hz | ${info.channelLayout}"
+                mediaInfo = info
+                val audio = info.audio
+                if (audio != null) {
+                    binding.tvAudioInfo.visibility = View.VISIBLE
+                    binding.tvAudioInfo.text = "🎵 音频: ${audio.codec} | ${info.audioSampleRate}Hz | ${audio.channelLayout}"
+                }
             }
         }
     }
@@ -133,11 +138,8 @@ class ExtractFragment : Fragment() {
             val inputPath = pathResult.path
             val sourceFile = java.io.File(inputPath)
 
-            // 探测音频格式以确定输出扩展名
-            val audioInfo = withContext(Dispatchers.IO) {
-                FFmpegService.probeAudioInfo(inputPath)
-            }
-            val extension = audioInfo?.extension ?: "aac"
+            // Use extension from probed info
+            val extension = mediaInfo?.audioExtension ?: "aac"
 
             val outputDir = SettingsManager.getOutputDir(requireContext(), sourceFile)
             val outputName = SettingsManager.getOutputFileName(
