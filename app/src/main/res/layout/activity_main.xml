@@ -22,8 +22,8 @@
             app:tabSelectedTextColor="@color/purple_500"
             app:tabIndicatorColor="@color/purple_500"
             app:tabTextAppearance="@style/TabTextTwoLine"
-            app:tabPaddingStart="12dp"
-            app:tabPaddingEnd="12dp" />
+            app:tabPaddingStart="20dp"
+            app:tabPaddingEnd="20dp" />
 
         <ImageButton
             android:id="@+id/btnMenu"
