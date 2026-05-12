@@ -90,8 +90,8 @@ class Trim2Fragment : Fragment() {
             val startSec = values[0]
             val endSec = values[1]
 
-            binding.tvStartTime.text = "开始: ${formatTime(startSec)}"
-            binding.tvEndTime.text = "结束: ${formatTime(endSec)}"
+            binding.tvStartTime.text = "${getString(R.string.trim_start)}: ${formatTime(startSec)}"
+            binding.tvEndTime.text = "${getString(R.string.trim_end)}: ${formatTime(endSec)}"
 
             // 实时预览：seek 到移动幅度更大的手柄位置（seekTarget 已经是毫秒）
             val startDelta = kotlin.math.abs(startSec - prevStartMs)
@@ -165,7 +165,7 @@ class Trim2Fragment : Fragment() {
                         binding.rangeSlider.values = listOf(0f, durationRounded.toFloat())
                         binding.tvDuration.text = formatDuration(duration)
                         binding.tvStartTime.text = "${getString(R.string.start_time)}: 00:00"
-                        binding.tvEndTime.text = "结束: ${formatTime(duration.toFloat())}"
+                        binding.tvEndTime.text = "${getString(R.string.trim_end)}: ${formatTime(duration.toFloat())}"
                     }
                 }
             })
@@ -242,7 +242,7 @@ class Trim2Fragment : Fragment() {
                     updateOutputStatus(outputFile)
                     Toast.makeText(requireContext(), getString(R.string.trim_complete, outputFile.name), Toast.LENGTH_LONG).show()
                 } else {
-                    val errorMsg = result.error ?: "未知错误"
+                    val errorMsg = result.error ?: getString(R.string.trim_unknown_error)
                     android.util.Log.e("Trim2Fragment", "Trim failed: $errorMsg")
                     Toast.makeText(requireContext(), getString(R.string.failed, errorMsg), Toast.LENGTH_LONG).show()
                 }

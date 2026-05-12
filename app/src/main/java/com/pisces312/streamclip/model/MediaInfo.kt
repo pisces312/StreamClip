@@ -72,14 +72,14 @@ data class MediaInfo(
                 rotation == other.rotation
     }
 
-    fun getIncompatibleFields(other: MediaInfo): List<String> {
-        val fields = mutableListOf<String>()
-        if (width != other.width || height != other.height) fields.add("分辨率")
-        if (videoCodec != other.videoCodec) fields.add("视频编码")
-        if (audioCodec != other.audioCodec) fields.add("音频编码")
-        if (frameRate != other.frameRate) fields.add("帧率")
-        if (pixelFormat != other.pixelFormat) fields.add("像素格式")
-        if (rotation != other.rotation) fields.add("旋转方向")
+    fun getIncompatibleFields(other: MediaInfo): List<Pair<String, String>> {
+        val fields = mutableListOf<Pair<String, String>>()
+        if (width != other.width || height != other.height) fields.add("resolution" to "${width}x${height} ≠ ${other.width}x${other.height}")
+        if (videoCodec != other.videoCodec) fields.add("videoCodec" to "$videoCodec ≠ ${other.videoCodec}")
+        if (audioCodec != other.audioCodec) fields.add("audioCodec" to "$audioCodec ≠ ${other.audioCodec}")
+        if (frameRate != other.frameRate) fields.add("frameRate" to "$frameRate ≠ ${other.frameRate}")
+        if (pixelFormat != other.pixelFormat) fields.add("pixelFormat" to "$pixelFormat ≠ ${other.pixelFormat}")
+        if (rotation != other.rotation) fields.add("rotation" to "$rotation° ≠ ${other.rotation}°")
         return fields
     }
 

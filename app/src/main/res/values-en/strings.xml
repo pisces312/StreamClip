@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">StreamClip</string>
+    <string name="app_name_with_version">StreamClip v%1$s</string>
+    <string name="menu">Menu</string>
+    <string name="select_media">Select File</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="reset">Reset</string>
     <string name="title_trim">Lossless Trim</string>
     <string name="title_trim2">Lossless Trim 2</string>
     <string name="title_merge">Lossless Merge</string>
@@ -41,6 +47,9 @@
     <string name="current_path">Current Path</string>
     <string name="scroll_to_bottom">Scroll to Bottom</string>
     <string name="title_donate">Support Developer</string>
+    <string name="title_help">Help</string>
+    <string name="title_about">About</string>
+    <string name="title_tab_order">Tab Order</string>
     <string name="guide_title">Encoding Settings Guide</string>
     <string name="guide_h264_title">H.264 (Best Compatibility)</string>
     <string name="guide_h264_desc">Recommended for daily use, playable on all devices</string>
@@ -169,6 +178,7 @@
 
     <!-- Metadata -->
     <string name="title_metadata">Metadata</string>
+    <string name="title_menu">Menu</string>
     <string name="metadata_select_video_hint">Select a video to edit metadata</string>
     <string name="metadata_fields">Editable Fields</string>
     <string name="metadata_title">Title</string>
@@ -187,7 +197,120 @@
     <string name="metadata_save_success">Saved: %s</string>
     <string name="metadata_save_failed">Save failed: %s</string>
 
+    <!-- About -->
+    <string name="about_version">Version %s</string>
+    <string name="about_changelog">Changelog</string>
+    <string name="about_close">Close</string>
+    <string name="about_licenses">Open Source Licenses</string>
+    <string name="about_license_summary">This app uses FFmpeg and related open source libraries, licensed under GPL v3.0</string>
+    <string name="about_license_not_found">License file not found</string>
+
+    <!-- Tab Order -->
+    <string name="tab_order_title">Adjust Tab Order</string>
+    <string name="tab_order_hint">Long press and drag to reorder tabs</string>
+    <string name="tab_order_saved">Saved</string>
+    <string name="tab_order_reset">Reset to default</string>
+
+    <!-- Processing Status -->
+    <string name="cancelled">Cancelled</string>
+    <string name="cancelling">Cancelling...</string>
+
+    <!-- Audio Compress -->
+    <string name="audio_encoder">Audio Encoder</string>
+    <string name="audio_bitrate">Audio Bitrate</string>
+    <string name="audio_sample_rate">Audio Sample Rate</string>
+    <string name="start_audio_compress">Start Audio Compress</string>
+
     <!-- Video Info Cards -->
     <string name="original_video_info">Original Video Info</string>
     <string name="output_video_info">Output Video Info</string>
+
+    <!-- Info card labels -->
+    <string name="info_size">Size</string>
+    <string name="info_video">Video</string>
+    <string name="info_audio">Audio</string>
+    <string name="info_color_space">Color Space</string>
+    <string name="info_color_primaries">Color Primaries</string>
+    <string name="info_color_transfer">Color Transfer</string>
+    <string name="info_creation_time">Date Taken</string>
+    <string name="info_file_creation_time">Date Created</string>
+    <string name="info_location">Location</string>
+    <string name="info_format_error">Unrecognized file format</string>
+    <string name="info_no_help">No help available</string>
+    <string name="info_help">Help</string>
+
+    <!-- Compress config labels -->
+    <string name="cfg_encoder">Encoder</string>
+    <string name="cfg_bitrate">Bitrate</string>
+    <string name="cfg_preset">Preset Speed</string>
+    <string name="cfg_framerate">Frame Rate</string>
+    <string name="cfg_resolution">Resolution</string>
+    <string name="cfg_audio">Audio Encoder</string>
+    <string name="cfg_audio_bitrate">Audio Bitrate</string>
+    <string name="cfg_audio_sample_rate">Audio Sample Rate</string>
+    <string name="cfg_original">Original</string>
+    <string name="cfg_copy">Copy</string>
+    <string name="cfg_ultrafast">Ultrafast</string>
+    <string name="cfg_superfast">Superfast</string>
+    <string name="cfg_veryfast">Veryfast</string>
+    <string name="cfg_faster">Faster</string>
+    <string name="cfg_fast">Fast</string>
+    <string name="cfg_medium">Medium</string>
+    <string name="cfg_slow">Slow</string>
+    <string name="cfg_slower">Slower</string>
+    <string name="cfg_veryslow">Veryslow</string>
+    <string name="cfg_help_encoder">Encoder compresses video to a smaller file. Hardware encoding is faster but slightly lower quality; software encoding has better quality but is slower.</string>
+    <string name="cfg_help_bitrate">Bitrate determines video data per second. Higher = better quality but larger file. Recommended: 2-4 Mbps for short clips, 1-2 Mbps for long videos.</string>
+    <string name="cfg_help_crf">CRF (Constant Rate Factor) controls quality. 0=lossless, 23=default, 51=worst. Lower value = larger file = better quality.</string>
+    <string name="cfg_help_preset">Software encoding preset speed. 9 levels from ultrafast to veryslow; slower = better compression = smaller file.</string>
+    <string name="cfg_help_framerate">Frames per second. Original keeps the source; lowering reduces file size but may affect smoothness.</string>
+    <string name="cfg_help_resolution">Output resolution. Original keeps the source size; lowering reduces file size significantly.</string>
+    <string name="cfg_help_audio">Audio encoder. Copy preserves original audio (fastest); AAC has best compatibility.</string>
+    <string name="cfg_help_audio_bitrate">Audio bitrate. Higher = better quality but larger file. 128k is typical.</string>
+    <string name="cfg_help_audio_sample_rate">Audio sample rate. Original keeps the source; lowering reduces file size.</string>
+
+    <!-- Processing progress -->
+    <string name="progress_elapsed">Elapsed</string>
+    <string name="progress_remaining">Remaining</string>
+    <string name="progress_output">Output</string>
+
+    <!-- Custom command -->
+    <string name="hint_ffmpeg">Enter FFmpeg arguments (without ffmpeg prefix)</string>
+    <string name="hint_ffprobe">Enter FFprobe arguments (without ffprobe prefix)</string>
+
+    <!-- Merge -->
+    <string name="merge_selected_count">Selected %d videos</string>
+    <string name="merge_direct_read">Direct</string>
+    <string name="merge_cached">Cached</string>
+    <string name="merge_incompatible">The following videos have incompatible parameters and cannot be merged losslessly:</string>
+    <string name="merge_ref_video">Reference video</string>
+    <string name="merge_incompatible_videos">Incompatible videos</string>
+    <string name="merge_need_2">At least 2 videos required</string>
+
+    <!-- Trim -->
+    <string name="trim_format_error">Invalid format, use MM:SS</string>
+    <string name="trim_unknown_error">Unknown error</string>
+    <string name="trim_start">Start</string>
+    <string name="trim_end">End</string>
+
+    <!-- MediaInfo diff fields -->
+    <string name="diff_resolution">Resolution</string>
+    <string name="diff_video_codec">Video Codec</string>
+    <string name="diff_audio_codec">Audio Codec</string>
+    <string name="diff_framerate">Frame Rate</string>
+    <string name="diff_pixel_format">Pixel Format</string>
+    <string name="diff_rotation">Rotation</string>
+
+    <!-- CompressConfig presets -->
+    <string name="preset_original">Original</string>
+    <string name="preset_copy">Copy</string>
+    <string name="preset_ultrafast">Ultrafast</string>
+    <string name="preset_superfast">Superfast</string>
+    <string name="preset_veryfast">Veryfast</string>
+    <string name="preset_faster">Faster</string>
+    <string name="preset_fast">Fast</string>
+    <string name="preset_medium">Medium</string>
+    <string name="preset_slow">Slow</string>
+    <string name="preset_slower">Slower</string>
+    <string name="preset_veryslow">Veryslow</string>
 </resources>

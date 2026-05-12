@@ -301,7 +301,7 @@ object FFmpegService {
         onProgress: ((Progress) -> Unit)? = null
     ): Result {
         if (inputPaths.size < 2) {
-            return Result(false, error = "至少需要2个视频")
+            return Result(false, error = "MERGE_NEED_2")
         }
 
         val concatFile = File.createTempFile("concat_list", ".txt", context.cacheDir)

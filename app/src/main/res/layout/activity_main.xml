@@ -7,37 +7,18 @@
     android:background="@color/gray_800"
     android:fitsSystemWindows="true">
 
-    <FrameLayout
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/gray_700">
-
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="36dp"
-            app:tabMode="scrollable"
-            app:tabTextColor="@color/white"
-            app:tabSelectedTextColor="@color/purple_500"
-            app:tabIndicatorColor="@color/purple_500"
-            app:tabTextAppearance="@style/TabTextTwoLine"
-            app:tabPaddingStart="20dp"
-            app:tabPaddingEnd="20dp" />
-
-        <ImageButton
-            android:id="@+id/btnMenu"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_gravity="end|center_vertical"
-            android:layout_marginEnd="2dp"
-            android:padding="6dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/menu"
-            android:src="@drawable/ic_menu_more"
-            app:tint="@color/gray_400" />
-
-    </FrameLayout>
+        android:background="@color/gray_700"
+        app:tabMode="scrollable"
+        app:tabTextColor="@color/white"
+        app:tabSelectedTextColor="@color/purple_500"
+        app:tabIndicatorColor="@color/purple_500"
+        app:tabTextAppearance="@style/TabTextTwoLine"
+        app:tabPaddingStart="20dp"
+        app:tabPaddingEnd="20dp" />
 
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/viewPager"

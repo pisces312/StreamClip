@@ -43,7 +43,6 @@ class MainActivity : BaseActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupMenuButton()
         checkPermissions()
         setupViewPager()
 
@@ -59,13 +58,38 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun setupMenuButton() {
-        binding.btnMenu.setOnClickListener { view ->
-            val popup = android.widget.PopupMenu(this, view, android.view.Gravity.END)
-            popup.menuInflater.inflate(R.menu.menu_main, popup.menu)
-            popup.setOnMenuItemClickListener { item -> handleMenuItem(item) }
-            popup.show()
-        }
+    private fun setupViewPager() {
+        val order = TabOrderManager.getOrder(this)
+        currentTabOrder = order
+        val adapter = MainPagerAdapter(this, order)
+        binding.viewPager.adapter = adapter
+
+        TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
+            val tabId = order[position]
+            tab.text = getTabText(tabId)
+            TabOrderManager.TAB_ICONS[tabId]?.let { tab.setIcon(it) }
+        }.attach()
+
+        val totalCount = order.size
+        binding.tvTabIndicator.text = "1/$totalCount"
+        binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                binding.tvTabIndicator.text = "${position + 1}/$totalCount"
+            }
+        })
+    }
+
+    private fun getTabText(tabId: String): String = when (tabId) {
+        "settings" -> getString(R.string.title_menu)
+        "trim" -> getString(R.string.title_trim)
+        "trim2" -> getString(R.string.title_trim2)
+        "merge" -> getString(R.string.title_merge)
+        "extract" -> getString(R.string.title_extract)
+        "compress" -> getString(R.string.title_compress)
+        "audio_compress" -> getString(R.string.title_audio_compress)
+        "custom" -> getString(R.string.title_custom)
+        "metadata" -> getString(R.string.title_metadata)
+        else -> ""
     }
 
     private fun checkCrashLog() {
@@ -121,7 +145,7 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun showDonateDialog() {
+    internal fun showDonateDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_donate, null)
         val container = dialogView.findViewById<LinearLayout>(R.id.containerDonate)
         val ivAlipay = dialogView.findViewById<android.widget.ImageView>(R.id.ivDonateAlipay)
@@ -153,7 +177,7 @@ class MainActivity : BaseActivity() {
             .show()
     }
 
-    private fun showGuideDialog() {
+    internal fun showGuideDialog() {
         val message = buildString {
             appendLine(getString(R.string.guide_h264_recommend))
             appendLine(getString(R.string.guide_h264_archive))
@@ -185,7 +209,7 @@ class MainActivity : BaseActivity() {
             .show()
     }
 
-    private fun showAboutDialog() {
+    internal fun showAboutDialog() {
         val versionName = try {
             packageManager.getPackageInfo(packageName, 0).versionName ?: "Unknown"
         } catch (e: Exception) {
@@ -245,37 +269,6 @@ class MainActivity : BaseActivity() {
             .show()
     }
 
-    private fun setupViewPager() {
-        val order = TabOrderManager.getOrder(this)
-        currentTabOrder = order
-        val adapter = MainPagerAdapter(this, order)
-        binding.viewPager.adapter = adapter
-
-        TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
-            val tabId = order[position]
-            tab.text = when (tabId) {
-                "trim" -> "无损\n截取"
-                "trim2" -> "截取\n2"
-                "merge" -> "无损\n合并"
-                "extract" -> "提取\n音频"
-                "compress" -> "视频\n压缩"
-                "audio_compress" -> "音频\n压缩"
-                "custom" -> "自定义\n命令"
-                "metadata" -> "元\n数据"
-                else -> ""
-            }
-            TabOrderManager.TAB_ICONS[tabId]?.let { tab.setIcon(it) }
-        }.attach()
-
-        // 位置指示器
-        val totalCount = order.size
-        binding.tvTabIndicator.text = "1/$totalCount"
-        binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                binding.tvTabIndicator.text = "${position + 1}/$totalCount"
-            }
-        })
-    }
 
     private fun checkPermissions() {
         // Android 11+: request MANAGE_EXTERNAL_STORAGE

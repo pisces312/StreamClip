@@ -188,6 +188,7 @@
     <string name="cancelling">取消中...</string>
 
     <string name="title_metadata">元数据</string>
+    <string name="title_menu">设置</string>
     <string name="metadata_select_video_hint">选择要编辑元数据的视频</string>
     <string name="metadata_fields">可编辑字段</string>
     <string name="metadata_title">标题</string>
@@ -213,4 +214,93 @@
     <string name="audio_bitrate">音频码率</string>
     <string name="audio_sample_rate">音频采样率</string>
     <string name="start_audio_compress">开始音频压缩</string>
+
+    <!-- Info card labels -->
+    <string name="info_size">大小</string>
+    <string name="info_video">视频</string>
+    <string name="info_audio">音频</string>
+    <string name="info_color_space">色彩空间</string>
+    <string name="info_color_primaries">色域</string>
+    <string name="info_color_transfer">传输</string>
+    <string name="info_creation_time">拍摄日期</string>
+    <string name="info_file_creation_time">创建日期</string>
+    <string name="info_location">地理位置</string>
+    <string name="info_format_error">无法识别文件格式</string>
+    <string name="info_no_help">暂无说明</string>
+    <string name="info_help">帮助</string>
+
+    <!-- Compress config labels -->
+    <string name="cfg_encoder">编码器</string>
+    <string name="cfg_bitrate">码率</string>
+    <string name="cfg_preset">预设速度</string>
+    <string name="cfg_framerate">帧率</string>
+    <string name="cfg_resolution">分辨率</string>
+    <string name="cfg_audio">音频编码</string>
+    <string name="cfg_audio_bitrate">音频码率</string>
+    <string name="cfg_audio_sample_rate">音频采样率</string>
+    <string name="cfg_original">原始</string>
+    <string name="cfg_copy">复制</string>
+    <string name="cfg_ultrafast">极快</string>
+    <string name="cfg_superfast">很快</string>
+    <string name="cfg_veryfast">非常快</string>
+    <string name="cfg_faster">更快</string>
+    <string name="cfg_fast">快</string>
+    <string name="cfg_medium">中等</string>
+    <string name="cfg_slow">慢</string>
+    <string name="cfg_slower">更慢</string>
+    <string name="cfg_veryslow">极慢</string>
+    <string name="cfg_help_encoder">编码器将视频压缩为更小文件。硬件编码速度快但质量略低，软件编码质量好但速度慢。</string>
+    <string name="cfg_help_bitrate">码率决定每秒视频数据量。越高画质越好文件越大。建议：短视频2-4Mbps，长视频1-2Mbps。</string>
+    <string name="cfg_help_crf">CRF (Constant Rate Factor) 控制质量。0=无损，23=默认，51=最差。值越小文件越大画质越好。</string>
+    <string name="cfg_help_preset">软件编码的预设速度。极快到极慢共9档，越慢压缩率越高文件越小。</string>
+    <string name="cfg_help_framerate">帧率控制每秒画面帧数。原始保持原帧率，降低帧率可减小文件但影响流畅度。</string>
+    <string name="cfg_help_resolution">输出视频分辨率。原始保持原尺寸，降低分辨率可大幅减小文件。</string>
+    <string name="cfg_help_audio">音频编码。复制原音频不重新编码最快，AAC兼容性最好。</string>
+    <string name="cfg_help_audio_bitrate">音频码率。越高音质越好文件越大。128k为常用值。</string>
+    <string name="cfg_help_audio_sample_rate">音频采样率。原始保持原采样率，降低可减小文件。</string>
+
+    <!-- Processing progress -->
+    <string name="progress_elapsed">已用</string>
+    <string name="progress_remaining">预估</string>
+    <string name="progress_output">输出</string>
+
+    <!-- Custom command -->
+    <string name="hint_ffmpeg">输入完整的 FFmpeg 参数（不含 ffmpeg 前缀）</string>
+    <string name="hint_ffprobe">输入完整的 FFprobe 参数（不含 ffprobe 前缀）</string>
+
+    <!-- Merge -->
+    <string name="merge_selected_count">已选择 %d 个视频</string>
+    <string name="merge_direct_read">直读</string>
+    <string name="merge_cached">缓存</string>
+    <string name="merge_incompatible">以下视频参数不一致，无法无损合并：</string>
+    <string name="merge_ref_video">参考视频</string>
+    <string name="merge_incompatible_videos">不兼容视频</string>
+    <string name="merge_need_2">至少需要2个视频</string>
+
+    <!-- Trim -->
+    <string name="trim_format_error">格式错误，请使用 MM:SS</string>
+    <string name="trim_unknown_error">未知错误</string>
+    <string name="trim_start">开始</string>
+    <string name="trim_end">结束</string>
+
+    <!-- MediaInfo diff fields -->
+    <string name="diff_resolution">分辨率</string>
+    <string name="diff_video_codec">视频编码</string>
+    <string name="diff_audio_codec">音频编码</string>
+    <string name="diff_framerate">帧率</string>
+    <string name="diff_pixel_format">像素格式</string>
+    <string name="diff_rotation">旋转方向</string>
+
+    <!-- CompressConfig presets -->
+    <string name="preset_original">原始</string>
+    <string name="preset_copy">复制</string>
+    <string name="preset_ultrafast">极快</string>
+    <string name="preset_superfast">很快</string>
+    <string name="preset_veryfast">非常快</string>
+    <string name="preset_faster">更快</string>
+    <string name="preset_fast">快</string>
+    <string name="preset_medium">中等</string>
+    <string name="preset_slow">慢</string>
+    <string name="preset_slower">更慢</string>
+    <string name="preset_veryslow">极慢</string>
 </resources>

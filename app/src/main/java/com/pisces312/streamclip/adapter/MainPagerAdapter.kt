@@ -11,6 +11,7 @@ import com.pisces312.streamclip.fragment.CompressFragment
 import com.pisces312.streamclip.fragment.AudioCompressFragment
 import com.pisces312.streamclip.fragment.CustomCommandFragment
 import com.pisces312.streamclip.fragment.MetadataFragment
+import com.pisces312.streamclip.fragment.MenuTabFragment
 
 class MainPagerAdapter(
     activity: FragmentActivity,
@@ -29,6 +30,7 @@ class MainPagerAdapter(
             "audio_compress" -> AudioCompressFragment()
             "custom" -> CustomCommandFragment()
             "metadata" -> MetadataFragment()
+            "settings" -> MenuTabFragment()
             else -> throw IllegalArgumentException("Invalid tab: ${tabOrder[position]}")
         }
     }

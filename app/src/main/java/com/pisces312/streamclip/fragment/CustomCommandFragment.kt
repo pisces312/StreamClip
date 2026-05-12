@@ -70,8 +70,8 @@ class CustomCommandFragment : Fragment() {
                     id: Long
                 ) {
                         val hint = when (CommandType.entries[position]) {
-                        CommandType.FFMPEG -> "输入完整的 FFmpeg 参数（不含 ffmpeg 前缀）"
-                        CommandType.FFPROBE -> "输入完整的 FFprobe 参数（不含 ffprobe 前缀）"
+                        CommandType.FFMPEG -> getString(R.string.hint_ffmpeg)
+                        CommandType.FFPROBE -> getString(R.string.hint_ffprobe)
                     }
                     binding.tvCommandHint.text = hint
 
@@ -302,10 +302,10 @@ class CustomCommandFragment : Fragment() {
                 } else {
                     "--:--"
                 }
-                tvTimeInfo?.text = "已用: $elapsedStr | 预估: $remainingStr"
+                tvTimeInfo?.text = "${getString(R.string.progress_elapsed)}: $elapsedStr | ${getString(R.string.progress_remaining)}: $remainingStr"
 
                 val sizeMB = progress.outputSizeBytes / (1024.0 * 1024.0)
-                tvOutputSize?.text = "输出: %.1f MB".format(sizeMB)
+                tvOutputSize?.text = "${getString(R.string.progress_output)}: %.1f MB".format(sizeMB)
             }
         }
     }

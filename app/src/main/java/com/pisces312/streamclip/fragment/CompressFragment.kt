@@ -56,6 +56,21 @@ class CompressFragment : Fragment() {
     private var batchVideoAdapter: com.pisces312.streamclip.adapter.BatchVideoListAdapter? = null
     private var pathResultCache: List<com.pisces312.streamclip.util.FileUtils.PathResult>? = null
 
+    private fun getPresetName(key: String): String = when (key) {
+        "original" -> getString(R.string.preset_original)
+        "copy" -> getString(R.string.preset_copy)
+        "ultrafast" -> getString(R.string.preset_ultrafast)
+        "superfast" -> getString(R.string.preset_superfast)
+        "veryfast" -> getString(R.string.preset_veryfast)
+        "faster" -> getString(R.string.preset_faster)
+        "fast" -> getString(R.string.preset_fast)
+        "medium" -> getString(R.string.preset_medium)
+        "slow" -> getString(R.string.preset_slow)
+        "slower" -> getString(R.string.preset_slower)
+        "veryslow" -> getString(R.string.preset_veryslow)
+        else -> key
+    }
+
     private val pickVideo = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -209,7 +224,7 @@ class CompressFragment : Fragment() {
         binding.spinnerPresetSw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.PRESETS.map { it.second }
+            CompressConfig.PRESETS.map { getPresetName(it.first) }
         )
         binding.spinnerPresetSw.setSelection(5) // medium
 
@@ -295,18 +310,21 @@ class CompressFragment : Fragment() {
 
     private fun showHelpDialog(key: String) {
         val title = when (key) {
-            "encoder" -> "编码器"
-            "bitrate" -> "码率"
-            "crf" -> "CRF 质量"
-            "preset" -> "预设速度"
-            "framerate" -> "帧率"
-            "resolution" -> "分辨率"
-            "audio" -> "音频编码"
-            "audioBitrate" -> "音频码率"
-            "audioSampleRate" -> "音频采样率"
-            else -> "帮助"
+            "encoder" -> getString(R.string.cfg_encoder)
+            "bitrate" -> getString(R.string.cfg_bitrate)
+            "crf" -> "CRF"
+            "preset" -> getString(R.string.cfg_preset)
+            "framerate" -> getString(R.string.cfg_framerate)
+            "resolution" -> getString(R.string.cfg_resolution)
+            "audio" -> getString(R.string.cfg_audio)
+            "audioBitrate" -> getString(R.string.cfg_audio_bitrate)
+            "audioSampleRate" -> getString(R.string.cfg_audio_sample_rate)
+            else -> getString(R.string.info_help)
         }
-        val message = CompressConfig.HELP_TEXTS[key] ?: "暂无说明"
+        val messageRes = CompressConfig.HELP_TEXTS[key]
+        val message = if (messageRes != null) {
+            try { getString(resources.getIdentifier(messageRes, "string", requireContext().packageName)) } catch (e: Exception) { getString(R.string.info_no_help) }
+        } else getString(R.string.info_no_help)
 
         AlertDialog.Builder(requireContext())
             .setTitle(title)
@@ -356,15 +374,15 @@ class CompressFragment : Fragment() {
         pathView.text = info.path
         val fileSizeMB = java.io.File(info.path).let { f -> if (f.exists()) "%.1f MB".format(f.length() / (1024.0 * 1024.0)) else "N/A" }
         val lines = mutableListOf<String>()
-        lines.add("大小: $fileSizeMB")
-        lines.add("视频: ${info.videoCodec} ${info.resolution} ${info.frameRate} ${info.videoBitrateKbps}${info.hdrTag}")
-        if (info.audioCodec.isNotEmpty()) lines.add("音频: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
-        if (info.colorSpace.isNotEmpty()) lines.add("色彩空间: ${info.colorSpace}")
-        if (info.colorPrimaries.isNotEmpty()) lines.add("色域: ${info.colorPrimaries}")
-        if (info.colorTransfer.isNotEmpty()) lines.add("传输: ${info.colorTransfer}")
-        if (info.creationTime.isNotEmpty()) lines.add("拍摄日期: ${info.creationTime}")
-        if (info.fileCreationTime.isNotEmpty()) lines.add("创建日期: ${info.fileCreationTime}")
-        if (info.location.isNotEmpty()) lines.add("地理位置: ${info.location}")
+        lines.add("${getString(R.string.info_size)}: $fileSizeMB")
+        lines.add("${getString(R.string.info_video)}: ${info.videoCodec} ${info.resolution} ${info.frameRate} ${info.videoBitrateKbps}${info.hdrTag}")
+        if (info.audioCodec.isNotEmpty()) lines.add("${getString(R.string.info_audio)}: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
+        if (info.colorSpace.isNotEmpty()) lines.add("${getString(R.string.info_color_space)}: ${info.colorSpace}")
+        if (info.colorPrimaries.isNotEmpty()) lines.add("${getString(R.string.info_color_primaries)}: ${info.colorPrimaries}")
+        if (info.colorTransfer.isNotEmpty()) lines.add("${getString(R.string.info_color_transfer)}: ${info.colorTransfer}")
+        if (info.creationTime.isNotEmpty()) lines.add("${getString(R.string.info_creation_time)}: ${info.creationTime}")
+        if (info.fileCreationTime.isNotEmpty()) lines.add("${getString(R.string.info_file_creation_time)}: ${info.fileCreationTime}")
+        if (info.location.isNotEmpty()) lines.add("${getString(R.string.info_location)}: ${info.location}")
         infoView.text = lines.joinToString("\n")
         card.visibility = android.view.View.VISIBLE
     }
@@ -719,11 +737,11 @@ class CompressFragment : Fragment() {
                 } else {
                     "--:--"
                 }
-                tvTimeInfo?.text = "已用: $elapsedStr | 预估: $remainingStr"
+                tvTimeInfo?.text = "${getString(R.string.progress_elapsed)}: $elapsedStr | ${getString(R.string.progress_remaining)}: $remainingStr"
 
                 // Format output size
                 val sizeMB = progress.outputSizeBytes / (1024.0 * 1024.0)
-                tvOutputSize?.text = "输出: %.1f MB".format(sizeMB)
+                tvOutputSize?.text = "${getString(R.string.progress_output)}: %.1f MB".format(sizeMB)
             }
 
         }

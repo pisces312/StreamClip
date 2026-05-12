@@ -140,7 +140,7 @@ data class CompressConfig(
             "720p" to "720p",
             "480p" to "480p"
         )
-        
+
         val PRESETS = listOf(
             "ultrafast" to "极快",
             "superfast" to "很快",
@@ -152,7 +152,7 @@ data class CompressConfig(
             "slower" to "更慢",
             "veryslow" to "极慢"
         )
-        
+
         val AUDIO_ENCODERS = listOf(
             "copy" to "复制",
             "aac" to "AAC",
@@ -187,15 +187,15 @@ data class CompressConfig(
 
         // Help texts
         val HELP_TEXTS = mapOf(
-            "encoder" to "编码器将视频压缩为更小文件。硬件编码速度快但质量略低，软件编码质量好但速度慢。",
-            "bitrate" to "码率决定每秒视频数据量。越高画质越好文件越大。建议：短视频2-4Mbps，长视频1-2Mbps。",
-            "crf" to "CRF (Constant Rate Factor) 控制质量。0=无损，23=默认，51=最差。值越小文件越大画质越好。",
-            "preset" to "软件编码的预设速度。极快到极慢共9档，越慢压缩率越高文件越小。",
-            "framerate" to "帧率控制每秒画面帧数。原始保持原帧率，降低帧率可减小文件但影响流畅度。",
-            "resolution" to "输出视频分辨率。原始保持原尺寸，降低分辨率可大幅减小文件。",
-            "audio" to "音频编码。复制原音频不重新编码最快，AAC兼容性最好。",
-            "audioBitrate" to "音频码率。越高音质越好文件越大。128k为常用值。",
-            "audioSampleRate" to "音频采样率。原始保持原采样率，降低可减小文件。"
+            "encoder" to "cfg_help_encoder",
+            "bitrate" to "cfg_help_bitrate",
+            "crf" to "cfg_help_crf",
+            "preset" to "cfg_help_preset",
+            "framerate" to "cfg_help_framerate",
+            "resolution" to "cfg_help_resolution",
+            "audio" to "cfg_help_audio",
+            "audioBitrate" to "cfg_help_audio_bitrate",
+            "audioSampleRate" to "cfg_help_audio_sample_rate"
         )
     }
 }

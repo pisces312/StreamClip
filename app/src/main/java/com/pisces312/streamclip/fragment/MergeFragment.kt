@@ -97,7 +97,7 @@ class MergeFragment : Fragment() {
     }
 
     private fun updateUi() {
-        binding.tvVideoCount.text = "已选择 ${videoUris.size} 个视频"
+        binding.tvVideoCount.text = getString(R.string.merge_selected_count, videoUris.size)
         binding.btnExecute.isEnabled = videoUris.size >= 2
     }
 
@@ -116,8 +116,8 @@ class MergeFragment : Fragment() {
         }
         binding.tvStatus.visibility = View.VISIBLE
         val parts = mutableListOf<String>()
-        if (directCount > 0) parts.add("直读: $directCount")
-        if (cacheCount > 0) parts.add("缓存: $cacheCount")
+        if (directCount > 0) parts.add("${getString(R.string.merge_direct_read)}: $directCount")
+        if (cacheCount > 0) parts.add("${getString(R.string.merge_cached)}: $cacheCount")
         if (cacheCount > 0) {
             binding.tvStatus.text = "⚠️ ${parts.joinToString(", ")}"
             binding.tvStatus.setTextColor(0xFFFF9800.toInt())
@@ -179,7 +179,7 @@ class MergeFragment : Fragment() {
 
             // Check compatibility
             val firstInfo = mediaInfos[0]
-            val incompatibleFiles = mutableListOf<Pair<String, List<String>>>()
+            val incompatibleFiles = mutableListOf<Pair<String, List<Pair<String, String>>>>()
             for (i in 1 until mediaInfos.size) {
                 val info = mediaInfos[i]
                 if (!firstInfo.isCompatibleWith(info)) {
@@ -221,31 +221,45 @@ class MergeFragment : Fragment() {
                     updateOutputStatus(outputFile)
                     Toast.makeText(requireContext(), getString(R.string.merge_complete, outputFile.name), Toast.LENGTH_LONG).show()
                 } else {
-                    Toast.makeText(requireContext(), getString(R.string.failed, result.error), Toast.LENGTH_LONG).show()
+                    val errorMsg = when (result.error) {
+                        "MERGE_NEED_2" -> getString(R.string.merge_need_2)
+                        else -> result.error ?: getString(R.string.trim_unknown_error)
+                    }
+                    Toast.makeText(requireContext(), getString(R.string.failed, errorMsg), Toast.LENGTH_LONG).show()
                 }
             }
         }
     }
 
+    private fun getFieldName(key: String): String = when (key) {
+        "resolution" -> getString(R.string.diff_resolution)
+        "videoCodec" -> getString(R.string.diff_video_codec)
+        "audioCodec" -> getString(R.string.diff_audio_codec)
+        "frameRate" -> getString(R.string.diff_framerate)
+        "pixelFormat" -> getString(R.string.diff_pixel_format)
+        "rotation" -> getString(R.string.diff_rotation)
+        else -> key
+    }
+
     private fun showIncompatibleDialog(
         firstInfo: MediaInfo,
-        incompatibleFiles: List<Pair<String, List<String>>>
+        incompatibleFiles: List<Pair<String, List<Pair<String, String>>>>
     ) {
         val message = buildString {
-            appendLine("以下视频参数不一致，无法无损合并：")
+            appendLine(getString(R.string.merge_incompatible))
             appendLine()
-            appendLine("参考视频: ${java.io.File(firstInfo.path).name}")
-            appendLine("  分辨率: ${firstInfo.resolution}")
-            appendLine("  视频编码: ${firstInfo.videoCodec}")
-            appendLine("  音频编码: ${firstInfo.audioCodec}")
-            appendLine("  帧率: ${firstInfo.frameRate}")
-            appendLine("  像素格式: ${firstInfo.pixelFormat}")
-            appendLine("  旋转: ${firstInfo.rotation}°")
+            appendLine("${getString(R.string.merge_ref_video)}: ${java.io.File(firstInfo.path).name}")
+            appendLine("  ${getString(R.string.diff_resolution)}: ${firstInfo.resolution}")
+            appendLine("  ${getString(R.string.diff_video_codec)}: ${firstInfo.videoCodec}")
+            appendLine("  ${getString(R.string.diff_audio_codec)}: ${firstInfo.audioCodec}")
+            appendLine("  ${getString(R.string.diff_framerate)}: ${firstInfo.frameRate}")
+            appendLine("  ${getString(R.string.diff_pixel_format)}: ${firstInfo.pixelFormat}")
+            appendLine("  ${getString(R.string.diff_rotation)}: ${firstInfo.rotation}°")
             appendLine()
-            appendLine("不兼容视频:")
+            appendLine("${getString(R.string.merge_incompatible_videos)}:")
             for ((fileName, fields) in incompatibleFiles) {
                 appendLine("  $fileName")
-                appendLine("    差异: ${fields.joinToString(", ")}")
+                appendLine("    ${fields.joinToString(", ") { getFieldName(it.first) + ": " + it.second }}")
             }
         }
 

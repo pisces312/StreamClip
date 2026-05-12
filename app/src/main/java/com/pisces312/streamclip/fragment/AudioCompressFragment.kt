@@ -124,12 +124,15 @@ class AudioCompressFragment : Fragment() {
 
     private fun showHelpDialog(key: String) {
         val title = when (key) {
-            "audio" -> "音频编码"
-            "audioBitrate" -> "音频码率"
-            "audioSampleRate" -> "音频采样率"
-            else -> "帮助"
+            "audio" -> getString(R.string.cfg_audio)
+            "audioBitrate" -> getString(R.string.cfg_audio_bitrate)
+            "audioSampleRate" -> getString(R.string.cfg_audio_sample_rate)
+            else -> getString(R.string.info_help)
         }
-        val message = CompressConfig.HELP_TEXTS[key] ?: "暂无说明"
+        val messageRes = CompressConfig.HELP_TEXTS[key]
+        val message = if (messageRes != null) {
+            try { getString(resources.getIdentifier(messageRes, "string", requireContext().packageName)) } catch (e: Exception) { getString(R.string.info_no_help) }
+        } else getString(R.string.info_no_help)
         AlertDialog.Builder(requireContext())
             .setTitle(title)
             .setMessage(message)
@@ -185,7 +188,7 @@ class AudioCompressFragment : Fragment() {
                         } else if (info.audio != null) {
                             showAudioInfo(path, info)
                         } else {
-                            Toast.makeText(requireContext(), "无法识别文件格式", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), R.string.info_format_error, Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -199,10 +202,10 @@ class AudioCompressFragment : Fragment() {
         binding.tvOriginalPath.text = path
         val fileSizeMB = java.io.File(path).let { f -> if (f.exists()) "%.1f MB".format(f.length() / (1024.0 * 1024.0)) else "N/A" }
         val lines = mutableListOf<String>()
-        lines.add("大小: $fileSizeMB")
+        lines.add("${getString(R.string.info_size)}: $fileSizeMB")
         val audio = info.audio
-        lines.add("音频: ${audio?.codec ?: ""} ${info.audioSampleRate}Hz ${audio?.channelLayout ?: ""}")
-        if (info.creationTime.isNotEmpty()) lines.add("拍摄日期: ${info.creationTime}")
+        lines.add("${getString(R.string.info_audio)}: ${audio?.codec ?: ""} ${info.audioSampleRate}Hz ${audio?.channelLayout ?: ""}")
+        if (info.creationTime.isNotEmpty()) lines.add("${getString(R.string.info_creation_time)}: ${info.creationTime}")
         binding.tvOriginalInfo.text = lines.joinToString("\n")
         binding.cardOriginalInfo.visibility = View.VISIBLE
     }
@@ -212,9 +215,9 @@ class AudioCompressFragment : Fragment() {
         binding.tvOriginalPath.text = info.path
         val fileSizeMB = java.io.File(info.path).let { f -> if (f.exists()) "%.1f MB".format(f.length() / (1024.0 * 1024.0)) else "N/A" }
         val lines = mutableListOf<String>()
-        lines.add("大小: $fileSizeMB")
-        lines.add("视频: ${info.videoCodec} ${info.resolution} ${info.frameRate}")
-        if (info.audioCodec.isNotEmpty()) lines.add("音频: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
+        lines.add("${getString(R.string.info_size)}: $fileSizeMB")
+        lines.add("${getString(R.string.info_video)}: ${info.videoCodec} ${info.resolution} ${info.frameRate}")
+        if (info.audioCodec.isNotEmpty()) lines.add("${getString(R.string.info_audio)}: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
         binding.tvOriginalInfo.text = lines.joinToString("\n")
         binding.cardOriginalInfo.visibility = View.VISIBLE
     }
