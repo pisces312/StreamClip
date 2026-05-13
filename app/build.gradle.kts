@@ -11,8 +11,8 @@ android {
         applicationId = "com.pisces312.streamclip"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "2.0.0"
+        versionCode = 9
+        versionName = "1.6.0"
     }
 
     buildTypes {
@@ -54,8 +54,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0")
     
-    // FFmpeg Kit 8.1 (arthenica)
-    implementation(files("libs/ffmpeg-kit-8.1.aar"))
+    // FFmpeg Kit 8.0 (antonkarpenko)
+    implementation(files("libs/ffmpeg-kit-full-gpl-arm64v8a-8.0.0.aar"))
 
     // Media3 for video preview
     implementation("androidx.media3:media3-exoplayer:1.6.1")
