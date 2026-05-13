@@ -1,5 +1,16 @@
 # StreamClip 更新日志
 
+## [Unreleased]
+
+### 修复
+- **音频采样率默认改为"复制"**：避免 ffmpeg-kit 8.1 的 `libswresample` 在特定采样率转换场景下触发 native crash（SIGSEGV）。当源采样率 ≠ 目标采样率时，swresample 的 NEON 优化路径存在 segfault，去掉 `-ar` 参数即可绕过。
+
+### 调整
+- 视频压缩和音频压缩页面的采样率 spinner 默认选中 "复制"（索引 0，原为 44100 Hz）
+- `CompressConfig.audioSampleRate` 默认值由 `"44100"` 改为 `"copy"`
+
+---
+
 ## [1.5.0] - 2026-05-10
 
 ### 升级

@@ -9,7 +9,7 @@ data class CompressConfig(
     val preset: String = "medium",     // 软编码预设
     val audioEncoder: String = "copy",
     val audioBitrate: String = "128",  // 音频码率 (kbps)
-    val audioSampleRate: String = "44100", // 音频采样率
+    val audioSampleRate: String = "copy", // 音频采样率（默认复制，避免 swresample native crash）
     val isHardware: Boolean = true,
     val copyMetadata: Boolean = true   // Copy all metadata from source
 ) : java.io.Serializable {

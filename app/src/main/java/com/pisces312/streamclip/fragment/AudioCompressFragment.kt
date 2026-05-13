@@ -95,7 +95,7 @@ class AudioCompressFragment : Fragment() {
             android.R.layout.simple_spinner_dropdown_item,
             CompressConfig.AUDIO_SAMPLE_RATES.map { it.second }
         )
-        binding.spinnerAudioSampleRate.setSelection(2) // 44100
+        binding.spinnerAudioSampleRate.setSelection(0) // copy default
 
         setupAudioVisibilityListener()
     }
