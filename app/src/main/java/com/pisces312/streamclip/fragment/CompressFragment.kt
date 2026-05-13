@@ -352,7 +352,6 @@ class CompressFragment : Fragment() {
                         showVideoInfoCard(
                             card = binding.cardOriginalInfo,
                             title = binding.tvOriginalInfoTitle,
-                            pathView = binding.tvOriginalPath,
                             infoView = binding.tvOriginalInfo,
                             info = info
                         )
@@ -367,13 +366,12 @@ class CompressFragment : Fragment() {
     private fun showVideoInfoCard(
         card: android.view.View,
         title: android.widget.TextView,
-        pathView: android.widget.TextView,
         infoView: android.widget.TextView,
         info: com.pisces312.streamclip.model.MediaInfo
     ) {
-        pathView.text = info.path
         val fileSizeMB = java.io.File(info.path).let { f -> if (f.exists()) "%.1f MB".format(f.length() / (1024.0 * 1024.0)) else "N/A" }
         val lines = mutableListOf<String>()
+        lines.add("${getString(R.string.info_path)}: ${info.path}")
         lines.add("${getString(R.string.info_size)}: $fileSizeMB")
         lines.add("${getString(R.string.info_video)}: ${info.videoCodec} ${info.resolution} ${info.frameRate} ${info.videoBitrateKbps}${info.hdrTag}")
         if (info.audioCodec.isNotEmpty()) lines.add("${getString(R.string.info_audio)}: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
@@ -598,7 +596,6 @@ class CompressFragment : Fragment() {
                                 showVideoInfoCard(
                                     card = binding.cardOutputInfo,
                                     title = binding.tvOutputInfoTitle,
-                                    pathView = binding.tvOutputPath,
                                     infoView = binding.tvOutputInfo,
                                     info = outputInfo
                                 )

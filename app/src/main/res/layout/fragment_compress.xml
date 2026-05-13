@@ -66,17 +66,6 @@
                     android:textSize="13sp" />
 
                 <TextView
-                    android:id="@+id/tvOriginalPath"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textSize="11sp"
-                    android:maxLines="1"
-                    android:ellipsize="middle"
-                    android:textColor="?android:textColorSecondary"
-                    android:textIsSelectable="true" />
-
-                <TextView
                     android:id="@+id/tvOriginalInfo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -110,17 +99,6 @@
                     android:text="@string/output_video_info"
                     android:textStyle="bold"
                     android:textSize="13sp" />
-
-                <TextView
-                    android:id="@+id/tvOutputPath"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textSize="11sp"
-                    android:maxLines="1"
-                    android:ellipsize="middle"
-                    android:textColor="?android:textColorSecondary"
-                    android:textIsSelectable="true" />
 
                 <TextView
                     android:id="@+id/tvOutputInfo"
