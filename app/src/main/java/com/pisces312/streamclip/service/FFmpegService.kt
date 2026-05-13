@@ -4,16 +4,20 @@ import android.content.Context
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFprobeKit
 import com.arthenica.ffmpegkit.ReturnCode
-import com.arthenica.ffmpegkit.StatisticsCallback
 import com.pisces312.streamclip.util.LogCollector
 import com.pisces312.streamclip.model.AudioStreamInfo
 import com.pisces312.streamclip.model.MediaInfo
 import com.pisces312.streamclip.model.VideoStreamInfo
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 
 object FFmpegService {
@@ -54,8 +58,9 @@ object FFmpegService {
      * Returns MediaInfo with video/audio streams, format tags, duration, etc.
      */
     fun probeMediaInfo(path: String): MediaInfo? {
+        var session: com.arthenica.ffmpegkit.FFprobeSession? = null
         return try {
-            val session = FFprobeKit.execute(
+            session = FFprobeKit.execute(
                 "-v quiet -print_format json -show_format -show_streams \"$path\""
             )
             if (!ReturnCode.isSuccess(session.returnCode)) {
@@ -143,11 +148,17 @@ object FFmpegService {
         } catch (e: Exception) {
             LogCollector.e("FFmpegService", "probeMediaInfo failed: ${e.message}")
             null
+        } finally {
+            // Clear ffprobe session logs to prevent memory accumulation
+            try {
+                session?.getLogs()?.clear()
+            } catch (_: Exception) {}
         }
     }
 
     /**
-     * Execute FFmpeg command with ffmpeg-kit
+     * Execute FFmpeg command with ffmpeg-kit using async execution
+     * with session cleanup (Phase A) and thread isolation (Phase D).
      */
     suspend fun executeCommand(
         command: String,
@@ -155,88 +166,113 @@ object FFmpegService {
         totalTimeMs: Long = -1,
         onProgress: ((Progress) -> Unit)? = null,
         onLog: ((LogLine) -> Unit)? = null
-    ): Result = withContext(Dispatchers.IO) {
-        suspendCancellableCoroutine { continuation ->
-            LogCollector.d("FFmpegService", "Executing: $command")
-            val startTime = System.currentTimeMillis()
+    ): Result {
+        // Phase D: Thread isolation - new single-thread executor per call
+        val executor = Executors.newSingleThreadExecutor()
+        val dispatcher = executor.asCoroutineDispatcher()
 
-            val session = if (onProgress != null || onLog != null) {
-                FFmpegKit.executeAsync(command, { session ->
-                    currentSessionId = -1
-                    val returnCode = session.returnCode
-                    val success = ReturnCode.isSuccess(returnCode)
-                    val error = if (success) null else (session.output.takeIf { it.isNotEmpty() } ?: "Unknown error")
+        return try {
+            withContext(dispatcher) {
+                // Phase A: Aggressive cleanup before starting new session
+                cancelCurrentSession()
+                com.arthenica.ffmpegkit.FFmpegKitConfig.clearSessions()
+                System.gc()
+                delay(500)
 
-                    LogCollector.d("FFmpegService", "Completed: success=$success, code=$returnCode, error=$error")
-
-                    continuation.resume(
-                        Result(
-                            success = success,
-                            outputPath = outputPath,
-                            error = error
-                        )
-                    )
-                }, { log ->
-                    LogCollector.d("FFmpegService", log.message)
-                    onLog?.invoke(LogLine(log.message, false))
-                }, StatisticsCallback { statistics ->
-                    val time = statistics.time.toLong()
-                    if (time > 0) {
-                        val percent = if (totalTimeMs > 0) {
-                            ((time.toDouble() / totalTimeMs) * 100).toInt().coerceIn(0, 100)
-                        } else {
-                            -1
+                // Delete output file if exists to avoid -y overwrite conflicts
+                outputPath?.let { path ->
+                    try {
+                        val f = File(path)
+                        if (f.exists()) {
+                            f.delete()
+                            LogCollector.d("FFmpegService", "Deleted existing output: $path")
                         }
+                    } catch (_: Exception) {}
+                }
 
-                        val elapsedMs = System.currentTimeMillis() - startTime
-                        val estimatedRemainingMs = if (percent > 0 && percent < 100) {
-                            (elapsedMs / percent.toDouble() * (100 - percent)).toLong()
-                        } else {
-                            -1
+                LogCollector.d("FFmpegService", "Executing (async+executor): $command")
+                val startTime = System.currentTimeMillis()
+
+                // Progress polling based on elapsed time and output file size
+                val progressJob = if (onProgress != null) {
+                    launch {
+                        while (isActive) {
+                            val elapsed = System.currentTimeMillis() - startTime
+                            val outputSize = if (outputPath != null) {
+                                try { File(outputPath).length() } catch (_: Exception) { 0L }
+                            } else 0L
+
+                            val percent = if (totalTimeMs > 0) {
+                                ((elapsed.toDouble() / totalTimeMs.coerceAtLeast(1)) * 100)
+                                    .toInt().coerceIn(0, 99)
+                            } else -1
+
+                            onProgress(Progress(
+                                percent = percent,
+                                processedTimeMs = elapsed,
+                                totalTimeMs = totalTimeMs,
+                                outputSizeBytes = outputSize,
+                                message = "Processing: ${elapsed / 1000}s"
+                            ))
+                            delay(800)
                         }
-
-                        val outputSize = if (outputPath != null) {
-                            try {
-                                java.io.File(outputPath).length()
-                            } catch (e: Exception) {
-                                0L
-                            }
-                        } else 0L
-
-                        onProgress?.invoke(Progress(
-                            percent = percent,
-                            processedTimeMs = time,
-                            totalTimeMs = totalTimeMs,
-                            outputSizeBytes = outputSize,
-                            message = "Processing: ${time}ms"
-                        ))
                     }
-                })
-            } else {
-                FFmpegKit.executeAsync(command, { session ->
-                    currentSessionId = -1
-                    val returnCode = session.returnCode
-                    val success = ReturnCode.isSuccess(returnCode)
-                    val error = if (success) null else (session.output.takeIf { it.isNotEmpty() } ?: "Unknown error")
+                } else null
 
-                    LogCollector.d("FFmpegService", "Completed: success=$success, code=$returnCode, error=$error")
+                val result = suspendCancellableCoroutine<Result> { continuation ->
+                    var session: com.arthenica.ffmpegkit.FFmpegSession? = null
 
-                    continuation.resume(
-                        Result(
-                            success = success,
-                            outputPath = outputPath,
-                            error = error
-                        )
-                    )
-                })
+                    val logCallback: com.arthenica.ffmpegkit.LogCallback? = if (onLog != null) {
+                        com.arthenica.ffmpegkit.LogCallback { log ->
+                            val level = log.level
+                            onLog(LogLine(
+                                text = log.message ?: "",
+                                isError = level == com.arthenica.ffmpegkit.Level.AV_LOG_ERROR
+                                    || level == com.arthenica.ffmpegkit.Level.AV_LOG_FATAL
+                                    || level == com.arthenica.ffmpegkit.Level.AV_LOG_PANIC
+                            ))
+                        }
+                    } else null
+
+                    val completeCallback = com.arthenica.ffmpegkit.FFmpegSessionCompleteCallback { completedSession ->
+                        progressJob?.cancel()
+
+                        val success = ReturnCode.isSuccess(completedSession.returnCode)
+                        val error = if (success) null else (completedSession.output.takeIf { it.isNotEmpty() } ?: "Unknown error")
+
+                        LogCollector.d("FFmpegService", "Completed: success=$success, code=${completedSession.returnCode}, error=$error")
+
+                        // Phase A: Aggressive cleanup after session ends
+                        try { completedSession.getLogs()?.clear() } catch (_: Exception) {}
+                        try { completedSession.cancel() } catch (_: Exception) {}
+                        com.arthenica.ffmpegkit.FFmpegKitConfig.clearSessions()
+                        System.gc()
+
+                        // Clean up failed output file
+                        if (!success) {
+                            outputPath?.let { path ->
+                                try { File(path).delete() } catch (_: Exception) {}
+                            }
+                        }
+
+                        val result = Result(success = success, outputPath = outputPath, error = error)
+                        continuation.resume(result)
+                        session = null
+                    }
+
+                    // Pass our executor to ffmpeg-kit so it runs on our thread
+                    session = FFmpegKit.executeAsync(command, completeCallback, logCallback, null, executor)
+                    currentSessionId = session?.sessionId ?: -1
+
+                    continuation.invokeOnCancellation {
+                        try { session?.cancel() } catch (_: Exception) {}
+                    }
+                }
+
+                result
             }
-
-            currentSessionId = session.sessionId
-
-            continuation.invokeOnCancellation {
-                FFmpegKit.cancel(session.sessionId)
-                currentSessionId = -1
-            }
+        } finally {
+            executor.shutdown()
         }
     }
 
