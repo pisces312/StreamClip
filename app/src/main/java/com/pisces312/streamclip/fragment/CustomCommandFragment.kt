@@ -75,11 +75,10 @@ class CustomCommandFragment : Fragment() {
                     }
                     binding.tvCommandHint.text = hint
 
-                    // 切换到 FFprobe 时填入示例命令
-                    if (CommandType.entries[position] == CommandType.FFPROBE) {
-                        binding.etCommand.setText("-v quiet -print_format json -show_format -show_streams /sdcard/DCIM/Camera/video.mp4")
-                    } else {
-                        binding.etCommand.text.clear()
+                    // 填入示例命令
+                    when (CommandType.entries[position]) {
+                        CommandType.FFPROBE -> binding.etCommand.setText("-v quiet -print_format json -show_format -show_streams /sdcard/DCIM/Camera/video.mp4")
+                        CommandType.FFMPEG -> binding.etCommand.setText("-y -i /storage/emulated/0/DCIM/Camera/VID_20260511_121703.mp4 -c:v libx264 -c:a copy /storage/emulated/0/DCIM/Camera/VID_20260511_121703_compressed_1778686459108.mp4")
                     }
                 }
 
