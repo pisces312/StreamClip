@@ -110,10 +110,6 @@ class MainActivity : BaseActivity() {
 
     private fun handleMenuItem(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_batch_tasks -> {
-                startActivity(Intent(this, com.pisces312.streamclip.ui.BatchTaskActivity::class.java))
-                true
-            }
             R.id.action_settings -> {
                 supportFragmentManager.beginTransaction()
                     .replace(android.R.id.content, SettingsFragment())
@@ -133,10 +129,6 @@ class MainActivity : BaseActivity() {
                 showAboutDialog()
                 true
             }
-            R.id.action_donate -> {
-                showDonateDialog()
-                true
-            }
             R.id.action_tab_order -> {
                 startActivity(Intent(this, com.pisces312.streamclip.ui.TabOrderActivity::class.java))
                 true
@@ -145,37 +137,6 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    internal fun showDonateDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_donate, null)
-        val container = dialogView.findViewById<LinearLayout>(R.id.containerDonate)
-        val ivAlipay = dialogView.findViewById<android.widget.ImageView>(R.id.ivDonateAlipay)
-        val ivWechat = dialogView.findViewById<android.widget.ImageView>(R.id.ivDonateWechat)
-
-        // 根据屏幕方向调整布局
-        val orientation = resources.configuration.orientation
-        container.orientation = if (orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
-            LinearLayout.HORIZONTAL
-        } else {
-            LinearLayout.VERTICAL
-        }
-
-        try {
-            val bitmapAlipay = android.graphics.BitmapFactory.decodeStream(assets.open("donate-alipay.png"))
-            ivAlipay.setImageBitmap(bitmapAlipay)
-        } catch (e: Exception) {
-            LogCollector.w("MainActivity", "加载支付宝二维码失败: ${e.message}")
-        }
-        try {
-            val bitmapWechat = android.graphics.BitmapFactory.decodeStream(assets.open("donate-wechat.png"))
-            ivWechat.setImageBitmap(bitmapWechat)
-        } catch (e: Exception) {
-            LogCollector.w("MainActivity", "加载微信二维码失败: ${e.message}")
-        }
-        AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setPositiveButton(R.string.guide_ok, null)
-            .show()
-    }
 
     internal fun showGuideDialog() {
         val message = buildString {
@@ -225,19 +186,94 @@ class MainActivity : BaseActivity() {
         } else {
             "v1.3.0 - 初始版本\nv1.3.1 - 修复GPS元数据，添加自定义命令\nv1.3.2 - 添加音频压缩，标签排序\nv1.4.0 - 添加二进制FFmpeg支持"
         }
-        val message = buildString {
-            appendLine(getString(R.string.app_name))
-            appendLine(getString(R.string.about_version, versionName))
-            appendLine()
-            appendLine(historyText)
-            appendLine()
-            appendLine("GitHub: https://github.com/pisces312/StreamClip")
-            appendLine()
-            appendLine(getString(R.string.about_license_summary))
+
+        val scrollView = android.widget.ScrollView(this)
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 32, 48, 32)
         }
+
+        // === 1. 支持开发者（最顶部）===
+        val donateTitle = androidx.appcompat.widget.AppCompatTextView(this).apply {
+            text = getString(R.string.title_donate)
+            textSize = 18f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(0, 0, 0, 8)
+        }
+        layout.addView(donateTitle)
+
+        // QR Code image
+        val qrCodeView = android.widget.ImageView(this).apply {
+            setImageResource(R.drawable.ic_donate_qrcode)
+            layoutParams = LinearLayout.LayoutParams(400, 400).apply {
+                gravity = android.view.Gravity.CENTER_HORIZONTAL
+                bottomMargin = 16
+            }
+            setOnClickListener {
+                AlertDialog.Builder(context)
+                    .setTitle(R.string.title_donate)
+                    .setView(android.widget.ImageView(context).apply {
+                        setImageResource(R.drawable.ic_donate_qrcode)
+                    })
+                    .setPositiveButton(R.string.about_close, null)
+                    .show()
+            }
+        }
+        layout.addView(qrCodeView)
+
+        val qrHint = androidx.appcompat.widget.AppCompatTextView(this).apply {
+            text = getString(R.string.donate_qrcode_desc)
+            gravity = android.view.Gravity.CENTER_HORIZONTAL
+            setPadding(0, 0, 0, 32)
+        }
+        layout.addView(qrHint)
+
+        // Divider
+        val divider1 = android.view.View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 2
+            ).apply { bottomMargin = 32 }
+            setBackgroundColor(androidx.core.content.ContextCompat.getColor(context, android.R.color.darker_gray))
+        }
+        layout.addView(divider1)
+
+        // === 2. GitHub 链接 ===
+        val githubLink = androidx.appcompat.widget.AppCompatTextView(this).apply {
+            text = "GitHub: https://github.com/pisces312/StreamClip"
+            setTextIsSelectable(true)
+            setTextColor(androidx.core.content.ContextCompat.getColor(context, com.google.android.material.R.color.design_default_color_primary))
+            paint.isUnderlineText = true
+            setOnClickListener {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/pisces312/StreamClip")))
+            }
+        }
+        layout.addView(githubLink)
+
+        // === 3. 版本信息 ===
+        val versionView = androidx.appcompat.widget.AppCompatTextView(this).apply {
+            text = buildString {
+                appendLine()
+                appendLine(getString(R.string.app_name_with_version, versionName))
+            }
+            setTextIsSelectable(true)
+        }
+        layout.addView(versionView)
+
+        // === 4. 更新日志 ===
+        val historyView = androidx.appcompat.widget.AppCompatTextView(this).apply {
+            text = buildString {
+                appendLine()
+                appendLine(historyText)
+            }
+            setTextIsSelectable(true)
+        }
+        layout.addView(historyView)
+
+        scrollView.addView(layout)
+
         AlertDialog.Builder(this)
             .setTitle(R.string.title_about)
-            .setMessage(message)
+            .setView(scrollView)
             .setPositiveButton(R.string.about_close, null)
             .setNeutralButton(R.string.about_licenses) { _, _ ->
                 showLicensesDialog()
@@ -302,11 +338,11 @@ class MainActivity : BaseActivity() {
 
     private fun showLicensesDialog() {
         val licenses = arrayOf(
-            "FFmpeg (GPL v3.0)" to R.raw.license_ffmpeg,
-            "FFmpegKit (GPL v3.0)" to R.raw.license_ffmpegkit,
-            "x264 (GPL v2.0+)" to R.raw.license_x264,
-            "x265 (GPL v2.0+)" to R.raw.license_x265,
-            "cpu_features (Apache 2.0)" to R.raw.license_cpu_features
+            Triple("FFmpeg (GPL v3.0)", R.raw.license_ffmpeg, "https://github.com/FFmpeg/FFmpeg"),
+            Triple("FFmpegKit (GPL v3.0)", R.raw.license_ffmpegkit, "https://github.com/pisces312/ffmpeg-kit"),
+            Triple("x264 (GPL v2.0+)", R.raw.license_x264, "https://github.com/mirror/x264"),
+            Triple("x265 (GPL v2.0+)", R.raw.license_x265, "https://github.com/videolan/x265"),
+            Triple("cpu_features (Apache 2.0)", R.raw.license_cpu_features, "https://github.com/google/cpu_features")
         )
 
         val items = licenses.map { it.first }.toTypedArray()
@@ -314,24 +350,55 @@ class MainActivity : BaseActivity() {
         AlertDialog.Builder(this)
             .setTitle(R.string.about_licenses)
             .setItems(items) { _, which ->
-                showLicenseText(licenses[which].second)
+                val (_, resId, url) = licenses[which]
+                showLicenseDetailDialog(it.first, resId, url)
             }
             .setPositiveButton(R.string.about_close, null)
             .show()
     }
 
-    private fun showLicenseText(resId: Int) {
+    private fun showLicenseDetailDialog(name: String, resId: Int, url: String) {
         val text = try {
             resources.openRawResource(resId).bufferedReader().use { it.readText() }
         } catch (e: Exception) {
             getString(R.string.about_license_not_found)
         }
+
+        val scrollView = android.widget.ScrollView(this)
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 32, 48, 32)
+        }
+
+        // 源码地址链接
+        val urlView = androidx.appcompat.widget.AppCompatTextView(this).apply {
+            text = url
+            setTextIsSelectable(true)
+            setTextColor(androidx.core.content.ContextCompat.getColor(context, com.google.android.material.R.color.design_default_color_primary))
+            paint.isUnderlineText = true
+            setOnClickListener {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            }
+            setPadding(0, 0, 0, 24)
+        }
+        layout.addView(urlView)
+
+        // 许可证文本
+        val textView = androidx.appcompat.widget.AppCompatTextView(this).apply {
+            this.text = text
+            setTextIsSelectable(true)
+        }
+        layout.addView(textView)
+
+        scrollView.addView(layout)
+
         AlertDialog.Builder(this)
-            .setTitle(R.string.about_licenses)
-            .setMessage(text)
+            .setTitle(name)
+            .setView(scrollView)
             .setPositiveButton(R.string.about_close, null)
             .show()
     }
+
 
 
     private fun checkPermissions() {
