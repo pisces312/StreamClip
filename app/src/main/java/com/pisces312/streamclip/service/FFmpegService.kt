@@ -1,10 +1,10 @@
 package com.pisces312.streamclip.service
 
 import android.content.Context
-import com.antonkarpenko.ffmpegkit.FFmpegKit
-import com.antonkarpenko.ffmpegkit.FFprobeKit
-import com.antonkarpenko.ffmpegkit.ReturnCode
-import com.antonkarpenko.ffmpegkit.StatisticsCallback
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFprobeKit
+import com.arthenica.ffmpegkit.ReturnCode
+import com.arthenica.ffmpegkit.StatisticsCallback
 import com.pisces312.streamclip.util.LogCollector
 import com.pisces312.streamclip.model.AudioStreamInfo
 import com.pisces312.streamclip.model.MediaInfo
@@ -156,87 +156,86 @@ object FFmpegService {
         onProgress: ((Progress) -> Unit)? = null,
         onLog: ((LogLine) -> Unit)? = null
     ): Result = withContext(Dispatchers.IO) {
-        // Cancel any previous session before starting new one
-        cancelCurrentSession()
-
         suspendCancellableCoroutine { continuation ->
             LogCollector.d("FFmpegService", "Executing: $command")
             val startTime = System.currentTimeMillis()
-            var session: com.antonkarpenko.ffmpegkit.FFmpegSession? = null
 
-            val completeCallback = com.antonkarpenko.ffmpegkit.FFmpegSessionCompleteCallback { completedSession ->
-                currentSessionId = -1
-                val returnCode = completedSession.returnCode
-                val success = ReturnCode.isSuccess(returnCode)
-                val error = if (success) null else (completedSession.output.takeIf { it.isNotEmpty() } ?: "Unknown error")
+            val session = if (onProgress != null || onLog != null) {
+                FFmpegKit.executeAsync(command, { session ->
+                    currentSessionId = -1
+                    val returnCode = session.returnCode
+                    val success = ReturnCode.isSuccess(returnCode)
+                    val error = if (success) null else (session.output.takeIf { it.isNotEmpty() } ?: "Unknown error")
 
-                LogCollector.d("FFmpegService", "Completed: success=$success, code=$returnCode, error=$error")
+                    LogCollector.d("FFmpegService", "Completed: success=$success, code=$returnCode, error=$error")
 
-                // Cancel and clear session reference to help GC
-                try { completedSession.cancel() } catch (_: Exception) {}
-                session = null
-
-                continuation.resume(
-                    Result(
-                        success = success,
-                        outputPath = outputPath,
-                        error = error
+                    continuation.resume(
+                        Result(
+                            success = success,
+                            outputPath = outputPath,
+                            error = error
+                        )
                     )
-                )
-            }
-
-            session = if (onProgress != null || onLog != null) {
-                FFmpegKit.executeAsync(
-                    command,
-                    completeCallback,
-                    { log ->
-                        LogCollector.d("FFmpegService", log.message)
-                        onLog?.invoke(LogLine(log.message, false))
-                    },
-                    com.antonkarpenko.ffmpegkit.StatisticsCallback { statistics ->
-                        val time = statistics.time.toLong()
-                        if (time > 0) {
-                            val percent = if (totalTimeMs > 0) {
-                                ((time.toDouble() / totalTimeMs) * 100).toInt().coerceIn(0, 100)
-                            } else {
-                                -1
-                            }
-
-                            val elapsedMs = System.currentTimeMillis() - startTime
-                            val estimatedRemainingMs = if (percent > 0 && percent < 100) {
-                                (elapsedMs / percent.toDouble() * (100 - percent)).toLong()
-                            } else {
-                                -1
-                            }
-
-                            val outputSize = if (outputPath != null) {
-                                try {
-                                    java.io.File(outputPath).length()
-                                } catch (e: Exception) {
-                                    0L
-                                }
-                            } else 0L
-
-                            onProgress?.invoke(Progress(
-                                percent = percent,
-                                processedTimeMs = time,
-                                totalTimeMs = totalTimeMs,
-                                outputSizeBytes = outputSize,
-                                message = "Processing: ${time}ms"
-                            ))
+                }, { log ->
+                    LogCollector.d("FFmpegService", log.message)
+                    onLog?.invoke(LogLine(log.message, false))
+                }, StatisticsCallback { statistics ->
+                    val time = statistics.time.toLong()
+                    if (time > 0) {
+                        val percent = if (totalTimeMs > 0) {
+                            ((time.toDouble() / totalTimeMs) * 100).toInt().coerceIn(0, 100)
+                        } else {
+                            -1
                         }
+
+                        val elapsedMs = System.currentTimeMillis() - startTime
+                        val estimatedRemainingMs = if (percent > 0 && percent < 100) {
+                            (elapsedMs / percent.toDouble() * (100 - percent)).toLong()
+                        } else {
+                            -1
+                        }
+
+                        val outputSize = if (outputPath != null) {
+                            try {
+                                java.io.File(outputPath).length()
+                            } catch (e: Exception) {
+                                0L
+                            }
+                        } else 0L
+
+                        onProgress?.invoke(Progress(
+                            percent = percent,
+                            processedTimeMs = time,
+                            totalTimeMs = totalTimeMs,
+                            outputSizeBytes = outputSize,
+                            message = "Processing: ${time}ms"
+                        ))
                     }
-                )
+                })
             } else {
-                FFmpegKit.executeAsync(command, completeCallback)
+                FFmpegKit.executeAsync(command, { session ->
+                    currentSessionId = -1
+                    val returnCode = session.returnCode
+                    val success = ReturnCode.isSuccess(returnCode)
+                    val error = if (success) null else (session.output.takeIf { it.isNotEmpty() } ?: "Unknown error")
+
+                    LogCollector.d("FFmpegService", "Completed: success=$success, code=$returnCode, error=$error")
+
+                    continuation.resume(
+                        Result(
+                            success = success,
+                            outputPath = outputPath,
+                            error = error
+                        )
+                    )
+                })
             }
 
-            currentSessionId = session?.sessionId ?: -1
+            currentSessionId = session.sessionId
 
             continuation.invokeOnCancellation {
-                session?.let { FFmpegKit.cancel(it.sessionId) }
+                FFmpegKit.cancel(session.sessionId)
                 currentSessionId = -1
-                session = null
             }
         }
     }

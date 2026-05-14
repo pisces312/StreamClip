@@ -74,7 +74,7 @@
 ## 🏗 技术栈
 
 - Kotlin + Android SDK 35
-- FFmpeg-kit 8.0（arm64，基于 antonkarpenko/ffmpeg-kit）
+- FFmpeg-kit 6.0（arm64 自编译）
 - Material Design 3
 - ViewPager2 + TabLayout
 

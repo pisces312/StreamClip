@@ -1,7 +1,7 @@
 package com.pisces312.streamclip.service
 
-import com.antonkarpenko.ffmpegkit.FFmpegKit
-import com.antonkarpenko.ffmpegkit.ReturnCode
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.ReturnCode
 import com.pisces312.streamclip.model.VideoMetadata
 import com.pisces312.streamclip.util.LogCollector
 import kotlinx.coroutines.Dispatchers

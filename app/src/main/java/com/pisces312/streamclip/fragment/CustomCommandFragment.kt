@@ -16,8 +16,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.pisces312.streamclip.databinding.FragmentCustomCommandBinding
-import com.antonkarpenko.ffmpegkit.FFprobeKit
-import com.antonkarpenko.ffmpegkit.ReturnCode
+import com.arthenica.ffmpegkit.FFprobeKit
+import com.arthenica.ffmpegkit.ReturnCode
 import com.pisces312.streamclip.service.FFmpegService
 import com.pisces312.streamclip.util.LogCollector
 import com.pisces312.streamclip.util.SettingsManager
