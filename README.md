@@ -78,8 +78,8 @@ Keeps screen awake during processing (enabled by default).
 ## 🏗 技术栈 / Tech Stack
 
 - Kotlin + Android SDK 35
-- FFmpeg-kit 8.0（arm64，GPL-3.0）
-  - 基于 [antonkarpenko/ffmpeg-kit](https://github.com/antonkarpenko/ffmpeg-kit)
+- FFmpeg-kit 8.1（arm64 自编译，GPL-3.0）
+  - 构建源码：[ffmpeg-kit](https://github.com/pisces312/ffmpeg-kit) · [ffmpeg](https://github.com/pisces312/ffmpeg)
 - Material Design 3
 - ViewPager2 + TabLayout
 
@@ -136,6 +136,7 @@ If this project helps you, consider supporting maintenance:
 
 本项目基于 [GPL-3.0](LICENSE) 发布，完整遵循该协议要求：
 
-- **ffmpeg-kit 源码**：[github.com/antonkarpenko/ffmpeg-kit](https://github.com/antonkarpenko/ffmpeg-kit)
+- **ffmpeg-kit 源码**：[github.com/pisces312/ffmpeg-kit](https://github.com/pisces312/ffmpeg-kit)
+- **ffmpeg 源码**：[github.com/pisces312/FFmpeg](https://github.com/pisces312/FFmpeg)
 
 对应源码与本项目使用完全相同的 GPL-3.0 许可证，可自由获取、修改和分发。
