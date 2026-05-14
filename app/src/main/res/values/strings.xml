@@ -48,11 +48,11 @@
     <string name="about_changelog">更新日志</string>
     <string name="about_close">关闭</string>
     <string name="about_licenses">开源许可</string>
-    <string name="about_license_summary">本应用使用 FFmpeg 及相关开源库，受 GPL v3.0 许可</string>
+    <string name="about_license_summary">本应用使用 FFmpeg 及相关开源库，受 LGPL-3.0 许可</string>
     <string name="about_license_not_found">许可证文件未找到</string>
-    <string name="title_donate">支持开发者</string>
+    <string name="title_donate">捐赠</string>
     <string name="donate_desc">如果轻剪辑帮到了你，欢迎打赏支持继续开发</string>
-    <string name="donate_qrcode_desc">微信/支付宝扫码</string>
+    <string name="donate_qrcode_desc">支付宝/微信扫码</string>
     <string name="guide_title">编码设置推荐</string>
     <string name="guide_h264_title">H.264（兼容性最好）</string>
     <string name="guide_h264_desc">日常使用首选，所有设备都能播放</string>

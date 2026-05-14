@@ -46,7 +46,7 @@
     <string name="add_timestamp_desc">Avoid overwriting original files</string>
     <string name="current_path">Current Path</string>
     <string name="scroll_to_bottom">Scroll to Bottom</string>
-    <string name="title_donate">Support Developer</string>
+    <string name="title_donate">Donate</string>
     <string name="title_help">Help</string>
     <string name="title_about">About</string>
     <string name="title_tab_order">Tab Order</string>
@@ -178,7 +178,7 @@
 
     <!-- Metadata -->
     <string name="title_metadata">Metadata</string>
-    <string name="title_menu">Menu</string>
+    <string name="title_menu">Settings</string>
     <string name="metadata_select_video_hint">Select a video to edit metadata</string>
     <string name="metadata_fields">Editable Fields</string>
     <string name="metadata_title">Title</string>
@@ -202,7 +202,7 @@
     <string name="about_changelog">Changelog</string>
     <string name="about_close">Close</string>
     <string name="about_licenses">Open Source Licenses</string>
-    <string name="about_license_summary">This app uses FFmpeg and related open source libraries, licensed under GPL v3.0</string>
+    <string name="about_license_summary">This app uses FFmpeg and related open source libraries, licensed under LGPL-3.0</string>
     <string name="about_license_not_found">License file not found</string>
 
     <!-- Tab Order -->

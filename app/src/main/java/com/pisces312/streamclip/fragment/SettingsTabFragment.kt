@@ -9,28 +9,28 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.widget.SwitchCompat
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import com.pisces312.streamclip.LogActivity
+import com.pisces312.streamclip.MainActivity
 import com.pisces312.streamclip.R
-import com.pisces312.streamclip.databinding.FragmentSettingsBinding
+import com.pisces312.streamclip.databinding.FragmentSettingsTabBinding
+import com.pisces312.streamclip.ui.TabOrderActivity
 import com.pisces312.streamclip.util.LocaleHelper
 import com.pisces312.streamclip.util.LogCollector
 import com.pisces312.streamclip.util.SettingsManager
 
-class SettingsFragment : Fragment() {
+class SettingsTabFragment : Fragment() {
 
-    private var _binding: FragmentSettingsBinding? = null
+    private var _binding: FragmentSettingsTabBinding? = null
     private val binding get() = _binding!!
 
     private val pickDir = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
-                // 持久化权限
                 val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 requireContext().contentResolver.takePersistableUriPermission(uri, takeFlags)
 
-                // 将 content URI 转换为文件路径
                 val filePath = uriToFilepath(uri)
                 if (filePath != null) {
                     SettingsManager.setCustomOutputPath(requireContext(), filePath)
@@ -44,44 +44,27 @@ class SettingsFragment : Fragment() {
         }
     }
 
-    /**
-     * 将 SAF content URI 转换为文件路径
-     * 例如 content://com.android.externalstorage.documents/tree/primary%3ADCIM
-     *   → /storage/emulated/0/DCIM
-     */
-    private fun uriToFilepath(uri: Uri): String? {
-        if (uri.scheme == "file") return uri.path
-        if (uri.scheme != "content") return null
-
-        // 处理 externalstoragedocuments
-        if (uri.authority == "com.android.externalstorage.documents") {
-            val docId = android.provider.DocumentsContract.getTreeDocumentId(uri)
-            val parts = docId.split(":")
-            if (parts.isEmpty()) return null
-            val storageId = parts[0]
-            val subPath = if (parts.size > 1) parts[1] else ""
-            // primary → /storage/emulated/0
-            val basePath = if (storageId == "primary") "/storage/emulated/0" else "/storage/$storageId"
-            return if (subPath.isNotEmpty()) "$basePath/$subPath" else basePath
-        }
-
-        return null
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentSettingsBinding.inflate(inflater, container, false)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = FragmentSettingsTabBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 加载当前设置
+        val mainActivity = activity as? MainActivity
+
         updateUi()
+
+        // 捐赠
+        binding.layoutDonate.setOnClickListener {
+            mainActivity?.showDonateDialog()
+        }
+
+        // 功能排序
+        binding.layoutTabOrder.setOnClickListener {
+            startActivity(Intent(requireContext(), TabOrderActivity::class.java))
+        }
 
         // 使用原视频目录
         binding.switchUseSourceDir.setOnCheckedChangeListener { _, isChecked ->
@@ -107,22 +90,26 @@ class SettingsFragment : Fragment() {
             pickDir.launch(intent)
         }
 
-        // 打开输出目录
-        binding.btnOpenDir.setOnClickListener {
-            openOutputDir()
-        }
-
         // 语言设置
         binding.layoutLanguage.setOnClickListener {
             showLanguageDialog()
         }
 
         // 清除缓存
-        binding.btnClearCache.setOnClickListener {
+        binding.layoutClearCache.setOnClickListener {
             showClearCacheDialog()
         }
 
+        // 日志
+        binding.layoutLogs.setOnClickListener {
+            startActivity(Intent(requireContext(), LogActivity::class.java))
+        }
 
+        // 帮助
+        binding.layoutHelp.setOnClickListener { mainActivity?.showGuideDialog() }
+
+        // 关于
+        binding.layoutAbout.setOnClickListener { mainActivity?.showAboutDialog() }
     }
 
     private fun updateUi() {
@@ -131,21 +118,18 @@ class SettingsFragment : Fragment() {
         binding.switchAddTimestamp.isChecked = SettingsManager.isAddTimestamp(context)
         binding.switchKeepScreenOn.isChecked = SettingsManager.isKeepScreenOn(context)
 
-        // 显示当前输出路径
         val path = when {
             SettingsManager.isUseSourceDir(context) -> getString(R.string.same_as_source)
             else -> SettingsManager.getCustomOutputPath(context) ?: getString(R.string.not_set)
         }
         binding.tvCurrentPath.text = path
 
-        // 自定义目录选择按钮状态
-        binding.btnSelectDir.isEnabled = !SettingsManager.isUseSourceDir(context)
+        val useSourceDir = SettingsManager.isUseSourceDir(context)
+        binding.layoutCustomDir.visibility = if (useSourceDir) View.GONE else View.VISIBLE
 
-        // 显示缓存大小
         val cacheSize = SettingsManager.getCacheSize(context)
-        binding.tvCacheSize.text = getString(R.string.cache_size, SettingsManager.formatSize(cacheSize))
+        binding.tvClearCache.text = "${getString(R.string.clear_cache)}（${getString(R.string.cache_size, SettingsManager.formatSize(cacheSize))}）"
 
-        // 更新语言显示
         updateLanguageDisplay()
     }
 
@@ -175,67 +159,12 @@ class SettingsFragment : Fragment() {
                 val selected = values[which]
                 if (selected != LocaleHelper.getLanguage(requireContext())) {
                     LocaleHelper.setLanguage(requireContext(), selected)
-                    // 需要重启应用才能生效
                     requireActivity().recreate()
                 }
                 dialog.dismiss()
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
-    }
-
-    private fun openOutputDir() {
-        val context = requireContext()
-        val path = when {
-            SettingsManager.isUseSourceDir(context) -> {
-                Toast.makeText(context, R.string.use_source_dir_hint, Toast.LENGTH_SHORT).show()
-                return
-            }
-            else -> SettingsManager.getCustomOutputPath(context)
-        }
-
-        if (path.isNullOrEmpty()) {
-            Toast.makeText(context, R.string.output_dir_not_set, Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        try {
-            // Convert file path to SAF document URI to avoid file:// URI crash on Android 7+
-            val docUri = pathToDocumentUri(path)
-            if (docUri != null) {
-                val intent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(docUri, android.provider.DocumentsContract.Document.MIME_TYPE_DIR)
-                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                }
-                startActivity(intent)
-            } else {
-                Toast.makeText(context, R.string.error, Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            Toast.makeText(context, getString(R.string.cannot_open_dir, e.message), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /**
-     * Convert file path to SAF document URI
-     * e.g. /storage/emulated/0/DCIM → content://com.android.externalstorage.documents/document/primary%3ADCIM
-     */
-    private fun pathToDocumentUri(path: String): Uri? {
-        val emulatedPrefix = "/storage/emulated/0/"
-        val storagePrefix = "/storage/"
-        val docId = when {
-            path.startsWith(emulatedPrefix) -> "primary:" + path.removePrefix(emulatedPrefix)
-            path.startsWith(storagePrefix) -> {
-                val rest = path.removePrefix(storagePrefix)
-                val slashIdx = rest.indexOf('/')
-                if (slashIdx > 0) rest.substring(0, slashIdx) + ":" + rest.substring(slashIdx + 1)
-                else return null
-            }
-            else -> return null
-        }
-        return android.provider.DocumentsContract.buildDocumentUri(
-            "com.android.externalstorage.documents", docId
-        )
     }
 
     private fun showClearCacheDialog() {
@@ -252,6 +181,23 @@ class SettingsFragment : Fragment() {
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
+    }
+
+    private fun uriToFilepath(uri: Uri): String? {
+        if (uri.scheme == "file") return uri.path
+        if (uri.scheme != "content") return null
+
+        if (uri.authority == "com.android.externalstorage.documents") {
+            val docId = android.provider.DocumentsContract.getTreeDocumentId(uri)
+            val parts = docId.split(":")
+            if (parts.isEmpty()) return null
+            val storageId = parts[0]
+            val subPath = if (parts.size > 1) parts[1] else ""
+            val basePath = if (storageId == "primary") "/storage/emulated/0" else "/storage/$storageId"
+            return if (subPath.isNotEmpty()) "$basePath/$subPath" else basePath
+        }
+
+        return null
     }
 
     override fun onDestroyView() {

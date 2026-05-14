@@ -20,7 +20,6 @@ import com.pisces312.streamclip.util.LogCollector
 import com.google.android.material.tabs.TabLayoutMediator
 import com.pisces312.streamclip.adapter.MainPagerAdapter
 import com.pisces312.streamclip.databinding.ActivityMainBinding
-import com.pisces312.streamclip.fragment.SettingsFragment
 import com.pisces312.streamclip.util.TabOrderManager
 import androidx.viewpager2.widget.ViewPager2
 
@@ -111,10 +110,11 @@ class MainActivity : BaseActivity() {
     private fun handleMenuItem(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_settings -> {
-                supportFragmentManager.beginTransaction()
-                    .replace(android.R.id.content, SettingsFragment())
-                    .addToBackStack(null)
-                    .commit()
+                val order = TabOrderManager.getOrder(this)
+                val index = order.indexOf("settings")
+                if (index >= 0) {
+                    binding.viewPager.currentItem = index
+                }
                 true
             }
             R.id.action_logs -> {
@@ -170,6 +170,73 @@ class MainActivity : BaseActivity() {
             .show()
     }
 
+    internal fun showDonateDialog() {
+        val scrollView = android.widget.ScrollView(this)
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 32, 48, 32)
+        }
+
+        val donateTitle = androidx.appcompat.widget.AppCompatTextView(this).apply {
+            text = "如果这个软件对你有帮助，欢迎支持维护："
+            textSize = 16f
+            setPadding(0, 0, 0, 16)
+        }
+        layout.addView(donateTitle)
+
+        // QR Code images from assets
+        val qrContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_HORIZONTAL
+            setPadding(0, 0, 0, 16)
+        }
+
+        fun loadQrImage(assetName: String): android.widget.ImageView {
+            return android.widget.ImageView(this@MainActivity).apply {
+                layoutParams = LinearLayout.LayoutParams(400, 400).apply {
+                    marginEnd = 16
+                }
+                try {
+                    assets.open(assetName).use { stream ->
+                        setImageBitmap(android.graphics.BitmapFactory.decodeStream(stream))
+                    }
+                } catch (_: Exception) {
+                    // ignore
+                }
+                setOnClickListener {
+                    AlertDialog.Builder(context)
+                        .setView(android.widget.ImageView(context).apply {
+                            try {
+                                assets.open(assetName).use { stream ->
+                                    setImageBitmap(android.graphics.BitmapFactory.decodeStream(stream))
+                                }
+                            } catch (_: Exception) {}
+                        })
+                        .setPositiveButton(R.string.about_close, null)
+                        .show()
+                }
+            }
+        }
+
+        qrContainer.addView(loadQrImage("donate-alipay.png"))
+        qrContainer.addView(loadQrImage("donate-wechat.png"))
+        layout.addView(qrContainer)
+
+        val qrHint = androidx.appcompat.widget.AppCompatTextView(this).apply {
+            text = "支付宝/微信扫码"
+            gravity = android.view.Gravity.CENTER_HORIZONTAL
+            setPadding(0, 16, 0, 0)
+        }
+        layout.addView(qrHint)
+
+        scrollView.addView(layout)
+
+        AlertDialog.Builder(this)
+            .setView(scrollView)
+            .setPositiveButton(R.string.about_close, null)
+            .show()
+    }
+
     internal fun showAboutDialog() {
         val versionName = try {
             packageManager.getPackageInfo(packageName, 0).versionName ?: "Unknown"
@@ -193,51 +260,7 @@ class MainActivity : BaseActivity() {
             setPadding(48, 32, 48, 32)
         }
 
-        // === 1. 支持开发者（最顶部）===
-        val donateTitle = androidx.appcompat.widget.AppCompatTextView(this).apply {
-            text = getString(R.string.title_donate)
-            textSize = 18f
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setPadding(0, 0, 0, 8)
-        }
-        layout.addView(donateTitle)
-
-        // QR Code image
-        val qrCodeView = android.widget.ImageView(this).apply {
-            setImageResource(R.drawable.ic_donate_qrcode)
-            layoutParams = LinearLayout.LayoutParams(400, 400).apply {
-                gravity = android.view.Gravity.CENTER_HORIZONTAL
-                bottomMargin = 16
-            }
-            setOnClickListener {
-                AlertDialog.Builder(context)
-                    .setTitle(R.string.title_donate)
-                    .setView(android.widget.ImageView(context).apply {
-                        setImageResource(R.drawable.ic_donate_qrcode)
-                    })
-                    .setPositiveButton(R.string.about_close, null)
-                    .show()
-            }
-        }
-        layout.addView(qrCodeView)
-
-        val qrHint = androidx.appcompat.widget.AppCompatTextView(this).apply {
-            text = getString(R.string.donate_qrcode_desc)
-            gravity = android.view.Gravity.CENTER_HORIZONTAL
-            setPadding(0, 0, 0, 32)
-        }
-        layout.addView(qrHint)
-
-        // Divider
-        val divider1 = android.view.View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 2
-            ).apply { bottomMargin = 32 }
-            setBackgroundColor(androidx.core.content.ContextCompat.getColor(context, android.R.color.darker_gray))
-        }
-        layout.addView(divider1)
-
-        // === 2. GitHub 链接 ===
+        // === 1. GitHub 链接 ===
         val githubLink = androidx.appcompat.widget.AppCompatTextView(this).apply {
             text = "GitHub: https://github.com/pisces312/StreamClip"
             setTextIsSelectable(true)
@@ -249,7 +272,7 @@ class MainActivity : BaseActivity() {
         }
         layout.addView(githubLink)
 
-        // === 3. 版本信息 ===
+        // === 2. 版本信息 ===
         val versionView = androidx.appcompat.widget.AppCompatTextView(this).apply {
             text = buildString {
                 appendLine()
@@ -259,7 +282,7 @@ class MainActivity : BaseActivity() {
         }
         layout.addView(versionView)
 
-        // === 4. 更新日志 ===
+        // === 3. 更新日志 ===
         val historyView = androidx.appcompat.widget.AppCompatTextView(this).apply {
             text = buildString {
                 appendLine()
@@ -339,7 +362,7 @@ class MainActivity : BaseActivity() {
     private fun showLicensesDialog() {
         val licenses = arrayOf(
             Triple("FFmpeg (GPL v3.0)", R.raw.license_ffmpeg, "https://github.com/FFmpeg/FFmpeg"),
-            Triple("FFmpegKit (GPL v3.0)", R.raw.license_ffmpegkit, "https://github.com/pisces312/ffmpeg-kit"),
+            Triple("FFmpegKit (LGPL-3.0)", R.raw.license_ffmpegkit, "https://github.com/pisces312/ffmpeg-kit"),
             Triple("x264 (GPL v2.0+)", R.raw.license_x264, "https://github.com/mirror/x264"),
             Triple("x265 (GPL v2.0+)", R.raw.license_x265, "https://github.com/videolan/x265"),
             Triple("cpu_features (Apache 2.0)", R.raw.license_cpu_features, "https://github.com/google/cpu_features")
@@ -351,7 +374,7 @@ class MainActivity : BaseActivity() {
             .setTitle(R.string.about_licenses)
             .setItems(items) { _, which ->
                 val (_, resId, url) = licenses[which]
-                showLicenseDetailDialog(it.first, resId, url)
+                showLicenseDetailDialog(licenses[which].first, resId, url)
             }
             .setPositiveButton(R.string.about_close, null)
             .show()
@@ -372,7 +395,7 @@ class MainActivity : BaseActivity() {
 
         // 源码地址链接
         val urlView = androidx.appcompat.widget.AppCompatTextView(this).apply {
-            text = url
+            this.text = url
             setTextIsSelectable(true)
             setTextColor(androidx.core.content.ContextCompat.getColor(context, com.google.android.material.R.color.design_default_color_primary))
             paint.isUnderlineText = true
