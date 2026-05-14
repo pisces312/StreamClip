@@ -18,7 +18,6 @@ class TabOrderActivity : BaseActivity() {
 
     private val tabTitles = mapOf(
         "trim" to R.string.title_trim,
-        "trim2" to R.string.title_trim2,
         "merge" to R.string.title_merge,
         "extract" to R.string.title_extract,
         "compress" to R.string.title_compress,

@@ -88,13 +88,13 @@ class TrimSimpleFragment : Fragment() {
 
         // 自定义进度条回调
         binding.trimSeekBar.setOnRangeChangeListener(object : com.pisces312.streamclip.ui.TrimSeekBar.OnRangeChangeListener {
-            override fun onRangeChanged(start: Int, end: Int, fromUser: Boolean) {
+            override fun onRangeChanged(start: Int, end: Int, fromUser: Boolean, draggingEnd: Boolean) {
                 startSec = start
                 endSec = end
                 updateTimeButtons()
                 if (fromUser) {
-                    // 拖动时更新播放器到开始位置
-                    player?.seekTo(startSec * 1000L)
+                    // 拖动时画面联动：拖结束标记跳转到结束位置，否则跳转到开始位置
+                    player?.seekTo((if (draggingEnd) endSec else startSec) * 1000L)
                 }
             }
         })
@@ -186,21 +186,21 @@ class TrimSimpleFragment : Fragment() {
     private fun updateInputStatus(uri: Uri) {
         val pathResult = FileUtils.getPathResultFromUri(requireContext(), uri)
         if (pathResult != null) {
-            binding.tvStatus.visibility = View.VISIBLE
+            binding.tvStatus.visibility = View.GONE
             if (pathResult.isDirectRead) {
-                binding.tvStatus.text = "✅ 直读: ${pathResult.path}"
-                binding.tvStatus.setTextColor(0xFF4CAF50.toInt())
+                binding.tvFileName.text = "✅ 直读: ${pathResult.path}"
+                binding.tvFileName.setTextColor(0xFF4CAF50.toInt())
             } else {
-                binding.tvStatus.text = "⚠️ 缓存: ${java.io.File(pathResult.path).name} (已复制)"
-                binding.tvStatus.setTextColor(0xFFFF9800.toInt())
+                binding.tvFileName.text = "⚠️ 缓存: ${java.io.File(pathResult.path).name} (已复制)"
+                binding.tvFileName.setTextColor(0xFFFF9800.toInt())
             }
             sourceFileTimes = FileUtils.readFileTimes(pathResult.path)
         }
     }
 
     private fun updateOutputStatus(outputFile: java.io.File) {
-        binding.tvStatus.text = "📁 输出: ${outputFile.absolutePath}"
-        binding.tvStatus.setTextColor(0xFF2196F3.toInt())
+        binding.tvFileName.text = "📁 输出: ${outputFile.absolutePath}"
+        binding.tvFileName.setTextColor(0xFF2196F3.toInt())
     }
 
     private fun loadVideo(uri: Uri) {

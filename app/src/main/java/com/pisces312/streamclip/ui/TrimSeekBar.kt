@@ -24,7 +24,7 @@ class TrimSeekBar @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     interface OnRangeChangeListener {
-        fun onRangeChanged(startSec: Int, endSec: Int, fromUser: Boolean)
+        fun onRangeChanged(startSec: Int, endSec: Int, fromUser: Boolean, draggingEnd: Boolean)
     }
 
     private var listener: OnRangeChangeListener? = null
@@ -228,7 +228,7 @@ class TrimSeekBar @JvmOverloads constructor(
     }
 
     private fun notifyListener(fromUser: Boolean) {
-        listener?.onRangeChanged(startSec, endSec, fromUser)
+        listener?.onRangeChanged(startSec, endSec, fromUser, draggingMarker == 2)
     }
 
     private fun dpToPx(dp: Float): Float {
