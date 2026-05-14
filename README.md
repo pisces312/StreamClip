@@ -1,4 +1,4 @@
-# StreamClip（剪流）
+# StreamClip（轻剪辑）
 
 An Android video processing app built on FFmpeg — 基于 FFmpeg 的 Android 视频处理工具。
 
@@ -100,9 +100,15 @@ Visit [Releases](https://github.com/pisces312/StreamClip/releases) for pre-built
 
 ## 📜 版本历史 / Changelog
 
+详见 [CHANGELOG.md](CHANGELOG.md) 获取完整更新记录。
+
 | 版本 / Version | 更新内容 / Changes |
 |---|---|
-| **v1.3.1** | 批处理队列、帧率控制、双语 README / Batch queue, frame rate control, bilingual README |
+| **v2.1.0** | ffmpeg-kit 8.1 崩溃修复、音频采样率默认"复制" / ffmpeg-kit 8.1 crash fix, audio sample rate default "copy" |
+| **v2.0.0** | 国际化、标签页排序、UI 改造、实时进度、批处理 / i18n, tab reordering, UI overhaul, real-time progress, batch |
+| **v1.6.0** | FFmpeg Kit 升级至 8.1 / FFmpeg Kit upgrade to 8.1 |
+| **v1.5.0** | 音频文件输入支持、元数据编辑、自定义命令增强 / Audio file input, metadata editing, custom command |
+| **v1.4.0** | 二进制 FFmpeg 支持、后端切换、音频压缩独立页 / Binary FFmpeg, backend switch, audio compression tab |
 | **v1.3.0** | 自定义 FFmpeg 命令页面、GPS 元数据修复 / Custom FFmpeg page, GPS metadata fix |
 | **v1.2.0** | 视频压缩（硬编码+软编码）、GPS 元数据保留、捐赠功能 / Compression, metadata preservation, donation |
 | **v1.1.0** | 压缩功能重构，H.264/H.265 Tab 切换 / Compression refactor, H.264/H.265 tabs |

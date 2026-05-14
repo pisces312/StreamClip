@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-StreamClip（剪流）— Android 视频处理工具，基于 FFmpeg 实现视频裁剪、音频提取、视频合并、视频压缩、自定义 FFmpeg 命令等功能。单模块 Kotlin 项目，版本 1.3.1。
+StreamClip（轻剪辑）— Android 视频处理工具，基于 FFmpeg 实现视频裁剪、音频提取、视频合并、视频压缩、自定义 FFmpeg 命令等功能。单模块 Kotlin 项目，版本 1.3.1。
 
 ## Build & Run
 

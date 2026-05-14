@@ -215,14 +215,23 @@ class MainActivity : BaseActivity() {
         } catch (e: Exception) {
             "Unknown"
         }
+        val changelog = try {
+            assets.open("CHANGELOG.md").bufferedReader().use { it.readText() }
+        } catch (e: Exception) {
+            null
+        }
+        val historyText = if (changelog != null) {
+            parseChangelogHistory(changelog)
+        } else {
+            "v1.3.0 - 初始版本\nv1.3.1 - 修复GPS元数据，添加自定义命令\nv1.3.2 - 添加音频压缩，标签排序\nv1.4.0 - 添加二进制FFmpeg支持"
+        }
         val message = buildString {
             appendLine(getString(R.string.app_name))
             appendLine(getString(R.string.about_version, versionName))
             appendLine()
-            appendLine("v1.3.0 - 初始版本")
-            appendLine("v1.3.1 - 修复GPS元数据，添加自定义命令")
-            appendLine("v1.3.2 - 添加音频压缩，标签排序")
-            appendLine("v1.4.0 - 添加二进制FFmpeg支持")
+            appendLine(historyText)
+            appendLine()
+            appendLine("GitHub: https://github.com/pisces312/StreamClip")
             appendLine()
             appendLine(getString(R.string.about_license_summary))
         }
@@ -234,6 +243,61 @@ class MainActivity : BaseActivity() {
                 showLicensesDialog()
             }
             .show()
+    }
+
+    private fun parseChangelogHistory(changelog: String): String {
+        val lines = changelog.lines()
+        val result = mutableListOf<String>()
+        var inVersionSection = false
+        var currentVersion = ""
+        var currentSummary = mutableListOf<String>()
+
+        for (line in lines) {
+            val trimmed = line.trim()
+            when {
+                // Match version header like "## [2.1.0] - 2026-05-13" or "## [Unreleased]"
+                trimmed.startsWith("## [") -> {
+                    // Save previous version if exists
+                    if (currentVersion.isNotEmpty() && currentSummary.isNotEmpty()) {
+                        result.add("$currentVersion - ${currentSummary.joinToString(", ")}")
+                    }
+                    // Parse new version
+                    val versionMatch = Regex("""## \[(.+?)\]""").find(trimmed)
+                    currentVersion = versionMatch?.groupValues?.get(1) ?: ""
+                    currentSummary = mutableListOf()
+                    inVersionSection = currentVersion != "Unreleased"
+                }
+                // Match category headers like "### 新增", "### 修复", etc.
+                trimmed.startsWith("### ") && inVersionSection -> {
+                    // Category header, skip
+                }
+                // Match list items under a version
+                trimmed.startsWith("- ") && inVersionSection && currentVersion.isNotEmpty() -> {
+                    val item = trimmed.removePrefix("- ").trim()
+                    // Extract bold text as summary, or first sentence
+                    val boldMatch = Regex("""\*\*(.+?)\*\*""").find(item)
+                    val summary = if (boldMatch != null) {
+                        boldMatch.groupValues[1]
+                    } else {
+                        item.take(40) + if (item.length > 40) "…" else ""
+                    }
+                    if (summary.isNotEmpty() && !currentSummary.contains(summary)) {
+                        currentSummary.add(summary)
+                    }
+                }
+                trimmed.isEmpty() -> {
+                    // Empty line, continue
+                }
+                else -> {
+                    // Other content, ignore
+                }
+            }
+        }
+        // Save last version
+        if (currentVersion.isNotEmpty() && currentSummary.isNotEmpty()) {
+            result.add("$currentVersion - ${currentSummary.joinToString(", ")}")
+        }
+        return result.joinToString("\n")
     }
 
     private fun showLicensesDialog() {

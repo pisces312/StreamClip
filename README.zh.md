@@ -1,4 +1,4 @@
-# StreamClip（剪流）
+# StreamClip（轻剪辑）
 
 基于 FFmpeg 的 Android 视频处理工具。
 
