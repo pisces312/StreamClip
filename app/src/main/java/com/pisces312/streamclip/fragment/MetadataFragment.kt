@@ -56,6 +56,21 @@ class MetadataFragment : Fragment() {
         binding.btnReset.setOnClickListener { resetFields() }
 
         setupFieldListeners()
+
+        // 处理外部传入的视频 URI（通过"用元数据编辑打开"）
+        arguments?.getParcelable<Uri>(com.pisces312.streamclip.ui.MetadataActivity.ARG_EXTERNAL_VIDEO_URI)?.let { uri ->
+            arguments?.remove(com.pisces312.streamclip.ui.MetadataActivity.ARG_EXTERNAL_VIDEO_URI)
+            view.post {
+                handleExternalVideo(uri)
+            }
+        }
+    }
+
+    /**
+     * 处理外部传入的视频（从"用元数据编辑打开"Intent）
+     */
+    fun handleExternalVideo(uri: Uri) {
+        handleSelectedVideo(uri)
     }
 
     private fun pickVideo() {

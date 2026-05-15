@@ -126,6 +126,25 @@ class CompressFragment : Fragment() {
         setupButtons()
         setupHelpButtons()
         setupBatchRecyclerView()
+
+        // 处理外部传入的视频 URI（通过"用视频压缩打开"）
+        arguments?.getParcelable<Uri>(com.pisces312.streamclip.ui.CompressActivity.ARG_EXTERNAL_VIDEO_URI)?.let { uri ->
+            arguments?.remove(com.pisces312.streamclip.ui.CompressActivity.ARG_EXTERNAL_VIDEO_URI)
+            view.post {
+                handleExternalVideo(uri)
+            }
+        }
+    }
+
+    /**
+     * 处理外部传入的视频（从"用视频压缩打开"Intent）
+     */
+    fun handleExternalVideo(uri: Uri) {
+        // 清除批量选择状态，确保单文件模式
+        batchVideoUris.clear()
+        pathResultCache = null
+        updateBatchUi()
+        handleVideoSelected(uri)
     }
 
     private fun setupTabLayout() {

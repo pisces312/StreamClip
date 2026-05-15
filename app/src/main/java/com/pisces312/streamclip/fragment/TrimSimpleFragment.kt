@@ -112,6 +112,24 @@ class TrimSimpleFragment : Fragment() {
         binding.btnExecute.setOnClickListener {
             executeTrim()
         }
+
+        // 处理外部传入的视频 URI（通过"用视频剪辑打开"）
+        arguments?.getParcelable<Uri>(com.pisces312.streamclip.ui.TrimActivity.ARG_EXTERNAL_VIDEO_URI)?.let { uri ->
+            arguments?.remove(com.pisces312.streamclip.ui.TrimActivity.ARG_EXTERNAL_VIDEO_URI)
+            view.post {
+                handleExternalVideo(uri)
+            }
+        }
+    }
+
+    /**
+     * 处理外部传入的视频（从"用视频剪辑打开"Intent）
+     */
+    fun handleExternalVideo(uri: Uri) {
+        selectedVideoUri = uri
+        SettingsManager.setLastVideoDir(requireContext(), uri)
+        loadVideo(uri)
+        updateInputStatus(uri)
     }
 
     private fun togglePlayPause() {

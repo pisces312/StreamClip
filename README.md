@@ -104,6 +104,7 @@ Visit [Releases](https://github.com/pisces312/StreamClip/releases) for pre-built
 
 | 版本 / Version | 更新内容 / Changes |
 |---|---|
+| **v2.1.2** | 支持"用视频压缩打开"/"用视频剪辑打开"等外部 Intent / Support external Intent to open video directly in compress/trim/extract/metadata |
 | **v2.1.0** | ffmpeg-kit 8.1 崩溃修复、音频采样率默认"复制" / ffmpeg-kit 8.1 crash fix, audio sample rate default "copy" |
 | **v2.0.0** | 国际化、标签页排序、UI 改造、实时进度、批处理 / i18n, tab reordering, UI overhaul, real-time progress, batch |
 | **v1.6.0** | FFmpeg Kit 升级至 8.1 / FFmpeg Kit upgrade to 8.1 |

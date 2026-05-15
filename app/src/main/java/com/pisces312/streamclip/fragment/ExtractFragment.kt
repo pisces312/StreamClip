@@ -71,6 +71,27 @@ class ExtractFragment : Fragment() {
         binding.btnExecute.setOnClickListener {
             executeExtract()
         }
+
+        // 处理外部传入的视频 URI（通过"用音频提取打开"）
+        arguments?.getParcelable<Uri>(com.pisces312.streamclip.ui.ExtractActivity.ARG_EXTERNAL_VIDEO_URI)?.let { uri ->
+            arguments?.remove(com.pisces312.streamclip.ui.ExtractActivity.ARG_EXTERNAL_VIDEO_URI)
+            view.post {
+                handleExternalVideo(uri)
+            }
+        }
+    }
+
+    /**
+     * 处理外部传入的视频（从"用音频提取打开"Intent）
+     */
+    fun handleExternalVideo(uri: Uri) {
+        selectedVideoUri = uri
+        SettingsManager.setLastVideoDir(requireContext(), uri)
+        val fileName = getFileName(uri)
+        binding.tvFileName.text = fileName
+        binding.btnExecute.isEnabled = true
+        updateInputStatus(uri)
+        probeMediaInfo(uri)
     }
 
     private fun updateInputStatus(uri: Uri) {
