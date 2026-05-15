@@ -44,6 +44,8 @@ class MainActivity : BaseActivity() {
 
         checkPermissions()
         setupViewPager()
+        setupTabLongPress()
+        setupVersionDisplay()
 
         // 检查是否有崩溃日志
         checkCrashLog()
@@ -76,6 +78,26 @@ class MainActivity : BaseActivity() {
                 binding.tvTabIndicator.text = "${position + 1}/$totalCount"
             }
         })
+    }
+
+    private fun setupTabLongPress() {
+        binding.tabLayout.post {
+            for (i in 0 until binding.tabLayout.tabCount) {
+                binding.tabLayout.getTabAt(i)?.view?.setOnLongClickListener {
+                    startActivity(Intent(this, com.pisces312.streamclip.ui.TabOrderActivity::class.java))
+                    true
+                }
+            }
+        }
+    }
+
+    private fun setupVersionDisplay() {
+        val versionName = try {
+            packageManager.getPackageInfo(packageName, 0).versionName ?: "Unknown"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+        binding.tvVersion.text = "v$versionName"
     }
 
     private fun getTabText(tabId: String): String = when (tabId) {
@@ -171,6 +193,11 @@ class MainActivity : BaseActivity() {
     }
 
     internal fun showDonateDialog() {
+        if (BuildConfig.DISTRIBUTION == "store") {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/pisces312/StreamClip")))
+            return
+        }
+
         val scrollView = android.widget.ScrollView(this)
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

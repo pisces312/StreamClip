@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">轻剪辑</string>
     <string name="app_name_with_version">轻剪辑 v%1$s</string>
+    <string name="app_version">v2.1.1</string>
     <string name="menu">菜单</string>
     <string name="title_trim">无损截取</string>
     <string name="title_trim2">无损截取2</string>
