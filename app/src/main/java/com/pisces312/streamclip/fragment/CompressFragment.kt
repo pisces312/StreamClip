@@ -85,11 +85,13 @@ class CompressFragment : Fragment() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            // Clear single selection when entering batch mode
-            if (batchVideoUris.isEmpty()) {
-                videoPath = null
-                binding.cardOriginalInfo.visibility = View.GONE
-            }
+            // Clear previous selection and info when starting new batch
+            videoPath = null
+            originalVideoInfo = null
+            binding.cardOriginalInfo.visibility = View.GONE
+            binding.cardOutputInfo.visibility = View.GONE
+            // Show all resolution options for batch (multiple videos may have different resolutions)
+            updateResolutionOptions(null)
             result.data?.clipData?.let { clipData ->
                 for (i in 0 until clipData.itemCount) {
                     val uri = clipData.getItemAt(i).uri
@@ -365,49 +367,44 @@ class CompressFragment : Fragment() {
         }
     }
 
-    private fun updateResolutionOptions(info: com.pisces312.streamclip.model.MediaInfo) {
-        val sourceWidth = info.displayWidth
-        val sourceHeight = info.displayHeight
-        val sourcePixels = sourceWidth * sourceHeight
+    private fun updateResolutionOptions(info: com.pisces312.streamclip.model.MediaInfo? = null) {
+        val options = mutableListOf<String>()
+        options.add(getString(R.string.resolution_copy))
 
-        // Filter resolutions: smaller than source (proportional scaling)
-        val filtered = CompressConfig.RESOLUTIONS.filter { res ->
-            val resPixels = res.width * res.height
-            resPixels < sourcePixels
+        if (info != null) {
+            // 单文件：显示计算后的最终分辨率
+            val w = info.displayWidth
+            val h = info.displayHeight
+            options.addAll(CompressConfig.SCALE_FACTORS.map { sf ->
+                val finalW = ((w / sf.factor) / 2).toInt() * 2
+                val finalH = ((h / sf.factor) / 2).toInt() * 2
+                "${finalW}×${finalH} (${sf.label})"
+            })
+        } else {
+            // 多文件：只显示倍率
+            options.addAll(CompressConfig.SCALE_FACTORS.map { sf ->
+                val percent = (100.0 / sf.factor).toInt()
+                "${sf.label} (约 ${percent}%)"
+            })
         }
 
-        // Build display labels with scaled resolution
-        val options = mutableListOf<String>()
-        options.add(getString(R.string.resolution_copy)) // "复制"
-        options.addAll(filtered.map { res ->
-            val scaleFactor = if (sourceWidth >= sourceHeight) {
-                sourceWidth.toFloat() / res.width
-            } else {
-                sourceHeight.toFloat() / res.width
-            }
-            val scaledW = (sourceWidth / scaleFactor).toInt()
-            val scaledH = (sourceHeight / scaleFactor).toInt()
-            val percent = (100 / scaleFactor).toInt()
-            "${res.label} (${scaledW}×${scaledH}, ${percent}%)"
-        })
-
-        // Update hardware panel spinner
+        // Update hardware panel
         val hwAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
             options
         )
         binding.spinnerResolutionHw.adapter = hwAdapter
-        binding.spinnerResolutionHw.setSelection(0) // default to "复制"
+        binding.spinnerResolutionHw.setSelection(0)
 
-        // Update software panel spinner
+        // Update software panel
         val swAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
             options
         )
         binding.spinnerResolutionSw.adapter = swAdapter
-        binding.spinnerResolutionSw.setSelection(0) // default to "复制"
+        binding.spinnerResolutionSw.setSelection(0)
     }
 
     private fun showVideoInfoCard(
@@ -473,7 +470,7 @@ class CompressFragment : Fragment() {
     private fun setupBatchRecyclerView() {
         batchVideoAdapter = com.pisces312.streamclip.adapter.BatchVideoListAdapter { position ->
             batchVideoUris.removeAt(position)
-            batchVideoAdapter?.submitList(ArrayList(batchVideoUris))
+            batchVideoAdapter?.removeAt(position)
             pathResultCache = null
             updateBatchUi()
         }
@@ -485,7 +482,7 @@ class CompressFragment : Fragment() {
         binding.recyclerSelectedVideos.isVisible = batchVideoUris.isNotEmpty()
         binding.tvBatchStatus.isVisible = batchVideoUris.isNotEmpty()
 
-        batchVideoAdapter?.submitList(ArrayList(batchVideoUris))
+        batchVideoAdapter?.setItems(ArrayList(batchVideoUris))
 
         if (pathResultCache == null || pathResultCache?.size != batchVideoUris.size) {
             pathResultCache = batchVideoUris.mapNotNull { uri ->
@@ -506,7 +503,9 @@ class CompressFragment : Fragment() {
         } else {
             binding.tvBatchStatus.setTextColor(0xFF4CAF50.toInt())
         }
-        binding.tvBatchStatus.text = getString(R.string.batch_selected_count, batchVideoUris.size, parts.joinToString(", "))
+        // Show full filenames with extension
+        val fileNames = results.joinToString(", ") { java.io.File(it.path).name }
+        binding.tvBatchStatus.text = getString(R.string.batch_selected_count, batchVideoUris.size, parts.joinToString(", ")) + "\n" + fileNames
     }
 
     private fun showBatchConfirmDialog() {
@@ -667,27 +666,11 @@ class CompressFragment : Fragment() {
         val resPositionSw = binding.spinnerResolutionSw.selectedItemPosition
 
         val resolutionHw = if (resPositionHw == 0) "original" else {
-            val info = originalVideoInfo
-            if (info != null) {
-                val sourcePixels = info.displayWidth * info.displayHeight
-                val filtered = CompressConfig.RESOLUTIONS.filter { res ->
-                    val resPixels = res.width * res.height
-                    resPixels < sourcePixels
-                }
-                filtered.getOrNull(resPositionHw - 1)?.id ?: "original"
-            } else "original"
+            CompressConfig.SCALE_FACTORS.getOrNull(resPositionHw - 1)?.id ?: "original"
         }
 
         val resolutionSw = if (resPositionSw == 0) "original" else {
-            val info = originalVideoInfo
-            if (info != null) {
-                val sourcePixels = info.displayWidth * info.displayHeight
-                val filtered = CompressConfig.RESOLUTIONS.filter { res ->
-                    val resPixels = res.width * res.height
-                    resPixels < sourcePixels
-                }
-                filtered.getOrNull(resPositionSw - 1)?.id ?: "original"
-            } else "original"
+            CompressConfig.SCALE_FACTORS.getOrNull(resPositionSw - 1)?.id ?: "original"
         }
 
         return if (isHardwareTab) {

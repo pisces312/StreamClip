@@ -3,17 +3,34 @@ package com.pisces312.streamclip.adapter
 import android.net.Uri
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.pisces312.streamclip.databinding.ItemBatchVideoBinding
 
 class BatchVideoListAdapter(
     private val onRemove: (Int) -> Unit
-) : ListAdapter<Uri, BatchVideoListAdapter.ViewHolder>(DiffCallback()) {
+) : RecyclerView.Adapter<BatchVideoListAdapter.ViewHolder>() {
+
+    private val items = mutableListOf<Uri>()
 
     inner class ViewHolder(val binding: ItemBatchVideoBinding) :
         RecyclerView.ViewHolder(binding.root)
+
+    override fun getItemCount() = items.size
+
+    fun setItems(newItems: List<Uri>) {
+        items.clear()
+        items.addAll(newItems)
+        notifyDataSetChanged()
+    }
+
+    fun getItems(): List<Uri> = items.toList()
+
+    fun removeAt(position: Int) {
+        if (position in items.indices) {
+            items.removeAt(position)
+            notifyItemRemoved(position)
+        }
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemBatchVideoBinding.inflate(
@@ -25,15 +42,10 @@ class BatchVideoListAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val uri = getItem(position)
+        val uri = items[position]
         holder.binding.tvVideoUri.text = uri.lastPathSegment ?: "Video ${position + 1}"
         holder.binding.btnRemove.setOnClickListener {
-            onRemove(holder.bindingAdapterPosition)
+            onRemove(position)
         }
-    }
-
-    class DiffCallback : DiffUtil.ItemCallback<Uri>() {
-        override fun areItemsTheSame(old: Uri, new: Uri) = old == new
-        override fun areContentsTheSame(old: Uri, new: Uri) = old == new
     }
 }

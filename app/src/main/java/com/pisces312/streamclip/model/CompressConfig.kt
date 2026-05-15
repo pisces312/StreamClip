@@ -71,20 +71,9 @@ data class CompressConfig(
         // Resolution
         val filters = mutableListOf<String>()
         if (resolution != "original") {
-            val res = RESOLUTIONS.find { it.id == resolution }
-            if (res != null) {
-                // Use proportional scaling based on source dimensions
-                val scaleFactor = when {
-                    sourceWidth >= sourceHeight -> {
-                        // Landscape source: scale based on width
-                        sourceWidth.toFloat() / res.width
-                    }
-                    else -> {
-                        // Portrait source: scale based on height (which is the longer side)
-                        sourceHeight.toFloat() / res.width
-                    }
-                }
-                filters.add("scale=iw/${scaleFactor}:ih/${scaleFactor}")
+            val scaleFactor = SCALE_FACTORS.find { it.id == resolution }
+            if (scaleFactor != null) {
+                filters.add("scale=iw/${scaleFactor.factor}:ih/${scaleFactor.factor}")
             }
             // Clear rotation metadata when resizing to avoid orientation confusion
             cmd.append("-metadata:s:v:0 rotate=0 ")
@@ -146,54 +135,17 @@ data class CompressConfig(
             12000 to "12 Mbps"
         )
         
-        // Resolution data: name, width, height, display name
-        data class ResolutionOption(
+        // Scale factor options for resolution reduction
+        data class ScaleFactor(
             val id: String,
-            val label: String,
-            val width: Int,
-            val height: Int
-        ) {
-            val pixelCount: Int get() = width * height
-            val isLandscape: Boolean get() = width >= height
-            val aspectRatio: String get() = simplifyRatio(width, height)
+            val factor: Float,
+            val label: String
+        )
 
-            fun getDisplayLabel(isSourceLandscape: Boolean): String {
-                val (w, h) = if (isSourceLandscape) Pair(width, height) else Pair(height, width)
-                val orientation = if (isSourceLandscape) "横屏" else "竖屏"
-                return "$label (${w}×${h} $orientation $aspectRatio)"
-            }
-
-            private fun simplifyRatio(w: Int, h: Int): String {
-                val gcd = gcd(w, h)
-                val rw = w / gcd
-                val rh = h / gcd
-                return when {
-                    rw == 16 && rh == 9 -> "16:9"
-                    rw == 4 && rh == 3 -> "4:3"
-                    rw == 1 && rh == 1 -> "1:1"
-                    rw == 21 && rh == 9 -> "21:9"
-                    else -> "${rw}:${rh}"
-                }
-            }
-
-            private fun gcd(a: Int, b: Int): Int {
-                var x = a
-                var y = b
-                while (y != 0) {
-                    val t = y
-                    y = x % y
-                    x = t
-                }
-                return x
-            }
-        }
-
-        val RESOLUTIONS = listOf(
-            ResolutionOption("4kuhd", "4K UHD", 3840, 2160),
-            ResolutionOption("2kqhd", "2K QHD", 2560, 1440),
-            ResolutionOption("1080p", "1080p FHD", 1920, 1080),
-            ResolutionOption("720p", "720p HD", 1280, 720),
-            ResolutionOption("480p", "480p SD", 854, 480)
+        val SCALE_FACTORS = listOf(
+            ScaleFactor("scale_1_5", 1.5f, "缩小 1.5×"),
+            ScaleFactor("scale_2_25", 2.25f, "缩小 2.25×"),
+            ScaleFactor("scale_3_0", 3.0f, "缩小 3.0×")
         )
 
         val PRESETS = listOf(
