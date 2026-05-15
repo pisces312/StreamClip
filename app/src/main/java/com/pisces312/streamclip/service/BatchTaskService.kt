@@ -241,8 +241,10 @@ class BatchTaskService : Service() {
 
     private fun buildCompressCommand(task: BatchTaskItem): Pair<String, com.pisces312.streamclip.model.MediaInfo?> {
         val info = FFmpegService.probeMediaInfo(task.inputPath)
+        val sourceW = info?.displayWidth ?: 1920
+        val sourceH = info?.displayHeight ?: 1080
         val command = task.config.compressConfig.toFFmpegCommand(
-            task.inputPath, task.outputPath,
+            task.inputPath, task.outputPath, sourceW, sourceH,
             info?.colorSpace ?: "", info?.colorPrimaries ?: "", info?.colorTransfer ?: ""
         )
         return Pair(command, info)

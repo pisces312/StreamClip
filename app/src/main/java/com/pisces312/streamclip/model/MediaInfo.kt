@@ -34,6 +34,43 @@ data class MediaInfo(
     val location: String get() = formatTags.optString("location", "")
         .ifEmpty { formatTags.optString("location-eng", "") }
 
+    // Orientation & aspect ratio (considering rotation)
+    val displayWidth: Int get() = if (rotation % 180 == 90) height else width
+    val displayHeight: Int get() = if (rotation % 180 == 90) width else height
+    val isLandscape: Boolean get() = displayWidth >= displayHeight
+    val isPortrait: Boolean get() = displayHeight > displayWidth
+    val pixelCount: Int get() = displayWidth * displayHeight
+    val aspectRatio: String get() = simplifyRatio(displayWidth, displayHeight)
+
+    private fun simplifyRatio(w: Int, h: Int): String {
+        if (w <= 0 || h <= 0) return "N/A"
+        val gcd = gcd(w, h)
+        val rw = w / gcd
+        val rh = h / gcd
+        // Common ratios
+        return when {
+            rw == 16 && rh == 9 -> "16:9"
+            rw == 9 && rh == 16 -> "9:16"
+            rw == 4 && rh == 3 -> "4:3"
+            rw == 3 && rh == 4 -> "3:4"
+            rw == 1 && rh == 1 -> "1:1"
+            rw == 21 && rh == 9 -> "21:9"
+            rw == 9 && rh == 21 -> "9:21"
+            else -> "${rw}:${rh}"
+        }
+    }
+
+    private fun gcd(a: Int, b: Int): Int {
+        var x = a
+        var y = b
+        while (y != 0) {
+            val t = y
+            y = x % y
+            x = t
+        }
+        return x
+    }
+
     // Formatted helpers
     val resolution: String get() = if (width > 0 && height > 0) "${width}x${height}" else "N/A"
     val videoBitrateKbps: String get() = if (videoBitrate > 0) "${videoBitrate / 1000}kbps" else "N/A"

@@ -21,6 +21,8 @@ data class CompressConfig(
     fun toFFmpegCommand(
         inputPath: String,
         outputPath: String,
+        sourceWidth: Int = 1920,
+        sourceHeight: Int = 1080,
         colorSpace: String = "",
         colorPrimaries: String = "",
         colorTransfer: String = ""
@@ -69,13 +71,23 @@ data class CompressConfig(
         // Resolution
         val filters = mutableListOf<String>()
         if (resolution != "original") {
-            val height = when (resolution) {
-                "1080p" -> 1080
-                "720p" -> 720
-                "480p" -> 480
-                else -> -1
+            val res = RESOLUTIONS.find { it.id == resolution }
+            if (res != null) {
+                // Use proportional scaling based on source dimensions
+                val scaleFactor = when {
+                    sourceWidth >= sourceHeight -> {
+                        // Landscape source: scale based on width
+                        sourceWidth.toFloat() / res.width
+                    }
+                    else -> {
+                        // Portrait source: scale based on height (which is the longer side)
+                        sourceHeight.toFloat() / res.width
+                    }
+                }
+                filters.add("scale=iw/${scaleFactor}:ih/${scaleFactor}")
             }
-            if (height > 0) filters.add("scale=-2:$height")
+            // Clear rotation metadata when resizing to avoid orientation confusion
+            cmd.append("-metadata:s:v:0 rotate=0 ")
         }
 
         if (filters.isNotEmpty()) {
@@ -134,11 +146,54 @@ data class CompressConfig(
             12000 to "12 Mbps"
         )
         
+        // Resolution data: name, width, height, display name
+        data class ResolutionOption(
+            val id: String,
+            val label: String,
+            val width: Int,
+            val height: Int
+        ) {
+            val pixelCount: Int get() = width * height
+            val isLandscape: Boolean get() = width >= height
+            val aspectRatio: String get() = simplifyRatio(width, height)
+
+            fun getDisplayLabel(isSourceLandscape: Boolean): String {
+                val (w, h) = if (isSourceLandscape) Pair(width, height) else Pair(height, width)
+                val orientation = if (isSourceLandscape) "横屏" else "竖屏"
+                return "$label (${w}×${h} $orientation $aspectRatio)"
+            }
+
+            private fun simplifyRatio(w: Int, h: Int): String {
+                val gcd = gcd(w, h)
+                val rw = w / gcd
+                val rh = h / gcd
+                return when {
+                    rw == 16 && rh == 9 -> "16:9"
+                    rw == 4 && rh == 3 -> "4:3"
+                    rw == 1 && rh == 1 -> "1:1"
+                    rw == 21 && rh == 9 -> "21:9"
+                    else -> "${rw}:${rh}"
+                }
+            }
+
+            private fun gcd(a: Int, b: Int): Int {
+                var x = a
+                var y = b
+                while (y != 0) {
+                    val t = y
+                    y = x % y
+                    x = t
+                }
+                return x
+            }
+        }
+
         val RESOLUTIONS = listOf(
-            "original" to "原始",
-            "1080p" to "1080p",
-            "720p" to "720p",
-            "480p" to "480p"
+            ResolutionOption("4kuhd", "4K UHD", 3840, 2160),
+            ResolutionOption("2kqhd", "2K QHD", 2560, 1440),
+            ResolutionOption("1080p", "1080p FHD", 1920, 1080),
+            ResolutionOption("720p", "720p HD", 1280, 720),
+            ResolutionOption("480p", "480p SD", 854, 480)
         )
 
         val PRESETS = listOf(

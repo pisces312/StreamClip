@@ -165,11 +165,11 @@ class CompressFragment : Fragment() {
         )
         binding.spinnerFrameRateHw.setSelection(0) // original
 
-        // Resolution
+        // Resolution (will be updated when video selected)
         binding.spinnerResolutionHw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.RESOLUTIONS.map { it.second }
+            listOf(getString(R.string.resolution_copy))
         )
 
         // Audio
@@ -236,11 +236,11 @@ class CompressFragment : Fragment() {
         )
         binding.spinnerFrameRateSw.setSelection(0) // original
 
-        // Resolution
+        // Resolution (will be updated when video selected)
         binding.spinnerResolutionSw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.RESOLUTIONS.map { it.second }
+            listOf(getString(R.string.resolution_copy))
         )
 
         // Audio
@@ -355,12 +355,59 @@ class CompressFragment : Fragment() {
                             infoView = binding.tvOriginalInfo,
                             info = info
                         )
+                        // Update resolution spinners based on source video
+                        updateResolutionOptions(info)
                     }
                 }
             }
         } else {
             Toast.makeText(requireContext(), getString(R.string.cannot_get_path), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun updateResolutionOptions(info: com.pisces312.streamclip.model.MediaInfo) {
+        val sourceWidth = info.displayWidth
+        val sourceHeight = info.displayHeight
+        val sourcePixels = sourceWidth * sourceHeight
+
+        // Filter resolutions: smaller than source (proportional scaling)
+        val filtered = CompressConfig.RESOLUTIONS.filter { res ->
+            val resPixels = res.width * res.height
+            resPixels < sourcePixels
+        }
+
+        // Build display labels with scaled resolution
+        val options = mutableListOf<String>()
+        options.add(getString(R.string.resolution_copy)) // "复制"
+        options.addAll(filtered.map { res ->
+            val scaleFactor = if (sourceWidth >= sourceHeight) {
+                sourceWidth.toFloat() / res.width
+            } else {
+                sourceHeight.toFloat() / res.width
+            }
+            val scaledW = (sourceWidth / scaleFactor).toInt()
+            val scaledH = (sourceHeight / scaleFactor).toInt()
+            val percent = (100 / scaleFactor).toInt()
+            "${res.label} (${scaledW}×${scaledH}, ${percent}%)"
+        })
+
+        // Update hardware panel spinner
+        val hwAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            options
+        )
+        binding.spinnerResolutionHw.adapter = hwAdapter
+        binding.spinnerResolutionHw.setSelection(0) // default to "复制"
+
+        // Update software panel spinner
+        val swAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            options
+        )
+        binding.spinnerResolutionSw.adapter = swAdapter
+        binding.spinnerResolutionSw.setSelection(0) // default to "复制"
     }
 
     private fun showVideoInfoCard(
@@ -374,6 +421,7 @@ class CompressFragment : Fragment() {
         lines.add("${getString(R.string.info_path)}: ${info.path}")
         lines.add("${getString(R.string.info_size)}: $fileSizeMB")
         lines.add("${getString(R.string.info_video)}: ${info.videoCodec} ${info.resolution} ${info.frameRate} ${info.videoBitrateKbps}${info.hdrTag}")
+        if (info.rotation != 0) lines.add("旋转: ${info.rotation}°")
         if (info.audioCodec.isNotEmpty()) lines.add("${getString(R.string.info_audio)}: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
         if (info.colorSpace.isNotEmpty()) lines.add("${getString(R.string.info_color_space)}: ${info.colorSpace}")
         if (info.colorPrimaries.isNotEmpty()) lines.add("${getString(R.string.info_color_primaries)}: ${info.colorPrimaries}")
@@ -529,11 +577,13 @@ class CompressFragment : Fragment() {
         val colorArgs = originalVideoInfo?.let {
             Triple(it.colorSpace, it.colorPrimaries, it.colorTransfer)
         } ?: Triple("", "", "")
-        val logDialog = showFfmpegLogDialog(config.toFFmpegCommand(path, outPath, colorArgs.first, colorArgs.second, colorArgs.third))
+        val sourceW = originalVideoInfo?.displayWidth ?: 1920
+        val sourceH = originalVideoInfo?.displayHeight ?: 1080
+        val logDialog = showFfmpegLogDialog(config.toFFmpegCommand(path, outPath, sourceW, sourceH, colorArgs.first, colorArgs.second, colorArgs.third))
 
         val compressJob = viewLifecycleOwner.lifecycleScope.launch {
             val totalTimeMs = originalVideoInfo?.durationMs ?: -1L
-            val command = config.toFFmpegCommand(path, outPath, colorArgs.first, colorArgs.second, colorArgs.third)
+            val command = config.toFFmpegCommand(path, outPath, sourceW, sourceH, colorArgs.first, colorArgs.second, colorArgs.third)
             LogCollector.d("Compress", "Command: $command")
 
             logDialog.onCancel = {
@@ -612,11 +662,39 @@ class CompressFragment : Fragment() {
     }
 
     private fun buildConfig(): CompressConfig {
+        // Get resolution from spinner (index 0 = "复制", index 1+ = actual resolution)
+        val resPositionHw = binding.spinnerResolutionHw.selectedItemPosition
+        val resPositionSw = binding.spinnerResolutionSw.selectedItemPosition
+
+        val resolutionHw = if (resPositionHw == 0) "original" else {
+            val info = originalVideoInfo
+            if (info != null) {
+                val sourcePixels = info.displayWidth * info.displayHeight
+                val filtered = CompressConfig.RESOLUTIONS.filter { res ->
+                    val resPixels = res.width * res.height
+                    resPixels < sourcePixels
+                }
+                filtered.getOrNull(resPositionHw - 1)?.id ?: "original"
+            } else "original"
+        }
+
+        val resolutionSw = if (resPositionSw == 0) "original" else {
+            val info = originalVideoInfo
+            if (info != null) {
+                val sourcePixels = info.displayWidth * info.displayHeight
+                val filtered = CompressConfig.RESOLUTIONS.filter { res ->
+                    val resPixels = res.width * res.height
+                    resPixels < sourcePixels
+                }
+                filtered.getOrNull(resPositionSw - 1)?.id ?: "original"
+            } else "original"
+        }
+
         return if (isHardwareTab) {
             CompressConfig(
                 encoder = CompressConfig.HW_ENCODERS[binding.spinnerEncoderHw.selectedItemPosition].first,
                 bitrate = CompressConfig.BITRATES[binding.spinnerBitrate.selectedItemPosition].first,
-                resolution = CompressConfig.RESOLUTIONS[binding.spinnerResolutionHw.selectedItemPosition].first,
+                resolution = resolutionHw,
                 frameRate = CompressConfig.FRAME_RATES[binding.spinnerFrameRateHw.selectedItemPosition].first,
                 audioEncoder = CompressConfig.AUDIO_ENCODERS[binding.spinnerAudioHw.selectedItemPosition].first,
                 audioBitrate = CompressConfig.AUDIO_BITRATES[binding.spinnerAudioBitrateHw.selectedItemPosition].first,
@@ -627,7 +705,7 @@ class CompressFragment : Fragment() {
             CompressConfig(
                 encoder = CompressConfig.SW_ENCODERS[binding.spinnerEncoderSw.selectedItemPosition].first,
                 crf = binding.seekBarCrf.progress,
-                resolution = CompressConfig.RESOLUTIONS[binding.spinnerResolutionSw.selectedItemPosition].first,
+                resolution = resolutionSw,
                 preset = CompressConfig.PRESETS[binding.spinnerPresetSw.selectedItemPosition].first,
                 frameRate = CompressConfig.FRAME_RATES[binding.spinnerFrameRateSw.selectedItemPosition].first,
                 audioEncoder = CompressConfig.AUDIO_ENCODERS[binding.spinnerAudioSw.selectedItemPosition].first,

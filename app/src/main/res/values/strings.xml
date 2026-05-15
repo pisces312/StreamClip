@@ -258,7 +258,8 @@
     <string name="cfg_help_crf">CRF (Constant Rate Factor) 控制质量。0=无损，23=默认，51=最差。值越小文件越大画质越好。</string>
     <string name="cfg_help_preset">软件编码的预设速度。极快到极慢共9档，越慢压缩率越高文件越小。</string>
     <string name="cfg_help_framerate">帧率控制每秒画面帧数。原始保持原帧率，降低帧率可减小文件但影响流畅度。</string>
-    <string name="cfg_help_resolution">输出视频分辨率。原始保持原尺寸，降低分辨率可大幅减小文件。</string>
+    <string name="cfg_help_resolution">输出视频分辨率。复制保持原尺寸，仅显示比原视频小的选项。</string>
+    <string name="resolution_copy">复制</string>
     <string name="cfg_help_audio">音频编码。复制原音频不重新编码最快，AAC兼容性最好。</string>
     <string name="cfg_help_audio_bitrate">音频码率。越高音质越好文件越大。128k为常用值。</string>
     <string name="cfg_help_audio_sample_rate">音频采样率。原始保持原采样率，降低可减小文件。</string>
