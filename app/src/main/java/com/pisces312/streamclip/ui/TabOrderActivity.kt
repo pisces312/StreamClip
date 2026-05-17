@@ -18,9 +18,11 @@ class TabOrderActivity : BaseActivity() {
 
     private val tabTitles = mapOf(
         "trim" to R.string.title_trim,
+        "trim2" to R.string.title_trim2,
         "merge" to R.string.title_merge,
         "extract" to R.string.title_extract,
         "compress" to R.string.title_compress,
+        "native_compress" to R.string.title_native_compress,
         "audio_compress" to R.string.title_audio_compress,
         "custom" to R.string.title_custom,
         "metadata" to R.string.title_metadata,
@@ -40,13 +42,26 @@ class TabOrderActivity : BaseActivity() {
         setupButtons()
     }
 
+    private fun getTabIdByTitle(title: String): String? {
+        return tabTitles.entries.find { getString(it.value) == title }?.key
+    }
+
     private fun setupRecyclerView() {
-        val order = TabOrderManager.getOrder(this)
-        val items = order.mapNotNull { id ->
-            val titleRes = tabTitles[id] ?: return@mapNotNull null
-            val iconRes = TabOrderManager.TAB_ICONS[id] ?: return@mapNotNull null
-            TabOrderAdapter.TabItem(id, getString(titleRes), iconRes)
-        }.toMutableList()
+        val currentTabTitles = intent.getStringArrayExtra("current_tabs")
+        val items = if (currentTabTitles != null) {
+            currentTabTitles.mapNotNull { title ->
+                val id = getTabIdByTitle(title) ?: return@mapNotNull null
+                val iconRes = TabOrderManager.TAB_ICONS[id] ?: return@mapNotNull null
+                TabOrderAdapter.TabItem(id, title, iconRes)
+            }.toMutableList()
+        } else {
+            val order = TabOrderManager.getOrder(this)
+            order.mapNotNull { id ->
+                val titleRes = tabTitles[id] ?: return@mapNotNull null
+                val iconRes = TabOrderManager.TAB_ICONS[id] ?: return@mapNotNull null
+                TabOrderAdapter.TabItem(id, getString(titleRes), iconRes)
+            }.toMutableList()
+        }
 
         adapter = TabOrderAdapter(items)
         binding.recyclerView.layoutManager = LinearLayoutManager(this)

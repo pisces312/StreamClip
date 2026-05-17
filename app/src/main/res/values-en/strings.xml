@@ -12,6 +12,7 @@
     <string name="title_merge">Lossless Merge</string>
     <string name="title_extract">Extract Audio</string>
     <string name="title_compress">Video Compress</string>
+    <string name="title_native_compress">Video Compress (Native)</string>
     <string name="title_custom">Custom Command</string>
     <string name="title_audio_compress">Audio Compress</string>
     <string name="select_video">Select Video</string>
@@ -313,4 +314,12 @@
     <string name="preset_slow">Slow</string>
     <string name="preset_slower">Slower</string>
     <string name="preset_veryslow">Veryslow</string>
+
+    <!-- Native compress -->
+    <string name="native_compress_hint_title">Native Compression</string>
+    <string name="native_compress_hint">This feature relies solely on Android built-in MediaCodec library, no FFmpeg required. Highest compatibility; use this when FFmpeg compression fails.</string>
+    <string name="cfg_native_encoder">Encoder</string>
+    <string name="cfg_native_iframe_interval">I-Frame Interval</string>
+    <string name="start_native_compress">Start Compression</string>
+    <string name="native_compressing">Native compressing...</string>
 </resources>

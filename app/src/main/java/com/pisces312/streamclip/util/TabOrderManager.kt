@@ -10,7 +10,7 @@ object TabOrderManager {
 
     // Master list of all tabs. New tabs are appended to the end by default.
     // When adding a new tab, also update: TAB_ICONS, MainPagerAdapter, MainActivity, TabOrderActivity.
-    val DEFAULT_ORDER = listOf("settings", "trim", "merge", "extract", "compress", "audio_compress", "custom", "metadata")
+    val DEFAULT_ORDER = listOf("settings", "trim", "merge", "extract", "compress", "native_compress", "audio_compress", "custom", "metadata")
 
     val TAB_ICONS = mapOf(
         "trim" to R.drawable.ic_video,
@@ -18,6 +18,7 @@ object TabOrderManager {
         "merge" to R.drawable.ic_merge,
         "extract" to R.drawable.ic_extract,
         "compress" to R.drawable.ic_compress,
+        "native_compress" to R.drawable.ic_compress,
         "audio_compress" to R.drawable.ic_compress,
         "custom" to R.drawable.ic_terminal,
         "metadata" to R.drawable.ic_info,

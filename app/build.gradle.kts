@@ -81,4 +81,8 @@ dependencies {
     
     // DocumentFile for SAF
     implementation("androidx.documentfile:documentfile:1.0.1")
+
+    // VideoCompressor native dependencies
+    implementation(files("libs/isoparser-1.0.6.jar"))
+    implementation(files("libs/aspectjrt-1.7.3.jar"))
 }

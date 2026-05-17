@@ -84,7 +84,12 @@ class MainActivity : BaseActivity() {
         binding.tabLayout.post {
             for (i in 0 until binding.tabLayout.tabCount) {
                 binding.tabLayout.getTabAt(i)?.view?.setOnLongClickListener {
-                    startActivity(Intent(this, com.pisces312.streamclip.ui.TabOrderActivity::class.java))
+                    val intent = Intent(this, com.pisces312.streamclip.ui.TabOrderActivity::class.java)
+                    val currentTabs = (0 until binding.tabLayout.tabCount).mapNotNull { idx ->
+                        binding.tabLayout.getTabAt(idx)?.text?.toString()
+                    }.toTypedArray()
+                    intent.putExtra("current_tabs", currentTabs)
+                    startActivity(intent)
                     true
                 }
             }
@@ -107,6 +112,7 @@ class MainActivity : BaseActivity() {
         "merge" -> getString(R.string.title_merge)
         "extract" -> getString(R.string.title_extract)
         "compress" -> getString(R.string.title_compress)
+        "native_compress" -> getString(R.string.title_native_compress)
         "audio_compress" -> getString(R.string.title_audio_compress)
         "custom" -> getString(R.string.title_custom)
         "metadata" -> getString(R.string.title_metadata)
@@ -152,7 +158,12 @@ class MainActivity : BaseActivity() {
                 true
             }
             R.id.action_tab_order -> {
-                startActivity(Intent(this, com.pisces312.streamclip.ui.TabOrderActivity::class.java))
+                val intent = Intent(this, com.pisces312.streamclip.ui.TabOrderActivity::class.java)
+                val currentTabs = (0 until binding.tabLayout.tabCount).mapNotNull { idx ->
+                    binding.tabLayout.getTabAt(idx)?.text?.toString()
+                }.toTypedArray()
+                intent.putExtra("current_tabs", currentTabs)
+                startActivity(intent)
                 true
             }
             else -> false

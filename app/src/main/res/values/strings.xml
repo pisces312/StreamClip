@@ -8,6 +8,7 @@
     <string name="title_merge">无损合并</string>
     <string name="title_extract">提取音频</string>
     <string name="title_compress">视频压缩</string>
+    <string name="title_native_compress">视频压缩(原生)</string>
     <string name="title_audio_compress">音频压缩</string>
     <string name="title_custom">自定义命令</string>
     <string name="select_video">选择视频</string>
@@ -308,4 +309,12 @@
     <string name="preset_slow">慢</string>
     <string name="preset_slower">更慢</string>
     <string name="preset_veryslow">极慢</string>
+
+    <!-- Native compress -->
+    <string name="native_compress_hint_title">原生压缩说明</string>
+    <string name="native_compress_hint">此功能仅依赖 Android 系统自带的 MediaCodec 库，无需 FFmpeg。兼容性最高，当 FFmpeg 方式无法压缩时可选用此方式。</string>
+    <string name="cfg_native_encoder">编码器</string>
+    <string name="cfg_native_iframe_interval">I帧间隔</string>
+    <string name="start_native_compress">开始压缩</string>
+    <string name="native_compressing">原生压缩中...</string>
 </resources>

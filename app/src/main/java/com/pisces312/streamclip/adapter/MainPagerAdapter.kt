@@ -8,6 +8,7 @@ import com.pisces312.streamclip.fragment.Trim2Fragment
 import com.pisces312.streamclip.fragment.MergeFragment
 import com.pisces312.streamclip.fragment.ExtractFragment
 import com.pisces312.streamclip.fragment.CompressFragment
+import com.pisces312.streamclip.fragment.NativeCompressFragment
 import com.pisces312.streamclip.fragment.AudioCompressFragment
 import com.pisces312.streamclip.fragment.CustomCommandFragment
 import com.pisces312.streamclip.fragment.MetadataFragment
@@ -27,6 +28,7 @@ class MainPagerAdapter(
             "merge" -> MergeFragment()
             "extract" -> ExtractFragment()
             "compress" -> CompressFragment()
+            "native_compress" -> NativeCompressFragment()
             "audio_compress" -> AudioCompressFragment()
             "custom" -> CustomCommandFragment()
             "metadata" -> MetadataFragment()
