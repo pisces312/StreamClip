@@ -26,7 +26,7 @@ object FFmpegService {
         if (id != -1L) {
             FFmpegKit.cancel(id)
             currentSessionId = -1
-            LogCollector.d("FFmpegService", "Cancelled session $id")
+            LogCollector.i("FFmpegService", "Cancelled session $id")
         }
     }
 
@@ -138,7 +138,7 @@ object FFmpegService {
                 video = videoStream,
                 audio = audioStream
             ).also {
-                LogCollector.d("FFmpegService", "probeMediaInfo: ${it.videoCodec} ${it.resolution} ${it.audioCodec} dur=${it.durationMs}ms")
+                LogCollector.i("FFmpegService", "probeMediaInfo: ${it.videoCodec} ${it.resolution} ${it.audioCodec} dur=${it.durationMs}ms")
             }
         } catch (e: Exception) {
             LogCollector.e("FFmpegService", "probeMediaInfo failed: ${e.message}")
@@ -157,7 +157,7 @@ object FFmpegService {
         onLog: ((LogLine) -> Unit)? = null
     ): Result = withContext(Dispatchers.IO) {
         suspendCancellableCoroutine { continuation ->
-            LogCollector.d("FFmpegService", "Executing: $command")
+            LogCollector.i("FFmpegService", "Executing: $command")
             val startTime = System.currentTimeMillis()
 
             val session = if (onProgress != null || onLog != null) {
@@ -167,7 +167,7 @@ object FFmpegService {
                     val success = ReturnCode.isSuccess(returnCode)
                     val error = if (success) null else (session.output.takeIf { it.isNotEmpty() } ?: "Unknown error")
 
-                    LogCollector.d("FFmpegService", "Completed: success=$success, code=$returnCode, error=$error")
+                    LogCollector.i("FFmpegService", "Completed: success=$success, code=$returnCode, error=$error")
 
                     continuation.resume(
                         Result(
@@ -177,7 +177,7 @@ object FFmpegService {
                         )
                     )
                 }, { log ->
-                    LogCollector.d("FFmpegService", log.message)
+                    LogCollector.i("FFmpegService", log.message)
                     onLog?.invoke(LogLine(log.message, false))
                 }, StatisticsCallback { statistics ->
                     val time = statistics.time.toLong()
@@ -219,7 +219,7 @@ object FFmpegService {
                     val success = ReturnCode.isSuccess(returnCode)
                     val error = if (success) null else (session.output.takeIf { it.isNotEmpty() } ?: "Unknown error")
 
-                    LogCollector.d("FFmpegService", "Completed: success=$success, code=$returnCode, error=$error")
+                    LogCollector.i("FFmpegService", "Completed: success=$success, code=$returnCode, error=$error")
 
                     continuation.resume(
                         Result(
@@ -267,7 +267,7 @@ object FFmpegService {
             append("\"$outputPath\"")
         }
 
-        LogCollector.d("FFmpegService", "Command: $command")
+        LogCollector.i("FFmpegService", "Command: $command")
         return executeCommand(command, outputPath, onProgress = onProgress)
     }
 
@@ -345,7 +345,7 @@ object FFmpegService {
         File(outputPath).parentFile?.mkdirs()
 
         val command = "-y -i \"$inputPath\" -vn -c:a copy \"$outputPath\""
-        LogCollector.d("FFmpegService", "Command: $command")
+        LogCollector.i("FFmpegService", "Command: $command")
         return executeCommand(command, outputPath, onProgress = onProgress)
     }
 
@@ -387,7 +387,7 @@ object FFmpegService {
             append(" \"$outputPath\"")
         }
 
-        LogCollector.d("FFmpegService", "Command: $command")
+        LogCollector.i("FFmpegService", "Command: $command")
         val totalTimeMs = probeMediaInfo(inputPath)?.durationMs ?: -1L
         return executeCommand(command, outputPath, totalTimeMs, onProgress = onProgress)
     }
@@ -412,7 +412,7 @@ object FFmpegService {
             append(" \"$outputPath\"")
         }
 
-        LogCollector.d("FFmpegService", "Command: $command")
+        LogCollector.i("FFmpegService", "Command: $command")
         val totalTimeMs = probeMediaInfo(inputPath)?.durationMs ?: -1L
         return executeCommand(command, outputPath, totalTimeMs, onProgress = onProgress)
     }

@@ -2,6 +2,7 @@ package com.pisces312.streamclip.util
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.pisces312.streamclip.BuildConfig
 import com.pisces312.streamclip.R
 
 object TabOrderManager {
@@ -10,7 +11,11 @@ object TabOrderManager {
 
     // Master list of all tabs. New tabs are appended to the end by default.
     // When adding a new tab, also update: TAB_ICONS, MainPagerAdapter, MainActivity, TabOrderActivity.
-    val DEFAULT_ORDER = listOf("settings", "trim", "merge", "extract", "compress", "native_compress", "audio_compress", "custom", "metadata")
+    val DEFAULT_ORDER = if (BuildConfig.DEBUG) {
+        listOf("settings", "trim", "merge", "extract", "compress", "native_compress", "audio_compress", "custom", "metadata")
+    } else {
+        listOf("settings", "trim", "merge", "extract", "compress", "audio_compress", "custom", "metadata")
+    }
 
     val TAB_ICONS = mapOf(
         "trim" to R.drawable.ic_video,
