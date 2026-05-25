@@ -403,7 +403,8 @@ class MainActivity : BaseActivity() {
             Triple("FFmpegKit (LGPL-3.0)", R.raw.license_ffmpegkit, "https://github.com/pisces312/ffmpeg-kit"),
             Triple("x264 (GPL v2.0+)", R.raw.license_x264, "https://github.com/mirror/x264"),
             Triple("x265 (GPL v2.0+)", R.raw.license_x265, "https://github.com/videolan/x265"),
-            Triple("cpu_features (Apache 2.0)", R.raw.license_cpu_features, "https://github.com/google/cpu_features")
+            Triple("cpu_features (Apache 2.0)", R.raw.license_cpu_features, "https://github.com/google/cpu_features"),
+            Triple("GPL 合规声明", 0, "https://github.com/pisces312/StreamClip/blob/main/GPL_COMPLIANCE.md")
         )
 
         val items = licenses.map { it.first }.toTypedArray()
@@ -419,10 +420,14 @@ class MainActivity : BaseActivity() {
     }
 
     private fun showLicenseDetailDialog(name: String, resId: Int, url: String) {
-        val text = try {
-            resources.openRawResource(resId).bufferedReader().use { it.readText() }
-        } catch (e: Exception) {
-            getString(R.string.about_license_not_found)
+        val text = if (resId != 0) {
+            try {
+                resources.openRawResource(resId).bufferedReader().use { it.readText() }
+            } catch (e: Exception) {
+                getString(R.string.about_license_not_found)
+            }
+        } else {
+            ""  // 外部链接，无本地文本
         }
 
         val scrollView = android.widget.ScrollView(this)
@@ -444,12 +449,14 @@ class MainActivity : BaseActivity() {
         }
         layout.addView(urlView)
 
-        // 许可证文本
-        val textView = androidx.appcompat.widget.AppCompatTextView(this).apply {
-            this.text = text
-            setTextIsSelectable(true)
+        // 许可证文本（仅当 resId 不为 0 时显示）
+        if (text.isNotEmpty()) {
+            val textView = androidx.appcompat.widget.AppCompatTextView(this).apply {
+                this.text = text
+                setTextIsSelectable(true)
+            }
+            layout.addView(textView)
         }
-        layout.addView(textView)
 
         scrollView.addView(layout)
 
