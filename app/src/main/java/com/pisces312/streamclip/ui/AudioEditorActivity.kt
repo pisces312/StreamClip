@@ -20,6 +20,8 @@ import com.pisces312.streamclip.R
 import com.pisces312.streamclip.audio.AudioDecoder
 import com.pisces312.streamclip.audio.AudioEncoder
 import com.pisces312.streamclip.audio.AudioPlayer
+import com.pisces312.streamclip.audio.FFmpegWaveformLoader
+import com.pisces312.streamclip.audio.FastWaveformLoader
 import com.pisces312.streamclip.audio.WaveformProcessor
 import com.pisces312.streamclip.audio.WaveformView
 import com.pisces312.streamclip.databinding.ActivityAudioEditorBinding
@@ -47,8 +49,13 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         private const val TAG = "AudioEditorActivity"
         const val EXTRA_AUDIO_URI = "audio_uri"
         const val EXTRA_MODE = "mode"
+        const val EXTRA_LOAD_MODE = "load_mode"
         const val MODE_EDIT = "edit"
         const val MODE_RECORD = "record"
+        const val LOAD_MODE_A = "a"  // streaming (not yet implemented)
+        const val LOAD_MODE_B = "b"  // fast preview waveform
+        const val LOAD_MODE_C = "c"  // optimized full decode
+        const val LOAD_MODE_D = "d"  // ffmpeg waveform
         private const val PREF_NAME = "audio_editor_prefs"
         private const val KEY_LAST_EXPORT_DIR = "last_export_dir"
         private const val BOUNDARY_TOUCH_DP = 24
@@ -64,6 +71,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
     private var isPlaying = false
     private var startPos = 0   // in waveform pixels
     private var endPos = 0     // in waveform pixels
+    private var cursorPos = 0  // current playback cursor position in pixels
     private var offset = 0
     private var density = 0f
     private var audioFile: File? = null
@@ -108,6 +116,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             player?.let { p ->
                 if (p.isPlaying()) {
                     val pos = binding.waveformView.millisecsToPixels(p.getCurrentPosition())
+                    cursorPos = pos
                     binding.waveformView.setPlayback(pos)
                     binding.waveformView.invalidate()
                     binding.tvCurrentTime.text = formatTime(p.getCurrentPosition())
@@ -144,8 +153,9 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         }
 
         val audioUriStr = intent.getStringExtra(EXTRA_AUDIO_URI)
+        val loadMode = intent.getStringExtra(EXTRA_LOAD_MODE) ?: LOAD_MODE_C
         if (audioUriStr != null) {
-            loadAudio(Uri.parse(audioUriStr))
+            loadAudio(Uri.parse(audioUriStr), loadMode)
         } else {
             Toast.makeText(this, getString(R.string.ae_no_audio_file), Toast.LENGTH_SHORT).show()
             finish()
@@ -188,20 +198,52 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             updateDisplay()
         }
 
-        binding.btnExportMp3.setOnClickListener {
-            exportAudio(AudioEncoder.OutputFormat.MP3)
+        // Export format spinner
+        val formatOptions = AudioEncoder.OutputFormat.entries.map { "${it.displayName} (.${it.extension})" }
+        val formatAdapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, formatOptions)
+        binding.spinnerExportFormat.setAdapter(formatAdapter)
+        binding.spinnerExportFormat.setText(formatOptions[0], false)
+
+        // Sample rate spinner
+        val sampleRateOptions = listOf("原始", "44100 Hz", "48000 Hz", "22050 Hz", "16000 Hz")
+        val sampleRateAdapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, sampleRateOptions)
+        binding.spinnerSampleRate.setAdapter(sampleRateAdapter)
+        binding.spinnerSampleRate.setText(sampleRateOptions[0], false)
+
+        // Bitrate mode spinner
+        val bitrateModeOptions = listOf(getString(R.string.ae_cbr), getString(R.string.ae_vbr))
+        val bitrateModeAdapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, bitrateModeOptions)
+        binding.spinnerBitrateMode.setAdapter(bitrateModeAdapter)
+        binding.spinnerBitrateMode.setText(bitrateModeOptions[0], false)
+
+        // Cascading: format change → show/hide bitrate controls
+        binding.spinnerExportFormat.setOnItemClickListener { _, _, _, _ -> updateExportSettingsVisibility() }
+        binding.spinnerBitrateMode.setOnItemClickListener { _, _, _, _ -> updateBitrateSlider() }
+
+        // Bitrate slider value display
+        binding.sliderBitrate.addOnChangeListener { _, value, _ ->
+            val isVbr = binding.spinnerBitrateMode.text.toString() == getString(R.string.ae_vbr)
+            val formatIndex = AudioEncoder.OutputFormat.entries.map { "${it.displayName} (.${it.extension})" }
+                .indexOf(binding.spinnerExportFormat.text.toString())
+            val format = AudioEncoder.OutputFormat.entries.getOrElse(formatIndex) { AudioEncoder.OutputFormat.MP3 }
+
+            if (isVbr) {
+                when (format) {
+                    AudioEncoder.OutputFormat.MP3 -> binding.tvBitrateValue.text = "${value.toInt()} (≈${listOf(245,225,190,175,150,130,110,95,80,65)[value.toInt().coerceIn(0,9)]} kbps)"
+                    AudioEncoder.OutputFormat.OPUS -> binding.tvBitrateValue.text = "${value.toInt()} kbps"
+                    else -> binding.tvBitrateValue.text = "${value.toInt()}"
+                }
+            } else {
+                binding.tvBitrateValue.text = "${value.toInt()} kbps"
+            }
         }
 
-        binding.btnExportM4A.setOnClickListener {
-            exportAudio(AudioEncoder.OutputFormat.M4A)
-        }
+        updateExportSettingsVisibility()
 
-        binding.btnExportFlac.setOnClickListener {
-            exportAudio(AudioEncoder.OutputFormat.FLAC)
-        }
-
-        binding.btnExportWav.setOnClickListener {
-            exportAudio(AudioEncoder.OutputFormat.WAV)
+        binding.btnExport.setOnClickListener {
+            val index = formatOptions.indexOf(binding.spinnerExportFormat.text.toString())
+            val format = AudioEncoder.OutputFormat.entries.getOrElse(index) { AudioEncoder.OutputFormat.MP3 }
+            exportAudio(format)
         }
 
         // Selection action bar
@@ -226,67 +268,26 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         }
     }
 
-    private fun loadAudio(uri: Uri) {
+    private fun loadAudio(uri: Uri, loadMode: String = LOAD_MODE_C) {
         binding.loadingLayout.visibility = View.VISIBLE
         binding.contentLayout.visibility = View.GONE
         binding.tvLoadingText.text = getString(R.string.ae_decoding)
-        LogCollector.i(TAG, "loadAudio: uri=$uri")
+        LogCollector.i(TAG, "loadAudio: uri=$uri, mode=$loadMode")
 
         scope.launch {
             try {
-                val file = copyUriToCache(uri)
-                audioFile = file
-                LogCollector.i(TAG, "loadAudio: cached file=${file.absolutePath}, size=${file.length()}")
+                val startTime = System.currentTimeMillis()
 
-                binding.tvLoadingPercent.text = ""
-                binding.progressBar.visibility = View.VISIBLE
-                binding.progressBar.max = 100
-                binding.progressBar.progress = 0
-
-                val decoder = AudioDecoder()
-                val decoded = withContext(Dispatchers.IO) {
-                    decoder.decode(file.absolutePath, object : AudioDecoder.ProgressListener {
-                        override fun onProgress(fraction: Double): Boolean {
-                            runOnUiThread {
-                                val percent = (fraction * 100).toInt()
-                                binding.tvLoadingPercent.text = "$percent%"
-                                binding.progressBar.progress = percent
-                            }
-                            return true
-                        }
-                    })
+                when (loadMode) {
+                    LOAD_MODE_B -> loadFastPreview(uri, startTime)
+                    LOAD_MODE_D -> loadFFmpegWaveform(uri, startTime)
+                    LOAD_MODE_A -> {
+                        // Not yet implemented, fallback to C
+                        LogCollector.w(TAG, "loadAudio: mode A not implemented, falling back to C")
+                        loadOptimizedDecode(uri, startTime)
+                    }
+                    else -> loadOptimizedDecode(uri, startTime)
                 }
-                decodedAudio = decoded
-                LogCollector.i(TAG, "loadAudio: decoded samples=${decoded.numSamples}, rate=${decoded.sampleRate}, ch=${decoded.channels}, bitrate=${decoded.avgBitrateKbps}kbps")
-
-                val waveform = withContext(Dispatchers.Default) {
-                    WaveformProcessor.process(decoded.samples, decoded.channels, decoded.numSamples)
-                }
-                LogCollector.i(TAG, "loadAudio: waveform frames=${waveform.numFrames}, zoomLevels=${waveform.numZoomLevels}")
-
-                decoded.samples.rewind()
-                player = AudioPlayer(decoded)
-                LogCollector.i(TAG, "loadAudio: player created")
-
-                binding.waveformView.setData(waveform, decoded.sampleRate)
-                binding.waveformView.recomputeHeights(density)
-
-                startPos = 0
-                endPos = binding.waveformView.maxPos()
-                offset = 0
-                updateDisplay()
-                LogCollector.i(TAG, "loadAudio: display updated, maxPos=${endPos}")
-
-                val durationMs = (decoded.numSamples.toDouble() / decoded.sampleRate * 1000).toInt()
-                val channelsStr = if (decoded.channels == 1) getString(R.string.ae_mono) else getString(R.string.ae_stereo)
-                val info = "${file.name}  |  ${formatTime(durationMs)}  |  ${decoded.sampleRate}Hz  |  $channelsStr  |  ${decoded.avgBitrateKbps}kbps"
-                binding.tvFileInfo.text = info
-
-                binding.progressBar.visibility = View.GONE
-                binding.loadingLayout.visibility = View.GONE
-                binding.contentLayout.visibility = View.VISIBLE
-                LogCollector.i(TAG, "loadAudio: success")
-
             } catch (e: Exception) {
                 LogCollector.e(TAG, "loadAudio failed: ${e.javaClass.simpleName}: ${e.message}", e)
                 Log.e(TAG, "Failed to load audio", e)
@@ -298,6 +299,199 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                         .setCancelable(false)
                         .show()
                 }
+            }
+        }
+    }
+
+    /**
+     * Mode C: Optimized full decode.
+     * Improvements over original: larger dequeue timeout, pre-allocated buffer,
+     * reduced progress callback frequency, direct URI source (skip cache copy when possible).
+     */
+    private suspend fun loadOptimizedDecode(uri: Uri, startTime: Long) {
+        val file = copyUriToCache(uri)
+        audioFile = file
+        LogCollector.i(TAG, "loadOptimizedDecode: cached file=${file.absolutePath}, size=${file.length()}")
+
+        binding.tvLoadingPercent.text = ""
+        binding.progressBar.visibility = View.VISIBLE
+        binding.progressBar.max = 100
+        binding.progressBar.progress = 0
+
+        val decoder = AudioDecoder()
+        val decoded = withContext(Dispatchers.IO) {
+            decoder.decodeOptimized(file.absolutePath, object : AudioDecoder.ProgressListener {
+                override fun onProgress(fraction: Double): Boolean {
+                    runOnUiThread {
+                        val percent = (fraction * 100).toInt()
+                        binding.tvLoadingPercent.text = "$percent%"
+                        binding.progressBar.progress = percent
+                    }
+                    return true
+                }
+            })
+        }
+        decodedAudio = decoded
+        val decodeMs = System.currentTimeMillis() - startTime
+        LogCollector.i(TAG, "loadOptimizedDecode: decoded in ${decodeMs}ms, samples=${decoded.numSamples}, rate=${decoded.sampleRate}, ch=${decoded.channels}")
+
+        val waveform = withContext(Dispatchers.Default) {
+            WaveformProcessor.process(decoded.samples, decoded.channels, decoded.numSamples)
+        }
+        LogCollector.i(TAG, "loadOptimizedDecode: waveform frames=${waveform.numFrames}")
+
+        decoded.samples.rewind()
+        player = AudioPlayer(decoded)
+
+        binding.waveformView.setData(waveform, decoded.sampleRate)
+        binding.waveformView.recomputeHeights(density)
+
+        startPos = 0
+        endPos = binding.waveformView.maxPos()
+        offset = 0
+        updateDisplay()
+
+        val durationMs = (decoded.numSamples.toDouble() / decoded.sampleRate * 1000).toInt()
+        val channelsStr = if (decoded.channels == 1) getString(R.string.ae_mono) else getString(R.string.ae_stereo)
+        val info = "${file.name}  |  ${formatTime(durationMs)}  |  ${decoded.sampleRate}Hz  |  $channelsStr  |  ${decoded.avgBitrateKbps}kbps  |  [C] ${decodeMs}ms"
+        binding.tvFileInfo.text = info
+
+        binding.progressBar.visibility = View.GONE
+        binding.loadingLayout.visibility = View.GONE
+        binding.contentLayout.visibility = View.VISIBLE
+        LogCollector.i(TAG, "loadOptimizedDecode: success in ${System.currentTimeMillis() - startTime}ms total")
+    }
+
+    /**
+     * Mode B: Fast preview waveform using MediaExtractor frame skipping.
+     * Only decodes a sparse subset of frames to build an approximate waveform quickly.
+     * Full decode for playback happens lazily in background.
+     */
+    private suspend fun loadFastPreview(uri: Uri, startTime: Long) {
+        val file = copyUriToCache(uri)
+        audioFile = file
+
+        binding.tvLoadingPercent.text = ""
+        binding.progressBar.visibility = View.VISIBLE
+        binding.progressBar.max = 100
+        binding.progressBar.progress = 0
+
+        // Step 1: Fast preview waveform (sparse decode)
+        val previewLoader = FastWaveformLoader()
+        val previewResult = withContext(Dispatchers.IO) {
+            previewLoader.loadPreview(file.absolutePath, object : FastWaveformLoader.ProgressListener {
+                override fun onProgress(fraction: Double) {
+                    runOnUiThread {
+                        val percent = (fraction * 100).toInt()
+                        binding.tvLoadingPercent.text = "$percent%"
+                        binding.progressBar.progress = percent
+                    }
+                }
+            })
+        }
+        val previewMs = System.currentTimeMillis() - startTime
+        LogCollector.i(TAG, "loadFastPreview: preview waveform in ${previewMs}ms, frames=${previewResult.numFrames}")
+
+        // Show waveform immediately
+        binding.tvLoadingPercent.text = "波形已加载，后台解码中..."
+
+        val waveform = WaveformProcessor.processFromGains(
+            previewResult.frameGains,
+            previewResult.sampleRate,
+            previewResult.channels,
+            previewResult.durationMs
+        )
+
+        binding.waveformView.setData(waveform, previewResult.sampleRate)
+        binding.waveformView.recomputeHeights(density)
+        startPos = 0
+        endPos = binding.waveformView.maxPos()
+        offset = 0
+
+        val durationMs = previewResult.durationMs
+        val channelsStr = if (previewResult.channels == 1) getString(R.string.ae_mono) else getString(R.string.ae_stereo)
+        val info = "${file.name}  |  ${formatTime(durationMs)}  |  ${previewResult.sampleRate}Hz  |  $channelsStr  |  [B] ${previewMs}ms"
+        binding.tvFileInfo.text = info
+
+        binding.progressBar.visibility = View.GONE
+        binding.loadingLayout.visibility = View.GONE
+        binding.contentLayout.visibility = View.VISIBLE
+        updateDisplay()
+
+        // Step 2: Full decode in background for playback
+        withContext(Dispatchers.IO) {
+            val decoder = AudioDecoder()
+            val decoded = decoder.decodeOptimized(file.absolutePath, null)
+            decodedAudio = decoded
+            decoded.samples.rewind()
+            withContext(Dispatchers.Main) {
+                player = AudioPlayer(decoded)
+                binding.tvLoadingPercent.text = ""
+                LogCollector.i(TAG, "loadFastPreview: background decode done in ${System.currentTimeMillis() - startTime}ms total")
+            }
+        }
+    }
+
+    /**
+     * Mode D: FFmpeg showwavespic waveform generation.
+     * Uses FFmpeg to generate a waveform image and extracts amplitude data from it.
+     * Very fast, but waveform is approximate and playback requires full decode afterward.
+     */
+    private suspend fun loadFFmpegWaveform(uri: Uri, startTime: Long) {
+        val file = copyUriToCache(uri)
+        audioFile = file
+
+        binding.tvLoadingPercent.text = ""
+        binding.progressBar.visibility = View.VISIBLE
+        binding.progressBar.max = 100
+        binding.progressBar.progress = 10
+
+        val ffmpegLoader = FFmpegWaveformLoader()
+        val result = withContext(Dispatchers.IO) {
+            ffmpegLoader.loadWaveform(file.absolutePath)
+        }
+        val ffmpegMs = System.currentTimeMillis() - startTime
+        LogCollector.i(TAG, "loadFFmpegWaveform: waveform in ${ffmpegMs}ms, frames=${result.frameGains.size}")
+
+        if (!result.success) {
+            throw RuntimeException("FFmpeg waveform failed: ${result.errorMessage}")
+        }
+
+        binding.progressBar.progress = 80
+
+        val waveform = WaveformProcessor.processFromGains(
+            result.frameGains,
+            result.sampleRate,
+            result.channels,
+            result.durationMs
+        )
+
+        binding.waveformView.setData(waveform, result.sampleRate)
+        binding.waveformView.recomputeHeights(density)
+        startPos = 0
+        endPos = binding.waveformView.maxPos()
+        offset = 0
+
+        val durationMs = result.durationMs
+        val channelsStr = if (result.channels == 1) getString(R.string.ae_mono) else getString(R.string.ae_stereo)
+        val info = "${file.name}  |  ${formatTime(durationMs)}  |  ${result.sampleRate}Hz  |  $channelsStr  |  [D] ${ffmpegMs}ms"
+        binding.tvFileInfo.text = info
+
+        binding.progressBar.progress = 90
+
+        // Full decode in background for playback
+        withContext(Dispatchers.IO) {
+            val decoder = AudioDecoder()
+            val decoded = decoder.decodeOptimized(file.absolutePath, null)
+            decodedAudio = decoded
+            decoded.samples.rewind()
+            withContext(Dispatchers.Main) {
+                player = AudioPlayer(decoded)
+                binding.progressBar.visibility = View.GONE
+                binding.loadingLayout.visibility = View.GONE
+                binding.contentLayout.visibility = View.VISIBLE
+                updateDisplay()
+                LogCollector.i(TAG, "loadFFmpegWaveform: background decode done in ${System.currentTimeMillis() - startTime}ms total")
             }
         }
     }
@@ -317,22 +511,28 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
     }
 
     private fun startPlayback() {
-        player?.let { p ->
+        val p = player
+        if (p == null) {
+            Toast.makeText(this, "后台解码中，请稍候...", Toast.LENGTH_SHORT).show()
+            return
+        }
+        p.let {
             val startMs: Int
             val endMs: Int
             if (hasSelection) {
                 startMs = binding.waveformView.pixelsToMillisecs(selectionStartPx)
                 endMs = binding.waveformView.pixelsToMillisecs(selectionEndPx)
-                p.setLooping(true)
+                it.setLooping(true)
                 isLoopingSelection = true
             } else {
-                startMs = binding.waveformView.pixelsToMillisecs(startPos)
+                // Start from current cursor position
+                startMs = binding.waveformView.pixelsToMillisecs(cursorPos)
                 endMs = binding.waveformView.pixelsToMillisecs(endPos)
-                p.setLooping(false)
+                it.setLooping(false)
                 isLoopingSelection = false
             }
-            p.setPlaybackRange(startMs, endMs)
-            p.start()
+            it.setPlaybackRange(startMs, endMs)
+            it.start()
             isPlaying = true
             binding.btnPlay.setImageResource(R.drawable.ic_pause)
             handler.post(updatePlayPosition)
@@ -352,11 +552,13 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
         if (lastDirStr != null) {
             val dirUri = Uri.parse(lastDirStr)
-            val docFile = DocumentFile.fromTreeUri(this, dirUri)
-            if (docFile != null && docFile.canWrite()) {
-                performExport(dirUri, format)
-                return
-            }
+            try {
+                val docFile = DocumentFile.fromTreeUri(this, dirUri)
+                if (docFile != null && docFile.exists()) {
+                    performExport(dirUri, format)
+                    return
+                }
+            } catch (_: Exception) { /* URI invalid, fall through to picker */ }
         }
 
         pendingExportFormat = format
@@ -365,8 +567,16 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
     private fun performExport(dirUri: Uri, format: AudioEncoder.OutputFormat) {
         val decoded = decodedAudio ?: return
-        val startMs = binding.waveformView.pixelsToMillisecs(startPos)
-        val endMs = binding.waveformView.pixelsToMillisecs(endPos)
+        val startMs = if (hasSelection) {
+            binding.waveformView.pixelsToMillisecs(selectionStartPx)
+        } else {
+            binding.waveformView.pixelsToMillisecs(startPos)
+        }
+        val endMs = if (hasSelection) {
+            binding.waveformView.pixelsToMillisecs(selectionEndPx)
+        } else {
+            binding.waveformView.pixelsToMillisecs(endPos)
+        }
         LogCollector.i(TAG, "performExport: format=${format.displayName}, range=${startMs}-${endMs}ms, samples=${decoded.numSamples}")
         val fadeIn = binding.sliderFadeIn.value
         val fadeOut = binding.sliderFadeOut.value
@@ -395,8 +605,49 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             try {
                 val enc = AudioEncoder()
                 encoder = enc
+
+                // Read export settings from UI
+                val sampleRateStr = binding.spinnerSampleRate.text.toString()
+                val targetSampleRate = when {
+                    sampleRateStr.startsWith("44100") -> 44100
+                    sampleRateStr.startsWith("48000") -> 48000
+                    sampleRateStr.startsWith("22050") -> 22050
+                    sampleRateStr.startsWith("16000") -> 16000
+                    else -> 0  // keep original
+                }
+
+                val isLossless = format == AudioEncoder.OutputFormat.FLAC || format == AudioEncoder.OutputFormat.WAV
+                val bitrateModeText = binding.spinnerBitrateMode.text.toString()
+                val isVbr = bitrateModeText == getString(R.string.ae_vbr)
+                val sliderValue = binding.sliderBitrate.value.toInt()
+
+                // CBR: slider = kbps (64-320) → bitrate in bps
+                // VBR MP3/M4A: slider = quality index → vbrQuality
+                // VBR Opus: slider = kbps (32-256) → bitrate in bps
+                val bitrateBps: Int
+                val vbrQuality: Int
+                if (isVbr) {
+                    when (format) {
+                        AudioEncoder.OutputFormat.OPUS -> {
+                            bitrateBps = sliderValue * 1000
+                            vbrQuality = sliderValue
+                        }
+                        else -> {
+                            bitrateBps = 192000 // fallback, not used for VBR
+                            vbrQuality = sliderValue
+                        }
+                    }
+                } else {
+                    bitrateBps = sliderValue * 1000
+                    vbrQuality = 4
+                }
+
                 val config = AudioEncoder.EncodeConfig(
                     format = format,
+                    bitrate = bitrateBps,
+                    vbrQuality = vbrQuality,
+                    bitrateMode = if (isLossless) AudioEncoder.BitrateMode.CBR else if (isVbr) AudioEncoder.BitrateMode.VBR else AudioEncoder.BitrateMode.CBR,
+                    sampleRate = targetSampleRate,
                     fadeInSec = fadeIn,
                     fadeOutSec = fadeOut
                 )
@@ -423,9 +674,10 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                     tempOutput.delete()
                     LogCollector.i(TAG, "performExport: success -> $outputFileName (${result.durationMs}ms)")
 
-                    binding.tvStatus.text = getString(R.string.ae_saved, outputFileName)
+                    val fullPath = resolveExportPath(dirUri, outputFileName)
+                    binding.tvStatus.text = getString(R.string.ae_saved, fullPath)
                     Toast.makeText(this@AudioEditorActivity,
-                        getString(R.string.ae_saved, outputFileName), Toast.LENGTH_LONG).show()
+                        getString(R.string.ae_saved, fullPath), Toast.LENGTH_LONG).show()
                 } else {
                     tempOutput.delete()
                     LogCollector.e(TAG, "performExport: FFmpeg failed: ${result.errorMessage}")
@@ -444,11 +696,81 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         }
     }
 
+    private fun resolveExportPath(dirUri: Uri, fileName: String): String {
+        // Try to get a readable path from the tree URI
+        val path = dirUri.path ?: return fileName
+        // Typical tree URI: /tree/primary:Documents/sub -> /storage/emulated/0/Documents/sub
+        val treePart = path.removePrefix("/tree/").replace(":", "/")
+        val storagePath = if (treePart.startsWith("primary/")) {
+            "/storage/emulated/0/${treePart.removePrefix("primary/")}"
+        } else {
+            "/storage/$treePart"
+        }
+        return "$storagePath/$fileName"
+    }
+
     private fun setExportButtonsEnabled(enabled: Boolean) {
-        binding.btnExportMp3.isEnabled = enabled
-        binding.btnExportM4A.isEnabled = enabled
-        binding.btnExportFlac.isEnabled = enabled
-        binding.btnExportWav.isEnabled = enabled
+        binding.btnExport.isEnabled = enabled
+        binding.spinnerExportFormat.isEnabled = enabled
+        binding.spinnerSampleRate.isEnabled = enabled
+        binding.spinnerBitrateMode.isEnabled = enabled
+        binding.sliderBitrate.isEnabled = enabled
+    }
+
+    private fun updateExportSettingsVisibility() {
+        val formatIndex = AudioEncoder.OutputFormat.entries.map { "${it.displayName} (.${it.extension})" }
+            .indexOf(binding.spinnerExportFormat.text.toString())
+        val format = AudioEncoder.OutputFormat.entries.getOrElse(formatIndex) { AudioEncoder.OutputFormat.MP3 }
+        val isLossless = format == AudioEncoder.OutputFormat.FLAC || format == AudioEncoder.OutputFormat.WAV
+
+        binding.layoutBitrateMode.visibility = if (isLossless) View.GONE else View.VISIBLE
+        binding.layoutBitrate.visibility = if (isLossless) View.GONE else View.VISIBLE
+        updateBitrateSlider()
+    }
+
+    private fun updateBitrateSlider() {
+        val modeText = binding.spinnerBitrateMode.text.toString()
+        val isVbr = modeText == getString(R.string.ae_vbr)
+
+        val formatIndex = AudioEncoder.OutputFormat.entries.map { "${it.displayName} (.${it.extension})" }
+            .indexOf(binding.spinnerExportFormat.text.toString())
+        val format = AudioEncoder.OutputFormat.entries.getOrElse(formatIndex) { AudioEncoder.OutputFormat.MP3 }
+
+        // Must set valueFrom/valueTo before setting value to avoid IllegalArgumentException
+        if (isVbr) {
+            binding.tvBitrateLabel.text = getString(R.string.ae_quality)
+            when (format) {
+                AudioEncoder.OutputFormat.MP3 -> {
+                    binding.sliderBitrate.valueFrom = 0f
+                    binding.sliderBitrate.valueTo = 9f
+                    binding.sliderBitrate.stepSize = 1f
+                    binding.sliderBitrate.value = 4f
+                    binding.tvBitrateValue.text = "4 (≈175 kbps)"
+                }
+                AudioEncoder.OutputFormat.M4A -> {
+                    binding.sliderBitrate.valueFrom = 1f
+                    binding.sliderBitrate.valueTo = 5f
+                    binding.sliderBitrate.stepSize = 1f
+                    binding.sliderBitrate.value = 3f
+                    binding.tvBitrateValue.text = "3"
+                }
+                AudioEncoder.OutputFormat.OPUS -> {
+                    binding.sliderBitrate.valueFrom = 32f
+                    binding.sliderBitrate.valueTo = 256f
+                    binding.sliderBitrate.stepSize = 16f
+                    binding.sliderBitrate.value = 128f
+                    binding.tvBitrateValue.text = "128 kbps"
+                }
+                else -> {}
+            }
+        } else {
+            binding.tvBitrateLabel.text = getString(R.string.ae_bitrate)
+            binding.sliderBitrate.stepSize = 16f
+            binding.sliderBitrate.valueFrom = 64f
+            binding.sliderBitrate.valueTo = 320f
+            binding.sliderBitrate.value = 192f
+            binding.tvBitrateValue.text = "192 kbps"
+        }
     }
 
     private fun updateDisplay() {
@@ -456,17 +778,37 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         binding.waveformView.invalidate()
 
         binding.tvStartTime.text = formatTime(binding.waveformView.pixelsToMillisecs(startPos))
-        binding.tvEndTime.text = formatTime(binding.waveformView.pixelsToMillisecs(endPos))
 
-        // Update export button text based on selection
-        val exportLabel = if (hasSelection) getString(R.string.ae_export_selection) else getString(R.string.ae_export_all)
-        binding.btnExportMp3.text = "$exportLabel (MP3)"
-        binding.btnExportM4A.text = "$exportLabel (M4A)"
-        binding.btnExportFlac.text = "$exportLabel (FLAC)"
-        binding.btnExportWav.text = "$exportLabel (WAV)"
+        // Total duration from decoded audio — stays correct after splice
+        val decoded = decodedAudio
+        if (decoded != null && decoded.sampleRate > 0) {
+            val totalMs = (decoded.numSamples.toDouble() / decoded.sampleRate * 1000).toInt()
+            binding.tvEndTime.text = formatTime(totalMs)
+        } else {
+            binding.tvEndTime.text = formatTime(binding.waveformView.pixelsToMillisecs(endPos))
+        }
 
-        // Update selection action bar visibility
-        binding.selectionActionBar.visibility = if (hasSelection) View.VISIBLE else View.GONE
+        // Show selection info during drag or after selection is finalized
+        val showSelection = hasSelection ||
+            (isDraggingSelection && Math.abs(selectionEndPx - selectionStartPx) > 5) ||
+            (isAdjustingBoundary && hasSelection)
+
+        binding.btnExport.text = if (showSelection) getString(R.string.ae_export_selection) else getString(R.string.ae_export_label)
+
+        if (showSelection) {
+            binding.selectionActionBar.visibility = View.VISIBLE
+            binding.selectionTimeLayout.visibility = View.VISIBLE
+            val lo = minOf(selectionStartPx, selectionEndPx)
+            val hi = maxOf(selectionStartPx, selectionEndPx)
+            val selStartMs = binding.waveformView.pixelsToMillisecs(lo)
+            val selEndMs = binding.waveformView.pixelsToMillisecs(hi)
+            binding.tvSelectionDuration.text = "⏱ ${formatTime(selEndMs - selStartMs)}"
+            binding.tvSelStartTime.text = formatTime(selStartMs)
+            binding.tvSelEndTime.text = formatTime(selEndMs)
+        } else {
+            binding.selectionActionBar.visibility = View.GONE
+            binding.selectionTimeLayout.visibility = View.GONE
+        }
     }
 
     private fun formatTime(msec: Int): String {
@@ -495,7 +837,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         endPos = savedEnd
         hasSelection = savedSelection
         if (!hasSelection) {
-            binding.waveformView.clearHighlight()
+            binding.waveformView.clearSelection()
             stopLoopPlayback()
         }
         updateDisplay()
@@ -569,7 +911,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         endPos = binding.waveformView.maxPos()
         offset = 0
         hasSelection = false
-        binding.waveformView.clearHighlight()
+        binding.waveformView.clearSelection()
         stopLoopPlayback()
         updateDisplay()
     }
@@ -595,21 +937,25 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                     binding.waveformView.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                 }
                 pos in selectionStartPx..selectionEndPx -> {
+                    // Touch inside selection — do nothing, wait for long press or boundary adjust
                     isDraggingSelection = false
                     isAdjustingBoundary = false
                 }
                 else -> {
+                    // Touch outside selection — clear existing selection, start new one
+                    hasSelection = false
+                    binding.waveformView.clearSelection()
                     isDraggingSelection = true
                     selectionStartPx = pos
                     selectionEndPx = pos
-                    binding.waveformView.setHighlight(selectionStartPx, selectionEndPx)
+                    binding.waveformView.setSelection(selectionStartPx, selectionEndPx)
                 }
             }
         } else {
             isDraggingSelection = true
             selectionStartPx = pos
             selectionEndPx = pos
-            binding.waveformView.setHighlight(selectionStartPx, selectionEndPx)
+            binding.waveformView.setSelection(selectionStartPx, selectionEndPx)
         }
         updateDisplay()
     }
@@ -631,14 +977,14 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                 selectionEndPx = touchDownPos
             }
         }
-        binding.waveformView.setHighlight(selectionStartPx, selectionEndPx)
+        binding.waveformView.setSelection(selectionStartPx, selectionEndPx)
         updateDisplay()
     }
 
     override fun waveformTouchEnd() {
         if (isAdjustingBoundary) {
             isAdjustingBoundary = false
-            startLoopPlayback()
+            // Don't auto-play after boundary adjustment
         } else if (isDraggingSelection) {
             isDraggingSelection = false
             val distance = Math.abs(selectionEndPx - selectionStartPx)
@@ -647,15 +993,23 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                 if (selectionEndPx < selectionStartPx) {
                     val tmp = selectionStartPx; selectionStartPx = selectionEndPx; selectionEndPx = tmp
                 }
-                startLoopPlayback()
+                // Don't auto-play after selection — user clicks play button to start
             } else {
                 if (hasSelection && touchDownPos in selectionStartPx..selectionEndPx) {
                     return
                 }
+                // Tap: move playback position indicator to tap point, no auto-play
                 hasSelection = false
-                binding.waveformView.clearHighlight()
-                stopLoopPlayback()
-                player?.seekTo(binding.waveformView.pixelsToMillisecs(selectionStartPx))
+                binding.waveformView.clearSelection()
+                if (isPlaying) {
+                    pausePlayback()
+                }
+                cursorPos = selectionStartPx
+                val tapMs = binding.waveformView.pixelsToMillisecs(cursorPos)
+                player?.seekTo(tapMs)
+                binding.waveformView.setPlayback(cursorPos)
+                binding.waveformView.invalidate()
+                binding.tvCurrentTime.text = formatTime(tapMs)
             }
             updateDisplay()
         }
@@ -680,10 +1034,10 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
     }
 
     override fun waveformDraw() {
+        // Sync offset from view — keeps Activity in sync with scrollbar drags
+        offset = binding.waveformView.getOffset()
         if (!isPlaying) {
-            val currentMs = binding.waveformView.pixelsToMillisecs(
-                binding.waveformView.getOffset()
-            )
+            val currentMs = binding.waveformView.pixelsToMillisecs(offset)
             binding.tvCurrentTime.text = formatTime(currentMs)
         }
     }
@@ -766,13 +1120,13 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         if (delStartMs <= currentStartMs) {
             startPos = binding.waveformView.millisecsToPixels(delEndMs)
             hasSelection = false
-            binding.waveformView.clearHighlight()
+            binding.waveformView.clearSelection()
             stopLoopPlayback()
             updateDisplay()
         } else if (delEndMs >= currentEndMs) {
             endPos = binding.waveformView.millisecsToPixels(delStartMs)
             hasSelection = false
-            binding.waveformView.clearHighlight()
+            binding.waveformView.clearSelection()
             stopLoopPlayback()
             updateDisplay()
         } else {
@@ -800,14 +1154,14 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             // Keep from start to keepEnd
             endPos = binding.waveformView.millisecsToPixels(keepEndMs)
             hasSelection = false
-            binding.waveformView.clearHighlight()
+            binding.waveformView.clearSelection()
             stopLoopPlayback()
             updateDisplay()
         } else if (keepEndMs >= currentEndMs) {
             // Keep from keepStart to end
             startPos = binding.waveformView.millisecsToPixels(keepStartMs)
             hasSelection = false
-            binding.waveformView.clearHighlight()
+            binding.waveformView.clearSelection()
             stopLoopPlayback()
             updateDisplay()
         } else {

@@ -348,5 +348,18 @@
     <string name="ae_export_selection">导出选区</string>
     <string name="ae_mono">单声道</string>
     <string name="ae_stereo">立体声</string>
+    <string name="ae_sample_rate">采样率</string>
+    <string name="ae_bitrate_mode">编码模式</string>
+    <string name="ae_bitrate">码率</string>
+    <string name="ae_quality">质量</string>
+    <string name="ae_cbr">恒定 (CBR)</string>
+    <string name="ae_vbr">可变 (VBR)</string>
     <string name="ae_info_format">%1$s  |  %2$s  |  %3$sHz  |  %4$s  |  %5$dkbps</string>
+
+    <!-- Audio load modes -->
+    <string name="ae_load_mode_c">C: 原始解码（优化版）</string>
+    <string name="ae_load_mode_b">B: 快速预览波形</string>
+    <string name="ae_load_mode_d">D: FFmpeg 波形</string>
+    <string name="ae_load_mode_a">A: 流式解码（未实现）</string>
+    <string name="ae_load_mode_label">解码模式</string>
 </resources>

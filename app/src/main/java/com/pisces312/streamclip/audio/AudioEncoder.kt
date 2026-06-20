@@ -30,9 +30,13 @@ class AudioEncoder {
         }
     }
 
+    enum class BitrateMode { CBR, VBR }
+
     data class EncodeConfig(
         val format: OutputFormat,
-        val bitrate: Int = 192000,       // for lossy formats
+        val bitrate: Int = 192000,       // for CBR lossy formats
+        val vbrQuality: Int = 4,         // for VBR: MP3 q=0-9, AAC quality 1-5
+        val bitrateMode: BitrateMode = BitrateMode.CBR,
         val sampleRate: Int = 0,         // 0 = keep original
         val channels: Int = 0,           // 0 = keep original
         val fadeInSec: Float = 0f,
@@ -168,19 +172,36 @@ class AudioEncoder {
         // 编码器 + 比特率
         when (config.format) {
             OutputFormat.MP3 -> {
-                sb.append(" -c:a libmp3lame -b:a ${config.bitrate}")
+                sb.append(" -c:a libmp3lame")
+                if (config.bitrateMode == BitrateMode.VBR) {
+                    sb.append(" -q:a ${config.vbrQuality}")
+                } else {
+                    sb.append(" -b:a ${config.bitrate}")
+                }
             }
             OutputFormat.FLAC -> {
                 sb.append(" -c:a flac")
             }
             OutputFormat.M4A -> {
-                sb.append(" -c:a aac -b:a ${config.bitrate}")
+                sb.append(" -c:a aac")
+                if (config.bitrateMode == BitrateMode.VBR) {
+                    // AAC VBR: -q:a 1-5 (1=lowest, 5=highest quality)
+                    sb.append(" -q:a ${config.vbrQuality}")
+                } else {
+                    sb.append(" -b:a ${config.bitrate}")
+                }
             }
             OutputFormat.WAV -> {
                 sb.append(" -c:a pcm_s16le")
             }
             OutputFormat.OPUS -> {
-                sb.append(" -c:a libopus -b:a ${config.bitrate}")
+                sb.append(" -c:a libopus")
+                if (config.bitrateMode == BitrateMode.VBR) {
+                    // Opus VBR is default, use -vbr on with target bitrate range
+                    sb.append(" -vbr on -b:a ${config.bitrate}")
+                } else {
+                    sb.append(" -b:a ${config.bitrate} -vbr off")
+                }
             }
         }
 

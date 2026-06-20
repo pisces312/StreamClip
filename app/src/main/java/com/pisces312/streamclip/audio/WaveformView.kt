@@ -101,8 +101,10 @@ class WaveformView @JvmOverloads constructor(
     private var zoomLevel = 0
     private var numZoomLevels = 0
     private var offset = 0
-    private var selectionStart = 0
-    private var selectionEnd = 0
+    private var audioStart = 0   // overall audio range start (pixels)
+    private var audioEnd = 0     // overall audio range end (pixels)
+    private var selStart = -1    // user selection start (-1 = no selection)
+    private var selEnd = -1      // user selection end
     private var playbackPos = -1
     private var density = 1.0f
     private var initialized = false
@@ -113,10 +115,6 @@ class WaveformView @JvmOverloads constructor(
     private var scrollbarPadding = 2f
     private var scrollbarTouchSlop = 8f
     private var isDraggingScrollbar = false
-
-    // Highlight state (Change 3)
-    private var highlightStart = -1
-    private var highlightEnd = -1
 
     private var listener: WaveformListener? = null
 
@@ -183,8 +181,10 @@ class WaveformView @JvmOverloads constructor(
         waveformData = null
         initialized = false
         offset = 0
-        selectionStart = 0
-        selectionEnd = 0
+        audioStart = 0
+        audioEnd = 0
+        selStart = -1
+        selEnd = -1
         playbackPos = -1
         invalidate()
     }
@@ -198,8 +198,8 @@ class WaveformView @JvmOverloads constructor(
     fun zoomIn() {
         if (canZoomIn()) {
             zoomLevel--
-            selectionStart *= 2
-            selectionEnd *= 2
+            audioStart *= 2
+            audioEnd *= 2
             heightsAtThisZoomLevel = null
             val offsetCenter = offset + measuredWidth / 2
             offset = offsetCenter * 2 - measuredWidth / 2
@@ -213,8 +213,8 @@ class WaveformView @JvmOverloads constructor(
     fun zoomOut() {
         if (canZoomOut()) {
             zoomLevel++
-            selectionStart /= 2
-            selectionEnd /= 2
+            audioStart /= 2
+            audioEnd /= 2
             val offsetCenter = offset + measuredWidth / 2
             offset = offsetCenter / 2 - measuredWidth / 2
             if (offset < 0) offset = 0
@@ -250,33 +250,29 @@ class WaveformView @JvmOverloads constructor(
     }
 
     fun setParameters(start: Int, end: Int, offset: Int) {
-        selectionStart = start
-        selectionEnd = end
+        audioStart = start
+        audioEnd = end
         this.offset = offset
     }
 
-    fun getStart(): Int = selectionStart
-    fun getEnd(): Int = selectionEnd
     fun getOffset(): Int = offset
 
     fun setPlayback(pos: Int) {
         playbackPos = pos
     }
 
-    fun setHighlight(start: Int, end: Int) {
-        highlightStart = minOf(start, end)
-        highlightEnd = maxOf(start, end)
+    /** Set user selection range (pixels). Controls waveform coloring. */
+    fun setSelection(start: Int, end: Int) {
+        selStart = minOf(start, end)
+        selEnd = maxOf(start, end)
         invalidate()
     }
 
-    fun clearHighlight() {
-        highlightStart = -1
-        highlightEnd = -1
+    /** Clear user selection — full waveform shown in normal color. */
+    fun clearSelection() {
+        selStart = -1
+        selEnd = -1
         invalidate()
-    }
-
-    fun isPointInHighlight(pos: Int): Boolean {
-        return highlightStart >= 0 && pos in highlightStart..highlightEnd
     }
 
     fun recomputeHeights(density: Float) {
@@ -375,10 +371,10 @@ class WaveformView @JvmOverloads constructor(
             }
         }
 
-        // 波形
+        // 波形 — 选区内亮色，选区外灰色
         for (j in 0 until width) {
             val paint: Paint
-            if (j + start >= selectionStart && j + start < selectionEnd) {
+            if (selStart >= 0 && j + start in selStart until selEnd) {
                 paint = selectedLinePaint
             } else {
                 canvas.drawLine(j.toFloat(), 0f, j.toFloat(), measuredHeight.toFloat(), unselectedBkgndLinePaint)
@@ -397,28 +393,16 @@ class WaveformView @JvmOverloads constructor(
             canvas.drawLine(j.toFloat(), 0f, j.toFloat(), measuredHeight.toFloat(), unselectedBkgndLinePaint)
         }
 
-        // 选区高亮 (Change 3)
-        if (highlightStart >= 0 && highlightEnd > highlightStart) {
-            val x1 = (highlightStart - offset).coerceIn(0, measuredWidth).toFloat()
-            val x2 = (highlightEnd - offset).coerceIn(0, measuredWidth).toFloat()
+        // 选区高亮半透明覆盖 + 边界线
+        if (selStart >= 0 && selEnd > selStart) {
+            val x1 = (selStart - offset).coerceIn(0, measuredWidth).toFloat()
+            val x2 = (selEnd - offset).coerceIn(0, measuredWidth).toFloat()
             if (x2 > x1) {
                 canvas.drawRect(x1, 0f, x2, measuredHeight.toFloat(), highlightPaint)
                 canvas.drawLine(x1, 0f, x1, measuredHeight.toFloat(), highlightBorderPaint)
                 canvas.drawLine(x2, 0f, x2, measuredHeight.toFloat(), highlightBorderPaint)
             }
         }
-
-        // 选区边界
-        canvas.drawLine(
-            (selectionStart - offset + 0.5f), 30f,
-            (selectionStart - offset + 0.5f), measuredHeight.toFloat(),
-            borderLinePaint
-        )
-        canvas.drawLine(
-            (selectionEnd - offset + 0.5f), 0f,
-            (selectionEnd - offset + 0.5f), (measuredHeight - 30).toFloat(),
-            borderLinePaint
-        )
 
         // 时间码
         var timecodeIntervalSecs = 1.0

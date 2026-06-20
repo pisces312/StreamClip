@@ -353,5 +353,11 @@
     <string name="ae_export_selection">Export Selection</string>
     <string name="ae_mono">Mono</string>
     <string name="ae_stereo">Stereo</string>
+    <string name="ae_sample_rate">Sample rate</string>
+    <string name="ae_bitrate_mode">Mode</string>
+    <string name="ae_bitrate">Bitrate</string>
+    <string name="ae_quality">Quality</string>
+    <string name="ae_cbr">Constant (CBR)</string>
+    <string name="ae_vbr">Variable (VBR)</string>
     <string name="ae_info_format">%1$s  |  %2$s  |  %3$sHz  |  %4$s  |  %5$dkbps</string>
 </resources>

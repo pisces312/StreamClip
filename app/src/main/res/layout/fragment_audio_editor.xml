@@ -32,11 +32,30 @@
         android:textColor="#AAAAAA"
         android:textSize="14sp" />
 
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilLoadMode"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:hint="解码模式"
+        app:boxBackgroundColor="@color/gray_800"
+        app:boxStrokeColor="@color/teal_200">
+
+        <AutoCompleteTextView
+            android:id="@+id/spinnerLoadMode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:textColor="@color/white"
+            android:textSize="14sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSelectAudio"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="16dp"
         android:text="选择音频文件"
         app:cornerRadius="8dp"
         app:icon="@drawable/ic_audio"

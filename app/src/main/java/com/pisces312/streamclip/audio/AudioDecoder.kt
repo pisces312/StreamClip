@@ -39,10 +39,25 @@ class AudioDecoder {
     }
 
     /**
-     * 解码音频文件为 PCM ShortBuffer。
+     * 解码音频文件为 PCM ShortBuffer（保留原接口，内部调用优化版）。
      */
     @Throws(Exception::class)
     fun decode(
+        filePath: String,
+        listener: ProgressListener? = null
+    ): DecodedAudio {
+        return decodeOptimized(filePath, listener)
+    }
+
+    /**
+     * Optimized decode (Mode C):
+     * - Larger dequeue timeout (10ms vs 100μs) to reduce CPU spin
+     * - Single pre-allocated buffer with 1.1x safety margin (no realloc copy in normal case)
+     * - Throttled progress callback (every ~512KB, not every chunk)
+     * - Early exit when expected samples reached
+     */
+    @Throws(Exception::class)
+    fun decodeOptimized(
         filePath: String,
         listener: ProgressListener? = null
     ): DecodedAudio {
@@ -84,18 +99,26 @@ class AudioDecoder {
         codec.configure(format, null, null, 0)
         codec.start()
 
-        // 初始分配 1MB，后续按需扩展
-        var decodedBytes = ByteBuffer.allocate(1 shl 20)
-        var decodedSamplesSize = 0
-        var decodedSamples = ByteArray(0)
+        // Pre-allocate buffer once with 1.1x safety margin, capped at 512MB
+        val expectedBytes = if (expectedNumSamples > 0) {
+            ((expectedNumSamples.toLong() * channels * 2 * 1.1).toLong().coerceAtMost(512L shl 20)).toInt()
+        } else {
+            1 shl 20  // 1MB fallback
+        }
+        var decodedBytes = ByteBuffer.allocate(expectedBytes)
+        var decodedSamples = ByteArray(65536)
         var totalSizeRead = 0
         var doneReading = false
         val info = MediaCodec.BufferInfo()
         var firstSampleData = true
 
+        // Progress throttling: callback every ~512KB read
+        var lastProgressBytes = 0
+        val progressInterval = 512 * 1024
+
         while (true) {
-            // 读取文件数据喂给解码器
-            val inputBufferIndex = codec.dequeueInputBuffer(100)
+            // Use 10ms timeout instead of 100μs to reduce CPU spin
+            val inputBufferIndex = codec.dequeueInputBuffer(10000)
             if (!doneReading && inputBufferIndex >= 0) {
                 val inputBuffer = codec.getInputBuffer(inputBufferIndex)!!
                 val sampleSize = extractor.readSampleData(inputBuffer, 0)
@@ -115,9 +138,11 @@ class AudioDecoder {
                     extractor.advance()
                     totalSizeRead += sampleSize
 
-                    listener?.let {
+                    // Throttled progress callback
+                    if (listener != null && totalSizeRead - lastProgressBytes >= progressInterval) {
+                        lastProgressBytes = totalSizeRead
                         val fraction = if (fileSize > 0) totalSizeRead.toDouble() / fileSize else 0.0
-                        if (!it.onProgress(fraction)) {
+                        if (!listener.onProgress(fraction)) {
                             extractor.release()
                             codec.stop()
                             codec.release()
@@ -128,24 +153,21 @@ class AudioDecoder {
                 firstSampleData = false
             }
 
-            // 从解码器取回 PCM 数据
-            val outputBufferIndex = codec.dequeueOutputBuffer(info, 100)
+            // Use 10ms timeout for output too
+            val outputBufferIndex = codec.dequeueOutputBuffer(info, 10000)
             if (outputBufferIndex >= 0 && info.size > 0) {
-                if (decodedSamplesSize < info.size) {
-                    decodedSamplesSize = info.size
-                    decodedSamples = ByteArray(decodedSamplesSize)
+                if (decodedSamples.size < info.size) {
+                    decodedSamples = ByteArray(info.size)
                 }
                 val outputBuffer = codec.getOutputBuffer(outputBufferIndex)!!
                 outputBuffer.get(decodedSamples, 0, info.size)
                 outputBuffer.clear()
 
-                // 扩容检查
+                // Check capacity before put (no realloc needed in normal case)
                 if (decodedBytes.remaining() < info.size) {
+                    // Rare case: expand with minimal copy
                     val position = decodedBytes.position()
-                    var newSize = (position * (1.0 * fileSize / totalSizeRead.coerceAtLeast(1)) * 1.2).toInt()
-                    if (newSize - position < info.size + 5 * (1 shl 20)) {
-                        newSize = position + info.size + 5 * (1 shl 20)
-                    }
+                    val newSize = (position + info.size + 5 * (1 shl 20)).toLong().coerceAtMost(512L shl 20).toInt()
                     var newBytes: ByteBuffer? = null
                     var retry = 10
                     while (retry > 0) {
@@ -157,7 +179,7 @@ class AudioDecoder {
                         }
                     }
                     if (newBytes == null) {
-                        Log.w(TAG, "OOM: failed to expand buffer after 10 retries, truncating decode")
+                        Log.w(TAG, "OOM: failed to expand buffer, truncating decode")
                         break
                     }
                     decodedBytes.rewind()
@@ -169,13 +191,17 @@ class AudioDecoder {
                 codec.releaseOutputBuffer(outputBufferIndex, false)
             }
 
-            // 结束判断
-            if ((info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0 ||
-                expectedNumSamples > 0 && decodedBytes.position() / (2 * channels) >= expectedNumSamples
-            ) {
+            // End conditions
+            if ((info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                break
+            }
+            if (expectedNumSamples > 0 && decodedBytes.position() / (2 * channels) >= expectedNumSamples) {
                 break
             }
         }
+
+        // Final progress callback
+        listener?.onProgress(1.0)
 
         val numSamples = decodedBytes.position() / (channels * 2)
         decodedBytes.rewind()
@@ -190,7 +216,7 @@ class AudioDecoder {
         codec.stop()
         codec.release()
 
-        Log.i(TAG, "Decoded: $filePath | type=$fileType | ${sampleRate}Hz | ${channels}ch | ${numSamples} samples | ~${avgBitrate}kbps")
+        Log.i(TAG, "Decoded(optimized): $filePath | type=$fileType | ${sampleRate}Hz | ${channels}ch | ${numSamples} samples | ~${avgBitrate}kbps")
 
         return DecodedAudio(
             samples = samples,

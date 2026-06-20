@@ -109,16 +109,19 @@ class AudioPlayer(
         playThread = Thread {
             val position = playbackStart * channels
             samples.position(position)
-            val limit = numSamples * channels
+            // When looping, stop at loopEndSample; otherwise play to end
+            val endSample = if (isLooping) loopEndSample else numSamples
+            val limit = endSample * channels
             while (samples.position() < limit && keepPlaying) {
                 val remaining = limit - samples.position()
+                val toWrite = if (remaining >= buffer.size) buffer.size else remaining
                 if (remaining >= buffer.size) {
                     samples.get(buffer)
                 } else {
                     for (i in remaining until buffer.size) buffer[i] = 0
                     samples.get(buffer, 0, remaining)
                 }
-                audioTrack.write(buffer, 0, buffer.size)
+                audioTrack.write(buffer, 0, toWrite)
             }
         }.also { it.start() }
     }
