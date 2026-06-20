@@ -11,6 +11,7 @@ import com.pisces312.streamclip.fragment.CompressFragment
 import com.pisces312.streamclip.fragment.NativeCompressFragment
 import com.pisces312.streamclip.fragment.AudioCompressFragment
 import com.pisces312.streamclip.fragment.CustomCommandFragment
+import com.pisces312.streamclip.fragment.AudioEditorFragment
 import com.pisces312.streamclip.fragment.MetadataFragment
 import com.pisces312.streamclip.fragment.SettingsTabFragment
 
@@ -30,6 +31,7 @@ class MainPagerAdapter(
             "compress" -> CompressFragment()
             "native_compress" -> NativeCompressFragment()
             "audio_compress" -> AudioCompressFragment()
+            "audio_editor" -> AudioEditorFragment()
             "custom" -> CustomCommandFragment()
             "metadata" -> MetadataFragment()
             "settings" -> SettingsTabFragment()

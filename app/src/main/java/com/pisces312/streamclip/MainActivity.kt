@@ -114,6 +114,7 @@ class MainActivity : BaseActivity() {
         "compress" -> getString(R.string.title_compress)
         "native_compress" -> getString(R.string.title_native_compress)
         "audio_compress" -> getString(R.string.title_audio_compress)
+        "audio_editor" -> getString(R.string.title_audio_editor)
         "custom" -> getString(R.string.title_custom)
         "metadata" -> getString(R.string.title_metadata)
         else -> ""

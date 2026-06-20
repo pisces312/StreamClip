@@ -12,4 +12,23 @@
     <color name="gray_600">#FF757575</color>
     <color name="gray_700">#FF616161</color>
     <color name="gray_800">#FF424242</color>
+    <color name="gray_900">#FF212121</color>
+
+    <!-- Waveform colors -->
+    <color name="waveform_grid">#FF1F1F1F</color>
+    <color name="waveform_selected">#FF03DAC5</color>
+    <color name="waveform_unselected">#FF555555</color>
+    <color name="waveform_unselected_bkgnd">#FF2A2A2A</color>
+    <color name="waveform_border">#FFCCCCCC</color>
+    <color name="waveform_playback">#FFFF5722</color>
+    <color name="waveform_timecode">#FFDDDDDD</color>
+    <color name="waveform_timecode_shadow">#FF000000</color>
+
+    <!-- Scrollbar colors -->
+    <color name="waveform_scrollbar_track">#22FFFFFF</color>
+    <color name="waveform_scrollbar_thumb">#CCB2DFDB</color>
+
+    <!-- Selection highlight colors -->
+    <color name="waveform_highlight">#33B2DFDB</color>
+    <color name="waveform_highlight_border">#B2DFDB</color>
 </resources>

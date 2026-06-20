@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/gray_800">
+
+    <TextView
+        android:id="@+id/tvSelectionInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/teal_200"
+        android:textSize="14sp"
+        android:paddingBottom="12dp" />
+
+    <TextView
+        android:id="@+id/action_delete_selected"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="@string/ae_delete_selected"
+        android:textColor="@color/white"
+        android:textSize="15sp"
+        android:gravity="center_vertical"
+        android:background="?attr/selectableItemBackground" />
+
+    <TextView
+        android:id="@+id/action_delete_others"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="@string/ae_delete_others"
+        android:textColor="@color/white"
+        android:textSize="15sp"
+        android:gravity="center_vertical"
+        android:background="?attr/selectableItemBackground" />
+
+    <TextView
+        android:id="@+id/action_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="取消"
+        android:textColor="#AAAAAA"
+        android:textSize="15sp"
+        android:gravity="center_vertical"
+        android:background="?attr/selectableItemBackground" />
+
+</LinearLayout>

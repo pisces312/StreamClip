@@ -4,6 +4,7 @@ import com.pisces312.streamclip.R
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.view.LayoutInflater
@@ -73,7 +74,13 @@ class ExtractFragment : Fragment() {
         }
 
         // 处理外部传入的视频 URI（通过"用音频提取打开"）
-        arguments?.getParcelable<Uri>(com.pisces312.streamclip.ui.ExtractActivity.ARG_EXTERNAL_VIDEO_URI)?.let { uri ->
+        val externalUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arguments?.getParcelable(com.pisces312.streamclip.ui.ExtractActivity.ARG_EXTERNAL_VIDEO_URI, Uri::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            arguments?.getParcelable(com.pisces312.streamclip.ui.ExtractActivity.ARG_EXTERNAL_VIDEO_URI)
+        }
+        externalUri?.let { uri ->
             arguments?.remove(com.pisces312.streamclip.ui.ExtractActivity.ARG_EXTERNAL_VIDEO_URI)
             view.post {
                 handleExternalVideo(uri)

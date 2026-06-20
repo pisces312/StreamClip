@@ -322,4 +322,36 @@
     <string name="cfg_native_iframe_interval">I-Frame Interval</string>
     <string name="start_native_compress">Start Compression</string>
     <string name="native_compressing">Native compressing...</string>
+
+    <!-- Audio Editor -->
+    <string name="title_audio_editor">Audio Editor</string>
+    <string name="ae_zoom_in">Zoom In</string>
+    <string name="ae_zoom_out">Zoom Out</string>
+    <string name="ae_fit">Fit</string>
+    <string name="ae_export_label">Export</string>
+    <string name="ae_fade_in">Fade In</string>
+    <string name="ae_fade_out">Fade Out</string>
+    <string name="ae_decoding">Decoding...</string>
+    <string name="ae_exporting">Exporting %s...</string>
+    <string name="ae_saved">Saved: %s</string>
+    <string name="ae_export_failed">Export failed</string>
+    <string name="ae_export_error">Export failed: %s</string>
+    <string name="ae_cannot_create_file">Cannot create file: %s</string>
+    <string name="ae_no_audio_file">No audio file selected</string>
+    <string name="ae_recording_dev">Recording feature in development</string>
+    <string name="ae_load_failed">Load failed: %s</string>
+    <string name="ae_delete_selected">🗑  Delete selected</string>
+    <string name="ae_delete_others">✂️  Delete others (keep selected only)</string>
+    <string name="ae_selection_info">Selected: %1$s - %2$s (%3$s)</string>
+    <string name="ae_deleted_selected">Selected part deleted</string>
+    <string name="ae_deleted_others">Other parts deleted</string>
+    <string name="ae_delete_all_warning">Selection covers entire content</string>
+    <string name="ae_undo">Undo</string>
+    <string name="ae_undone">Undone</string>
+    <string name="ae_nothing_to_undo">Nothing to undo</string>
+    <string name="ae_export_all">Export All</string>
+    <string name="ae_export_selection">Export Selection</string>
+    <string name="ae_mono">Mono</string>
+    <string name="ae_stereo">Stereo</string>
+    <string name="ae_info_format">%1$s  |  %2$s  |  %3$sHz  |  %4$s  |  %5$dkbps</string>
 </resources>

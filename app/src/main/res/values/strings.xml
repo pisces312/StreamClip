@@ -10,6 +10,7 @@
     <string name="title_compress">视频压缩</string>
     <string name="title_native_compress">视频压缩(原生)</string>
     <string name="title_audio_compress">音频压缩</string>
+    <string name="title_audio_editor">音频编辑</string>
     <string name="title_custom">自定义命令</string>
     <string name="select_video">选择视频</string>
     <string name="select_media">选择文件</string>
@@ -317,4 +318,35 @@
     <string name="cfg_native_iframe_interval">I帧间隔</string>
     <string name="start_native_compress">开始压缩</string>
     <string name="native_compressing">原生压缩中...</string>
+
+    <!-- Audio Editor -->
+    <string name="ae_zoom_in">放大</string>
+    <string name="ae_zoom_out">缩小</string>
+    <string name="ae_fit">适应</string>
+    <string name="ae_export_label">导出</string>
+    <string name="ae_fade_in">淡入</string>
+    <string name="ae_fade_out">淡出</string>
+    <string name="ae_decoding">解码中...</string>
+    <string name="ae_exporting">导出 %s...</string>
+    <string name="ae_saved">已保存: %s</string>
+    <string name="ae_export_failed">导出失败</string>
+    <string name="ae_export_error">导出失败: %s</string>
+    <string name="ae_cannot_create_file">无法创建文件: %s</string>
+    <string name="ae_no_audio_file">未选择音频文件</string>
+    <string name="ae_recording_dev">录音功能开发中</string>
+    <string name="ae_load_failed">加载失败: %s</string>
+    <string name="ae_delete_selected">🗑  删除选中部分</string>
+    <string name="ae_delete_others">✂️  删除以外的部分（只保留选中）</string>
+    <string name="ae_selection_info">选中: %1$s - %2$s (%3$s)</string>
+    <string name="ae_deleted_selected">已删除选中部分</string>
+    <string name="ae_deleted_others">已删除以外的部分</string>
+    <string name="ae_delete_all_warning">删除范围覆盖了全部内容</string>
+    <string name="ae_undo">撤销</string>
+    <string name="ae_undone">已撤销</string>
+    <string name="ae_nothing_to_undo">无可撤销操作</string>
+    <string name="ae_export_all">导出全部</string>
+    <string name="ae_export_selection">导出选区</string>
+    <string name="ae_mono">单声道</string>
+    <string name="ae_stereo">立体声</string>
+    <string name="ae_info_format">%1$s  |  %2$s  |  %3$sHz  |  %4$s  |  %5$dkbps</string>
 </resources>
