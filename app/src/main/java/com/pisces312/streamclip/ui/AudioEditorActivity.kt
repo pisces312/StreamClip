@@ -1037,7 +1037,9 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         // Sync offset from view — keeps Activity in sync with scrollbar drags
         offset = binding.waveformView.getOffset()
         if (!isPlaying) {
-            val currentMs = binding.waveformView.pixelsToMillisecs(offset)
+            // Show cursor position time if set, otherwise show left edge time
+            val pos = if (cursorPos >= 0) cursorPos else offset
+            val currentMs = binding.waveformView.pixelsToMillisecs(pos)
             binding.tvCurrentTime.text = formatTime(currentMs)
         }
     }
