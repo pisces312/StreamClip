@@ -37,6 +37,8 @@ class AudioPlayer(
     private var isLooping = false
     private var loopStartSample = 0
     private var loopEndSample = 0
+    // 选区标记：true 时 playThread 写完后不调 listener（由调用方用 selectionCompleteRunnable 处理 UI 复位）
+    private var hasSelectionRange = false
 
     init {
         val channelConfig = if (channels == 1) {
@@ -72,6 +74,7 @@ class AudioPlayer(
             .setTransferMode(AudioTrack.MODE_STREAM)
             .build()
 
+        // marker 仅用于循环模式下的循环重置；非循环下由 playThread 写完自然结束
         audioTrack.setNotificationMarkerPosition(numSamples - 1)
         audioTrack.setPlaybackPositionUpdateListener(object : AudioTrack.OnPlaybackPositionUpdateListener {
             override fun onPeriodicNotification(track: AudioTrack?) {}
@@ -81,10 +84,8 @@ class AudioPlayer(
                     playbackStart = loopStartSample
                     audioTrack.setNotificationMarkerPosition(loopEndSample - 1 - loopStartSample)
                     start()
-                } else {
-                    stop()
-                    listener?.onCompletion()
                 }
+                // 非循环：playThread 已经写完自然结束，这里不重复调 listener
             }
         })
     }
@@ -110,8 +111,15 @@ class AudioPlayer(
             val position = playbackStart * channels
             samples.position(position)
             // When looping, stop at loopEndSample; otherwise play to end
-            val endSample = if (isLooping) loopEndSample else numSamples
+            // But if setPlaybackRange() was called (loopEndSample > playbackStart),
+            // honor that as the upper bound even when not looping.
+            val endSample = when {
+                isLooping -> loopEndSample
+                loopEndSample > playbackStart -> loopEndSample
+                else -> numSamples
+            }
             val limit = endSample * channels
+            var naturalEnd = false
             while (samples.position() < limit && keepPlaying) {
                 val remaining = limit - samples.position()
                 val toWrite = if (remaining >= buffer.size) buffer.size else remaining
@@ -123,6 +131,13 @@ class AudioPlayer(
                 }
                 audioTrack.write(buffer, 0, toWrite)
             }
+            // 写完：不要主动 pause/stop，让 audioTrack 内部 buffer 自然排空（否则会提前静音）
+            if (samples.position() >= limit && keepPlaying) {
+                naturalEnd = true
+                keepPlaying = false
+            }
+            // 只有无选区（写到 numSamples 边界）才通知；选区由调用方用 selectionCompleteRunnable 触发 UI 复位
+            if (naturalEnd && !hasSelectionRange) listener?.onCompletion()
         }.also { it.start() }
     }
 
@@ -163,14 +178,17 @@ class AudioPlayer(
 
     /**
      * 设置播放起止范围（用于选区播放）
+     * @param hasSelectionRange true=用户选了区，playThread 写完后不调 listener（由 Activity 的 selectionCompleteRunnable 复位 UI）
+     *                        false=全曲播放，playThread 写完后正常调 listener
      */
-    fun setPlaybackRange(startMsec: Int, endMsec: Int) {
+    fun setPlaybackRange(startMsec: Int, endMsec: Int, hasSelectionRange: Boolean = true) {
         val wasPlaying = isPlaying()
         stop()
         playbackStart = (startMsec * (sampleRate / 1000.0)).toInt().coerceAtMost(numSamples)
         val endSample = (endMsec * (sampleRate / 1000.0)).toInt().coerceAtMost(numSamples)
         loopStartSample = playbackStart
         loopEndSample = endSample
+        this.hasSelectionRange = hasSelectionRange
         audioTrack.setNotificationMarkerPosition(loopEndSample - 1 - loopStartSample)
         if (wasPlaying) start()
     }

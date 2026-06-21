@@ -58,7 +58,7 @@ class AudioEditorFragment : Fragment() {
         )
         val loadModeAdapter = android.widget.ArrayAdapter(
             requireContext(),
-            android.R.layout.simple_dropdown_item_1line,
+            android.R.layout.simple_spinner_dropdown_item,
             loadModes
         )
         binding.spinnerLoadMode.setAdapter(loadModeAdapter)
@@ -72,6 +72,11 @@ class AudioEditorFragment : Fragment() {
                 3 -> AudioEditorActivity.LOAD_MODE_A
                 else -> AudioEditorActivity.LOAD_MODE_C
             }
+        }
+
+        // Material3 + inputType="none" 时首次点击 AutoCompleteTextView 不一定弹 dropdown，显式触发
+        binding.spinnerLoadMode.setOnClickListener {
+            binding.spinnerLoadMode.showDropDown()
         }
 
         binding.btnSelectAudio.setOnClickListener {

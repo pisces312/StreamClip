@@ -42,7 +42,7 @@
         app:boxBackgroundColor="@color/gray_800"
         app:boxStrokeColor="@color/teal_200">
 
-        <AutoCompleteTextView
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
             android:id="@+id/spinnerLoadMode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

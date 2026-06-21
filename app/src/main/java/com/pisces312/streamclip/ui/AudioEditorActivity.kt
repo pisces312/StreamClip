@@ -26,6 +26,7 @@ import com.pisces312.streamclip.audio.WaveformProcessor
 import com.pisces312.streamclip.audio.WaveformView
 import com.pisces312.streamclip.databinding.ActivityAudioEditorBinding
 import com.pisces312.streamclip.util.LogCollector
+import com.pisces312.streamclip.util.FileUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -99,7 +100,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                     treeUri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 )
-            } catch (_: SecurityException) { /* 忽略 */ }
+            } catch (_: SecurityException) { /* 蹇界暐 */ }
 
             getSharedPreferences(PREF_NAME, MODE_PRIVATE)
                 .edit().putString(KEY_LAST_EXPORT_DIR, treeUri.toString()).apply()
@@ -111,6 +112,10 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
     }
 
     private val handler = Handler(Looper.getMainLooper())
+    private val selectionCompleteRunnable = Runnable {
+        // 选区播放到点强制停（不依赖 AudioTrack marker）
+        if (isPlaying) onPlaybackComplete()
+    }
     private val updatePlayPosition = object : Runnable {
         override fun run() {
             player?.let { p ->
@@ -205,7 +210,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         binding.spinnerExportFormat.setText(formatOptions[0], false)
 
         // Sample rate spinner
-        val sampleRateOptions = listOf("原始", "44100 Hz", "48000 Hz", "22050 Hz", "16000 Hz")
+         val sampleRateOptions = listOf("原始", "44100 Hz", "48000 Hz", "22050 Hz", "16000 Hz")
         val sampleRateAdapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, sampleRateOptions)
         binding.spinnerSampleRate.setAdapter(sampleRateAdapter)
         binding.spinnerSampleRate.setText(sampleRateOptions[0], false)
@@ -216,7 +221,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         binding.spinnerBitrateMode.setAdapter(bitrateModeAdapter)
         binding.spinnerBitrateMode.setText(bitrateModeOptions[0], false)
 
-        // Cascading: format change → show/hide bitrate controls
+        // Cascading: format change 鈫?show/hide bitrate controls
         binding.spinnerExportFormat.setOnItemClickListener { _, _, _, _ -> updateExportSettingsVisibility() }
         binding.spinnerBitrateMode.setOnItemClickListener { _, _, _, _ -> updateBitrateSlider() }
 
@@ -229,7 +234,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
             if (isVbr) {
                 when (format) {
-                    AudioEncoder.OutputFormat.MP3 -> binding.tvBitrateValue.text = "${value.toInt()} (≈${listOf(245,225,190,175,150,130,110,95,80,65)[value.toInt().coerceIn(0,9)]} kbps)"
+                    AudioEncoder.OutputFormat.MP3 -> binding.tvBitrateValue.text = "${value.toInt()} (鈮?{listOf(245,225,190,175,150,130,110,95,80,65)[value.toInt().coerceIn(0,9)]} kbps)"
                     AudioEncoder.OutputFormat.OPUS -> binding.tvBitrateValue.text = "${value.toInt()} kbps"
                     else -> binding.tvBitrateValue.text = "${value.toInt()}"
                 }
@@ -266,6 +271,20 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         binding.btnUndo.setOnClickListener {
             performUndo()
         }
+
+        // 初始状态：删/留按钮灰掉
+        updateEditActionsState()
+    }
+
+    /**
+     * 刷新编辑操作按钮的启用状态。
+     * - 删/留：需要 hasSelection=true
+     * - 撤销：需要 undoStack 非空
+     */
+    private fun updateEditActionsState() {
+        binding.btnDeleteSelected.isEnabled = hasSelection
+        binding.btnKeepOnly.isEnabled = hasSelection
+        binding.btnUndo.isEnabled = undoStack.isNotEmpty()
     }
 
     private fun loadAudio(uri: Uri, loadMode: String = LOAD_MODE_C) {
@@ -341,7 +360,11 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         LogCollector.i(TAG, "loadOptimizedDecode: waveform frames=${waveform.numFrames}")
 
         decoded.samples.rewind()
-        player = AudioPlayer(decoded)
+        player = AudioPlayer(decoded).also {
+            it.setOnCompletionListener(object : AudioPlayer.OnCompletionListener {
+                override fun onCompletion() = onPlaybackComplete()
+            })
+        }
 
         binding.waveformView.setData(waveform, decoded.sampleRate)
         binding.waveformView.recomputeHeights(density)
@@ -353,8 +376,9 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
         val durationMs = (decoded.numSamples.toDouble() / decoded.sampleRate * 1000).toInt()
         val channelsStr = if (decoded.channels == 1) getString(R.string.ae_mono) else getString(R.string.ae_stereo)
-        val info = "${file.name}  |  ${formatTime(durationMs)}  |  ${decoded.sampleRate}Hz  |  $channelsStr  |  ${decoded.avgBitrateKbps}kbps  |  [C] ${decodeMs}ms"
-        binding.tvFileInfo.text = info
+        val info = "${file.absolutePath}  |  ${formatTime(durationMs)}  |  ${decoded.sampleRate}Hz  |  $channelsStr  |  ${decoded.avgBitrateKbps}kbps  |  [C] ${decodeMs}ms"
+                binding.tvFileInfo.text = info
+                binding.tvFileInfo.isSelected = true
 
         binding.progressBar.visibility = View.GONE
         binding.loadingLayout.visibility = View.GONE
@@ -393,7 +417,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         LogCollector.i(TAG, "loadFastPreview: preview waveform in ${previewMs}ms, frames=${previewResult.numFrames}")
 
         // Show waveform immediately
-        binding.tvLoadingPercent.text = "波形已加载，后台解码中..."
+        binding.tvLoadingPercent.text = "娉㈠舰宸插姞杞斤紝鍚庡彴瑙ｇ爜涓?.."
 
         val waveform = WaveformProcessor.processFromGains(
             previewResult.frameGains,
@@ -410,8 +434,9 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
         val durationMs = previewResult.durationMs
         val channelsStr = if (previewResult.channels == 1) getString(R.string.ae_mono) else getString(R.string.ae_stereo)
-        val info = "${file.name}  |  ${formatTime(durationMs)}  |  ${previewResult.sampleRate}Hz  |  $channelsStr  |  [B] ${previewMs}ms"
-        binding.tvFileInfo.text = info
+        val info = "${file.absolutePath}  |  ${formatTime(durationMs)}  |  ${previewResult.sampleRate}Hz  |  $channelsStr  |  [B] ${previewMs}ms"
+                binding.tvFileInfo.text = info
+                binding.tvFileInfo.isSelected = true
 
         binding.progressBar.visibility = View.GONE
         binding.loadingLayout.visibility = View.GONE
@@ -425,7 +450,11 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             decodedAudio = decoded
             decoded.samples.rewind()
             withContext(Dispatchers.Main) {
-                player = AudioPlayer(decoded)
+                player = AudioPlayer(decoded).also {
+                    it.setOnCompletionListener(object : AudioPlayer.OnCompletionListener {
+                        override fun onCompletion() = onPlaybackComplete()
+                    })
+                }
                 binding.tvLoadingPercent.text = ""
                 LogCollector.i(TAG, "loadFastPreview: background decode done in ${System.currentTimeMillis() - startTime}ms total")
             }
@@ -474,8 +503,9 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
         val durationMs = result.durationMs
         val channelsStr = if (result.channels == 1) getString(R.string.ae_mono) else getString(R.string.ae_stereo)
-        val info = "${file.name}  |  ${formatTime(durationMs)}  |  ${result.sampleRate}Hz  |  $channelsStr  |  [D] ${ffmpegMs}ms"
-        binding.tvFileInfo.text = info
+        val info = "${file.absolutePath}  |  ${formatTime(durationMs)}  |  ${result.sampleRate}Hz  |  $channelsStr  |  [D] ${ffmpegMs}ms"
+                binding.tvFileInfo.text = info
+                binding.tvFileInfo.isSelected = true
 
         binding.progressBar.progress = 90
 
@@ -486,7 +516,11 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             decodedAudio = decoded
             decoded.samples.rewind()
             withContext(Dispatchers.Main) {
-                player = AudioPlayer(decoded)
+                player = AudioPlayer(decoded).also {
+                    it.setOnCompletionListener(object : AudioPlayer.OnCompletionListener {
+                        override fun onCompletion() = onPlaybackComplete()
+                    })
+                }
                 binding.progressBar.visibility = View.GONE
                 binding.loadingLayout.visibility = View.GONE
                 binding.contentLayout.visibility = View.VISIBLE
@@ -496,24 +530,39 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         }
     }
 
+    /**
+     * 解析音频 URI 为本地文件路径。
+     * 优先原地直读（file:// / ExternalStorage / Downloads / MediaStore），
+     * 解析失败或文件不存在时再 fallback 到 cacheDir 复制。
+     * onDestroy 会按 cacheDir 路径判断并自动清理复制的副本（见 L1273）。
+     */
     private fun copyUriToCache(uri: Uri): File {
+        // 1. 优先原地直读
+        val direct = FileUtils.getPathResultFromUri(this, uri)
+        if (direct != null && File(direct.path).exists()) {
+            val directFile = File(direct.path)
+            LogCollector.i(TAG, "copyUriToCache: direct read ${directFile.absolutePath}, size=${directFile.length()}")
+            return directFile
+        }
+
+        // 2. 兜底：复制到 cacheDir
         val docName = DocumentFile.fromSingleUri(this, uri)?.name
         val fileName = docName ?: "audio_${System.currentTimeMillis()}"
-        LogCollector.i(TAG, "copyUriToCache: uri=$uri, docName=$docName, fileName=$fileName")
+        LogCollector.i(TAG, "copyUriToCache: fallback copy uri=$uri, docName=$docName, fileName=$fileName")
         val cacheFile = File(cacheDir, fileName)
         contentResolver.openInputStream(uri)?.use { input ->
             FileOutputStream(cacheFile).use { output ->
                 input.copyTo(output)
             }
         } ?: throw IllegalStateException("Cannot open input stream for $uri")
-        LogCollector.i(TAG, "copyUriToCache: done, size=${cacheFile.length()}")
+        LogCollector.i(TAG, "copyUriToCache: cached ${cacheFile.absolutePath}, size=${cacheFile.length()}")
         return cacheFile
     }
 
     private fun startPlayback() {
         val p = player
         if (p == null) {
-            Toast.makeText(this, "后台解码中，请稍候...", Toast.LENGTH_SHORT).show()
+             Toast.makeText(this, "后台解码中，请稍候...", Toast.LENGTH_SHORT).show()
             return
         }
         p.let {
@@ -522,20 +571,26 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             if (hasSelection) {
                 startMs = binding.waveformView.pixelsToMillisecs(selectionStartPx)
                 endMs = binding.waveformView.pixelsToMillisecs(selectionEndPx)
-                it.setLooping(true)
-                isLoopingSelection = true
             } else {
                 // Start from current cursor position
                 startMs = binding.waveformView.pixelsToMillisecs(cursorPos)
                 endMs = binding.waveformView.pixelsToMillisecs(endPos)
-                it.setLooping(false)
-                isLoopingSelection = false
             }
-            it.setPlaybackRange(startMs, endMs)
+             // 选区播放：播完一次后自动停止，不再循环
+             it.setLooping(false)
+            isLoopingSelection = false
+             // 传入 hasSelection 让 AudioPlayer 区分：选区场景不主动调 listener，由 selectionCompleteRunnable 统一复位
+            it.setPlaybackRange(startMs, endMs, hasSelection)
             it.start()
             isPlaying = true
             binding.btnPlay.setImageResource(R.drawable.ic_pause)
             handler.post(updatePlayPosition)
+            // 选区播放：到点强制停（不依赖 AudioTrack marker 不可靠问题）
+            if (hasSelection) {
+                val durationMs = (endMs - startMs).coerceAtLeast(0)
+                handler.removeCallbacks(selectionCompleteRunnable)
+                handler.postDelayed(selectionCompleteRunnable, durationMs + 150L)
+            }
         }
     }
 
@@ -544,6 +599,32 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         isPlaying = false
         binding.btnPlay.setImageResource(R.drawable.ic_play)
         handler.removeCallbacks(updatePlayPosition)
+        handler.removeCallbacks(selectionCompleteRunnable)
+    }
+
+    /**
+     * 播放完成回调（AudioPlayer 到达选区/曲末触发）。
+     * 复位 UI：按钮变播放、光标移到选区首（或 0）、停止位置刷新。
+     */
+    private fun onPlaybackComplete() {
+        // AudioPlayer 鐨?listener 鍦?playThread (Thread-5) 瑙﹀彂锛屼笉鑳界洿鎺ユ敼 UI
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            handler.post { onPlaybackComplete() }
+            return
+        }
+         if (!isPlaying) return  // 已被手动暂停/停止，防止重入
+        isPlaying = false
+        binding.btnPlay.setImageResource(R.drawable.ic_play)
+        handler.removeCallbacks(updatePlayPosition)
+        handler.removeCallbacks(selectionCompleteRunnable)
+        isLoopingSelection = false
+        player?.setLooping(false)
+        // 光标回到选区首（无选区则回到 0）
+        val newCursor = if (hasSelection) selectionStartPx else 0
+        cursorPos = newCursor
+        binding.waveformView.setPlayback(newCursor)
+        binding.waveformView.invalidate()
+        binding.tvCurrentTime.text = formatTime(binding.waveformView.pixelsToMillisecs(newCursor))
     }
 
     private fun exportAudio(format: AudioEncoder.OutputFormat) {
@@ -621,9 +702,9 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                 val isVbr = bitrateModeText == getString(R.string.ae_vbr)
                 val sliderValue = binding.sliderBitrate.value.toInt()
 
-                // CBR: slider = kbps (64-320) → bitrate in bps
-                // VBR MP3/M4A: slider = quality index → vbrQuality
-                // VBR Opus: slider = kbps (32-256) → bitrate in bps
+                // CBR: slider = kbps (64-320) 鈫?bitrate in bps
+                // VBR MP3/M4A: slider = quality index 鈫?vbrQuality
+                // VBR Opus: slider = kbps (32-256) 鈫?bitrate in bps
                 val bitrateBps: Int
                 val vbrQuality: Int
                 if (isVbr) {
@@ -745,7 +826,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                     binding.sliderBitrate.valueTo = 9f
                     binding.sliderBitrate.stepSize = 1f
                     binding.sliderBitrate.value = 4f
-                    binding.tvBitrateValue.text = "4 (≈175 kbps)"
+                    binding.tvBitrateValue.text = "4 (鈮?75 kbps)"
                 }
                 AudioEncoder.OutputFormat.M4A -> {
                     binding.sliderBitrate.valueFrom = 1f
@@ -779,7 +860,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
         binding.tvStartTime.text = formatTime(binding.waveformView.pixelsToMillisecs(startPos))
 
-        // Total duration from decoded audio — stays correct after splice
+        // Total duration from decoded audio 鈥?stays correct after splice
         val decoded = decodedAudio
         if (decoded != null && decoded.sampleRate > 0) {
             val totalMs = (decoded.numSamples.toDouble() / decoded.sampleRate * 1000).toInt()
@@ -902,7 +983,11 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
         // Update player
         player?.release()
-        player = AudioPlayer(newDecoded)
+        player = AudioPlayer(newDecoded).also {
+            it.setOnCompletionListener(object : AudioPlayer.OnCompletionListener {
+                override fun onCompletion() = onPlaybackComplete()
+            })
+        }
 
         // Update UI
         binding.waveformView.setData(waveform, sr)
@@ -911,6 +996,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         endPos = binding.waveformView.maxPos()
         offset = 0
         hasSelection = false
+            updateEditActionsState()
         binding.waveformView.clearSelection()
         stopLoopPlayback()
         updateDisplay()
@@ -937,13 +1023,14 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                     binding.waveformView.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                 }
                 pos in selectionStartPx..selectionEndPx -> {
-                    // Touch inside selection — do nothing, wait for long press or boundary adjust
+                    // Touch inside selection 鈥?do nothing, wait for long press or boundary adjust
                     isDraggingSelection = false
                     isAdjustingBoundary = false
                 }
                 else -> {
-                    // Touch outside selection — clear existing selection, start new one
+                    // Touch outside selection 鈥?clear existing selection, start new one
                     hasSelection = false
+            updateEditActionsState()
                     binding.waveformView.clearSelection()
                     isDraggingSelection = true
                     selectionStartPx = pos
@@ -990,16 +1077,18 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             val distance = Math.abs(selectionEndPx - selectionStartPx)
             if (distance > 5) {
                 hasSelection = true
+            updateEditActionsState()
                 if (selectionEndPx < selectionStartPx) {
                     val tmp = selectionStartPx; selectionStartPx = selectionEndPx; selectionEndPx = tmp
                 }
-                // Don't auto-play after selection — user clicks play button to start
+                // Don't auto-play after selection 鈥?user clicks play button to start
             } else {
                 if (hasSelection && touchDownPos in selectionStartPx..selectionEndPx) {
                     return
                 }
                 // Tap: move playback position indicator to tap point, no auto-play
                 hasSelection = false
+            updateEditActionsState()
                 binding.waveformView.clearSelection()
                 if (isPlaying) {
                     pausePlayback()
@@ -1034,7 +1123,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
     }
 
     override fun waveformDraw() {
-        // Sync offset from view — keeps Activity in sync with scrollbar drags
+        // Sync offset from view 鈥?keeps Activity in sync with scrollbar drags
         offset = binding.waveformView.getOffset()
         if (!isPlaying) {
             // Show cursor position time if set, otherwise show left edge time
@@ -1122,12 +1211,14 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         if (delStartMs <= currentStartMs) {
             startPos = binding.waveformView.millisecsToPixels(delEndMs)
             hasSelection = false
+            updateEditActionsState()
             binding.waveformView.clearSelection()
             stopLoopPlayback()
             updateDisplay()
         } else if (delEndMs >= currentEndMs) {
             endPos = binding.waveformView.millisecsToPixels(delStartMs)
             hasSelection = false
+            updateEditActionsState()
             binding.waveformView.clearSelection()
             stopLoopPlayback()
             updateDisplay()
@@ -1156,6 +1247,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             // Keep from start to keepEnd
             endPos = binding.waveformView.millisecsToPixels(keepEndMs)
             hasSelection = false
+            updateEditActionsState()
             binding.waveformView.clearSelection()
             stopLoopPlayback()
             updateDisplay()
@@ -1163,11 +1255,12 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             // Keep from keepStart to end
             startPos = binding.waveformView.millisecsToPixels(keepStartMs)
             hasSelection = false
+            updateEditActionsState()
             binding.waveformView.clearSelection()
             stopLoopPlayback()
             updateDisplay()
         } else {
-            // Middle keep: splice PCM — delete the part before keepStart and after keepEnd
+            // Middle keep: splice PCM 鈥?delete the part before keepStart and after keepEnd
             // First delete after keepEnd (keep the part before keepEnd = the full range up to keepEnd)
             splicePcm(keepEndMs, currentEndMs, keepBefore = true)
             // Then adjust startPos

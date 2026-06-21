@@ -41,8 +41,12 @@
                 android:padding="12dp"
                 android:textColor="@color/teal_200"
                 android:textSize="12sp"
-                android:ellipsize="middle"
                 android:singleLine="true"
+                android:scrollHorizontally="true"
+                android:ellipsize="marquee"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
                 android:background="@color/gray_900" />
 
             <!-- Waveform -->
@@ -53,6 +57,43 @@
                 android:layout_marginStart="8dp"
                 android:layout_marginEnd="8dp"
                 android:layout_marginTop="4dp" />
+            <!-- Zoom controls -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnZoomIn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/ae_zoom_in"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    app:icon="@drawable/ic_zoom_in"
+                    app:iconTint="@color/white"
+                    android:textColor="@color/white" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnZoomOut"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/ae_zoom_out"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    app:icon="@drawable/ic_zoom_out"
+                    app:iconTint="@color/white"
+                    android:textColor="@color/white" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFitToScreen"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/ae_fit"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:textColor="@color/white" />
+            </LinearLayout>
 
             <!-- Selection action bar -->
             <LinearLayout
@@ -67,40 +108,12 @@
                 android:paddingBottom="4dp"
                 android:visibility="gone">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnDeleteSelected"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:text="@string/ae_delete_selected"
-                    android:textColor="@color/white"
-                    android:textSize="12sp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnKeepOnly"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:text="@string/ae_delete_others"
-                    android:textColor="@color/white"
-                    android:textSize="12sp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnUndo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:text="@string/ae_undo"
-                    android:textColor="@color/teal_200"
-                    android:textSize="12sp" />
-
                 <TextView
                     android:id="@+id/tvSelectionDuration"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/teal_200"
-                    android:textSize="12sp"
-                    android:layout_marginStart="8dp" />
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <!-- Selection time range -->
@@ -208,42 +221,46 @@
                     app:tint="@color/white" />
             </LinearLayout>
 
-            <!-- Zoom controls -->
+            <!-- Edit actions bar (始终显示，hasSelection=false 时按钮灰掉) -->
             <LinearLayout
+                android:id="@+id/editActionsBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center"
-                android:padding="4dp">
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp">
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnZoomIn"
+                    android:id="@+id/btnDeleteSelected"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/ae_zoom_in"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
-                    app:icon="@drawable/ic_zoom_in"
-                    app:iconTint="@color/white"
-                    android:textColor="@color/white" />
+                    android:text="@string/ae_delete_selected"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnZoomOut"
+                    android:id="@+id/btnKeepOnly"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/ae_zoom_out"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
-                    app:icon="@drawable/ic_zoom_out"
-                    app:iconTint="@color/white"
-                    android:textColor="@color/white" />
+                    android:text="@string/ae_delete_others"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnFitToScreen"
+                    android:id="@+id/btnUndo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/ae_fit"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:textColor="@color/white" />
+                    android:text="@string/ae_undo"
+                    android:textColor="@color/teal_200"
+                    android:textSize="12sp" />
             </LinearLayout>
+
 
             <!-- Export section -->
             <View

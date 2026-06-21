@@ -56,7 +56,8 @@ class WaveformView @JvmOverloads constructor(
         color = context.getColor(R.color.waveform_border)
     }
     private val playbackLinePaint = Paint().apply {
-        isAntiAlias = false
+        isAntiAlias = true
+        strokeWidth = 2.5f
         color = context.getColor(R.color.waveform_playback)
     }
     private val timecodePaint = Paint().apply {
@@ -111,9 +112,9 @@ class WaveformView @JvmOverloads constructor(
     private var initialScaleSpan = 0f
 
     // Scrollbar state (Change 2)
-    private var scrollbarHeight = 8f
+    private var scrollbarHeight = 24f
     private var scrollbarPadding = 2f
-    private var scrollbarTouchSlop = 8f
+    private var scrollbarTouchSlop = 12f
     private var isDraggingScrollbar = false
 
     private var listener: WaveformListener? = null
@@ -278,10 +279,11 @@ class WaveformView @JvmOverloads constructor(
     fun recomputeHeights(density: Float) {
         heightsAtThisZoomLevel = null
         this.density = density
-        scrollbarHeight = 8 * density
+        scrollbarHeight = 24 * density
         scrollbarPadding = 2 * density
-        scrollbarTouchSlop = 8 * density
+        scrollbarTouchSlop = 12 * density
         timecodePaint.textSize = (12 * density).toInt().toFloat()
+        playbackLinePaint.strokeWidth = 2.5f * density
         invalidate()
     }
 
@@ -352,6 +354,11 @@ class WaveformView @JvmOverloads constructor(
         val ctr = measuredHeight / 2
 
         if (width > measuredWidth) width = measuredWidth
+
+        // 限制波形绘制区域：滚动条以上
+        val waveformBottom = measuredHeight - scrollbarHeight - scrollbarPadding
+        canvas.save()
+        canvas.clipRect(0f, 0f, measuredWidth.toFloat(), waveformBottom)
 
         // 网格
         val onePixelInSecs = pixelsToSeconds(1)
@@ -426,6 +433,8 @@ class WaveformView @JvmOverloads constructor(
                 canvas.drawText(timecodeStr, i - textOffset, (12 * density), timecodePaint)
             }
         }
+
+        canvas.restore()
 
         drawScrollbar(canvas)
 
