@@ -337,8 +337,8 @@
     <string name="ae_pause_first">播放中无法操作波形，请先暂停</string>
     <string name="ae_select_all">全选</string>
     <string name="ae_load_failed">加载失败: %s</string>
-    <string name="ae_delete_selected">🗑  删除选中部分</string>
-    <string name="ae_delete_others">✂️  删除以外的部分（只保留选中）</string>
+    <string name="ae_delete_selected">🗑  删除选区</string>
+    <string name="ae_delete_others">✂️  删除非选区</string>
     <string name="ae_selection_info">选中: %1$s - %2$s (%3$s)</string>
     <string name="ae_deleted_selected">已删除选中部分</string>
     <string name="ae_deleted_others">已删除以外的部分</string>

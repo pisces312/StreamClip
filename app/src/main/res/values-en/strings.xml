@@ -342,8 +342,8 @@
     <string name="ae_pause_first">Pause playback before interacting with waveform</string>
     <string name="ae_select_all">Select All</string>
     <string name="ae_load_failed">Load failed: %s</string>
-    <string name="ae_delete_selected">🗑  Delete selected</string>
-    <string name="ae_delete_others">✂️  Delete others (keep selected only)</string>
+    <string name="ae_delete_selected">🗑  Delete Selection</string>
+    <string name="ae_delete_others">✂️  Delete Outside</string>
     <string name="ae_selection_info">Selected: %1$s - %2$s (%3$s)</string>
     <string name="ae_deleted_selected">Selected part deleted</string>
     <string name="ae_deleted_others">Other parts deleted</string>
