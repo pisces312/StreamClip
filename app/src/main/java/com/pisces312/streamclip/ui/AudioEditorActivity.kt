@@ -183,13 +183,26 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
         binding.btnRewind.setOnClickListener {
             player?.seekTo(0)
+            cursorPos = 0
+            currentPlaybackEndMs = if (hasSelection) {
+                binding.waveformView.pixelsToMillisecs(selectionEndPx)
+            } else {
+                binding.waveformView.pixelsToMillisecs(endPos)
+            }
             binding.waveformView.setPlayback(0)
             binding.waveformView.invalidate()
+            binding.tvCurrentTime.text = formatTime(0)
         }
 
         binding.btnFfwd.setOnClickListener {
-            val endMs = binding.waveformView.pixelsToMillisecs(endPos)
+            val targetEndPx = if (hasSelection) selectionEndPx else endPos
+            val endMs = binding.waveformView.pixelsToMillisecs(targetEndPx)
             player?.seekTo(endMs)
+            cursorPos = targetEndPx
+            currentPlaybackEndMs = endMs
+            binding.waveformView.setPlayback(targetEndPx)
+            binding.waveformView.invalidate()
+            binding.tvCurrentTime.text = formatTime(endMs)
         }
 
         binding.btnZoomIn.setOnClickListener {
