@@ -335,6 +335,7 @@
     <string name="ae_no_audio_file">未选择音频文件</string>
     <string name="ae_recording_dev">录音功能开发中</string>
     <string name="ae_pause_first">播放中无法操作波形，请先暂停</string>
+    <string name="ae_select_all">全选</string>
     <string name="ae_load_failed">加载失败: %s</string>
     <string name="ae_delete_selected">🗑  删除选中部分</string>
     <string name="ae_delete_others">✂️  删除以外的部分（只保留选中）</string>

@@ -270,6 +270,19 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         }
 
         // Selection action bar
+        binding.btnSelectAll.setOnClickListener {
+            hasSelection = true
+            selectionStartPx = 0
+            selectionEndPx = endPos
+            cursorPos = 0
+            binding.waveformView.setSelection(selectionStartPx, selectionEndPx)
+            binding.waveformView.setPlayback(0)
+            binding.waveformView.invalidate()
+            binding.tvCurrentTime.text = formatTime(0)
+            updateEditActionsState()
+            updateDisplay()
+        }
+
         binding.btnDeleteSelected.setOnClickListener {
             if (hasSelection) {
                 val startMs = binding.waveformView.pixelsToMillisecs(selectionStartPx)

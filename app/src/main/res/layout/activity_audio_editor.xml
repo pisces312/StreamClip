@@ -234,6 +234,15 @@
                 android:paddingBottom="4dp">
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSelectAll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:text="@string/ae_select_all"
+                    android:textColor="@color/teal_200"
+                    android:textSize="12sp" />
+
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnDeleteSelected"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
