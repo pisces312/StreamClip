@@ -585,16 +585,25 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         }
         // ① 暂停态：从光标处继续播放
         if (p.isPaused()) {
-            // 暂停期间选区可能已变，同步 AudioPlayer 播放范围
+            // 暂停期间选区可能已变，同步播放范围和光标
             val targetEndMs = if (hasSelection) {
                 binding.waveformView.pixelsToMillisecs(selectionEndPx)
             } else {
                 binding.waveformView.pixelsToMillisecs(endPos)
             }
             if (targetEndMs != currentPlaybackEndMs) {
-                val curMs = p.getCurrentPosition()
-                p.setPlaybackRange(curMs, targetEndMs)
+                // 选区变了：seek 到选区起点，更新播放范围
+                val startMs = if (hasSelection) {
+                    binding.waveformView.pixelsToMillisecs(selectionStartPx)
+                } else {
+                    p.getCurrentPosition()
+                }
+                p.setPlaybackRange(startMs, targetEndMs)
                 currentPlaybackEndMs = targetEndMs
+                cursorPos = if (hasSelection) selectionStartPx else cursorPos
+                binding.waveformView.setPlayback(cursorPos)
+                binding.waveformView.invalidate()
+                binding.tvCurrentTime.text = formatTime(startMs)
             }
             p.start()
             isPlaying = true
