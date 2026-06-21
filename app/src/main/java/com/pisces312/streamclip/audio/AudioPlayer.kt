@@ -22,23 +22,16 @@ class AudioPlayer(
         private const val TAG = "AudioPlayer"
     }
 
-    interface OnCompletionListener {
-        fun onCompletion()
-    }
-
     private var audioTrack: AudioTrack
     private var buffer: ShortArray
     private var playbackStart = 0  // in samples (per channel)
     private var playThread: Thread? = null
     @Volatile private var keepPlaying = true
-    private var listener: OnCompletionListener? = null
 
     // Looping support (Change 3)
     private var isLooping = false
     private var loopStartSample = 0
     private var loopEndSample = 0
-    // 选区标记：true 时 playThread 写完后不调 listener（由调用方用 selectionCompleteRunnable 处理 UI 复位）
-    private var hasSelectionRange = false
 
     init {
         val channelConfig = if (channels == 1) {
@@ -85,7 +78,7 @@ class AudioPlayer(
                     audioTrack.setNotificationMarkerPosition(loopEndSample - 1 - loopStartSample)
                     start()
                 }
-                // 非循环：playThread 已经写完自然结束，这里不重复调 listener
+                // 非循环：playThread 已经写完自然结束，由调用方用 playbackCompleteRunnable 复位 UI
             }
         })
     }
@@ -94,15 +87,21 @@ class AudioPlayer(
         decoded.samples, decoded.sampleRate, decoded.channels, decoded.numSamples
     )
 
-    fun setOnCompletionListener(l: OnCompletionListener) {
-        listener = l
-    }
-
     fun isPlaying(): Boolean = audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING
     fun isPaused(): Boolean = audioTrack.playState == AudioTrack.PLAYSTATE_PAUSED
 
+    /**
+     * 启动播放。三种状态分别处理：
+     * - 已在 PLAYING：忽略
+     * - 已在 PAUSED：直接 audioTrack.play() 恢复（不 flush，保留内部 buffer，无卡顿）
+     * - STOPPED 或首次：flush + play + 启动新 playThread 从 playbackStart 读取样本
+     */
     fun start() {
         if (isPlaying()) return
+        if (isPaused()) {
+            audioTrack.play()
+            return
+        }
         keepPlaying = true
         audioTrack.flush()
         audioTrack.play()
@@ -136,8 +135,7 @@ class AudioPlayer(
                 naturalEnd = true
                 keepPlaying = false
             }
-            // 只有无选区（写到 numSamples 边界）才通知；选区由调用方用 selectionCompleteRunnable 触发 UI 复位
-            if (naturalEnd && !hasSelectionRange) listener?.onCompletion()
+            // 播放结束通知统一由 Activity 的 playbackCompleteRunnable 处理（无需 listener）
         }.also { it.start() }
     }
 
@@ -177,18 +175,16 @@ class AudioPlayer(
     }
 
     /**
-     * 设置播放起止范围（用于选区播放）
-     * @param hasSelectionRange true=用户选了区，playThread 写完后不调 listener（由 Activity 的 selectionCompleteRunnable 复位 UI）
-     *                        false=全曲播放，playThread 写完后正常调 listener
+     * 设置播放起止范围（毫秒）。内部 stop 后更新字段，若原本在播则重新 start。
+     * 调用方负责调度 UI 复位（playbackCompleteRunnable）。
      */
-    fun setPlaybackRange(startMsec: Int, endMsec: Int, hasSelectionRange: Boolean = true) {
+    fun setPlaybackRange(startMsec: Int, endMsec: Int) {
         val wasPlaying = isPlaying()
         stop()
         playbackStart = (startMsec * (sampleRate / 1000.0)).toInt().coerceAtMost(numSamples)
         val endSample = (endMsec * (sampleRate / 1000.0)).toInt().coerceAtMost(numSamples)
         loopStartSample = playbackStart
         loopEndSample = endSample
-        this.hasSelectionRange = hasSelectionRange
         audioTrack.setNotificationMarkerPosition(loopEndSample - 1 - loopStartSample)
         if (wasPlaying) start()
     }

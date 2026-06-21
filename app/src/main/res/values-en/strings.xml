@@ -339,6 +339,7 @@
     <string name="ae_cannot_create_file">Cannot create file: %s</string>
     <string name="ae_no_audio_file">No audio file selected</string>
     <string name="ae_recording_dev">Recording feature in development</string>
+    <string name="ae_pause_first">Pause playback before interacting with waveform</string>
     <string name="ae_load_failed">Load failed: %s</string>
     <string name="ae_delete_selected">🗑  Delete selected</string>
     <string name="ae_delete_others">✂️  Delete others (keep selected only)</string>

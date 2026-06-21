@@ -390,14 +390,22 @@ class WaveformView @JvmOverloads constructor(
             val h = heightsAtThisZoomLevel!![start + j]
             canvas.drawLine(j.toFloat(), (ctr - h).toFloat(), j.toFloat(), (ctr + 1 + h).toFloat(), paint)
 
-            if (j + start == playbackPos) {
-                canvas.drawLine(j.toFloat(), 0f, j.toFloat(), measuredHeight.toFloat(), playbackLinePaint)
-            }
         }
+
 
         // 非波形区域
         for (j in width until measuredWidth) {
             canvas.drawLine(j.toFloat(), 0f, j.toFloat(), measuredHeight.toFloat(), unselectedBkgndLinePaint)
+        }
+
+        // Cursor line: 先于 selection 画（保留 selection 高亮在 cursor 之上）
+        // 但 selection 左/右边界线在 cursor 位置（±1.5px）跳过绘制，让 cursor 视觉主导
+        var cursorScreenX = -1
+        if (playbackPos >= 0) {
+            cursorScreenX = playbackPos - start
+            if (cursorScreenX in 0..width) {
+                canvas.drawLine(cursorScreenX.toFloat(), 0f, cursorScreenX.toFloat(), measuredHeight.toFloat(), playbackLinePaint)
+            }
         }
 
         // 选区高亮半透明覆盖 + 边界线
@@ -406,8 +414,13 @@ class WaveformView @JvmOverloads constructor(
             val x2 = (selEnd - offset).coerceIn(0, measuredWidth).toFloat()
             if (x2 > x1) {
                 canvas.drawRect(x1, 0f, x2, measuredHeight.toFloat(), highlightPaint)
-                canvas.drawLine(x1, 0f, x1, measuredHeight.toFloat(), highlightBorderPaint)
-                canvas.drawLine(x2, 0f, x2, measuredHeight.toFloat(), highlightBorderPaint)
+                // 边界线：如果 cursor 在 x1 或 x2 位置（±1px），跳过该边界线让 cursor 视觉主导
+                if (cursorScreenX < 0 || kotlin.math.abs(x1 - cursorScreenX) > 1.5f) {
+                    canvas.drawLine(x1, 0f, x1, measuredHeight.toFloat(), highlightBorderPaint)
+                }
+                if (cursorScreenX < 0 || kotlin.math.abs(x2 - cursorScreenX) > 1.5f) {
+                    canvas.drawLine(x2, 0f, x2, measuredHeight.toFloat(), highlightBorderPaint)
+                }
             }
         }
 
