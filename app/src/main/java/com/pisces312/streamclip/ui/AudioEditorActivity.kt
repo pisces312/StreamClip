@@ -1119,6 +1119,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
     }
 
     override fun waveformTouchMove(x: Float) {
+        if (isPlaying) return
         val pos = binding.waveformView.getOffset() + x.toInt()
 
         // 选区内触摸后滑动超过阈值 → 清除旧选区，开始新选区拖拽
@@ -1148,10 +1149,16 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             }
         }
         binding.waveformView.setSelection(selectionStartPx, selectionEndPx)
+        // 拖选过程中实时同步光标到选区起点
+        if (isDraggingSelection) {
+            cursorPos = minOf(selectionStartPx, selectionEndPx)
+            binding.waveformView.setPlayback(cursorPos)
+        }
         updateDisplay()
     }
 
     override fun waveformTouchEnd() {
+        if (isPlaying) return
         if (isAdjustingBoundary) {
             isAdjustingBoundary = false
             // Don't auto-play after boundary adjustment
@@ -1174,11 +1181,15 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             val distance = Math.abs(selectionEndPx - selectionStartPx)
             if (distance > 5) {
                 hasSelection = true
-            updateEditActionsState()
+                updateEditActionsState()
                 if (selectionEndPx < selectionStartPx) {
                     val tmp = selectionStartPx; selectionStartPx = selectionEndPx; selectionEndPx = tmp
                 }
-                // Don't auto-play after selection 鈥?user clicks play button to start
+                // 光标同步到选区起点
+                cursorPos = selectionStartPx
+                binding.waveformView.setPlayback(cursorPos)
+                binding.waveformView.invalidate()
+                binding.tvCurrentTime.text = formatTime(binding.waveformView.pixelsToMillisecs(cursorPos))
             } else {
                 if (hasSelection && touchDownPos in selectionStartPx..selectionEndPx) {
                     return
