@@ -609,35 +609,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
              Toast.makeText(this, "后台解码中，请稍候...", Toast.LENGTH_SHORT).show()
             return
         }
-        // ① 暂停态：从光标处继续播放
-        if (p.isPaused()) {
-            // 暂停期间选区可能已变，同步播放范围和光标
-            val targetEndMs = if (hasSelection) {
-                binding.waveformView.pixelsToMillisecs(selectionEndPx)
-            } else {
-                binding.waveformView.pixelsToMillisecs(endPos)
-            }
-            if (targetEndMs != currentPlaybackEndMs) {
-                // 选区变了：seek 到选区起点，更新播放范围
-                val startMs = if (hasSelection) {
-                    binding.waveformView.pixelsToMillisecs(selectionStartPx)
-                } else {
-                    p.getCurrentPosition()
-                }
-                p.setPlaybackRange(startMs, targetEndMs)
-                currentPlaybackEndMs = targetEndMs
-                cursorPos = if (hasSelection) selectionStartPx else cursorPos
-                binding.waveformView.setPlayback(cursorPos)
-                binding.waveformView.invalidate()
-                binding.tvCurrentTime.text = formatTime(startMs)
-            }
-            p.start()
-            isPlaying = true
-            binding.btnPlay.setImageResource(R.drawable.ic_pause)
-            handler.post(updatePlayPosition)
-            return
-        }
-        // ② 全新开始：按当前选区（默认全选 0..endPos）设范围，光标到选区首
+        // 统一逻辑：从当前选区计算播放范围，设置光标，开始播放
         val startMs = if (hasSelection) {
             binding.waveformView.pixelsToMillisecs(selectionStartPx)
         } else {
@@ -655,7 +627,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         p.start()
         isPlaying = true
         binding.btnPlay.setImageResource(R.drawable.ic_pause)
-        // 立即把光标同步到播放起点（不等 50ms 后 updatePlayPosition 推第一帧）
+        // 光标同步到播放起点
         val cursorPx = if (hasSelection) selectionStartPx else cursorPos
         cursorPos = cursorPx
         binding.waveformView.setPlayback(cursorPx)
