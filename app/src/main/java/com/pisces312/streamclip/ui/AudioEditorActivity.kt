@@ -78,13 +78,20 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
     private var audioFile: File? = null
     private var pendingExportFormat: AudioEncoder.OutputFormat? = null
 
-    // 当前一次播放的终点（毫秒）；updatePlayPosition 轮询到此处即视为播放完成，触发 UI 复位
+    // 当前一次播放的终点（毫秒）；轮询 Runnable 到此处即视为播放完成，触发 UI 复位
     private var currentPlaybackEndMs = 0
 
-    // Selection state
-    private var hasSelection = false
+    // Selection state — 选区由像素范围表示，无需额外标记
     private var selectionStartPx = 0
     private var selectionEndPx = 0
+    /** 选区是否有效（起点 < 终点） */
+    private val hasValidSelection: Boolean get() = selectionStartPx < selectionEndPx
+
+    /** 清除选区像素状态（视觉清除由调用方负责） */
+    private fun clearSelectionState() {
+        selectionStartPx = 0
+        selectionEndPx = 0
+    }
     private var isLoopingSelection = false
     private var touchDownPos = 0
     private var isDraggingSelection = false
@@ -92,8 +99,9 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
     private var isPendingInsideSelection = false  // 触摸落在选区内部，等待判断是拖拽还是点击
     private var boundaryTouchThreshold = 30f
 
-    // Undo stack: (startPos, endPos, hasSelection)
-    private val undoStack = ArrayDeque<Triple<Int, Int, Boolean>>()
+    // Undo stack: (startPos, endPos, selectionStartPx, selectionEndPx)
+    private data class UndoState(val startPos: Int, val endPos: Int, val selStart: Int, val selEnd: Int)
+    private val undoStack = ArrayDeque<UndoState>()
 
     private val pickDirLauncher: ActivityResultLauncher<Uri?> = registerForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
@@ -116,25 +124,10 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
     }
 
     private val handler = Handler(Looper.getMainLooper())
-    private val updatePlayPosition = object : Runnable {
-        override fun run() {
-            val p = player ?: return
-            if (p.isPlaying()) {
-                val ms = p.getCurrentPosition()
-                // 到达本次播放终点（选区尾/曲末）→ 复位 UI，不再 post
-                if (currentPlaybackEndMs > 0 && ms >= currentPlaybackEndMs - 5) {
-                    onPlaybackComplete()
-                    return
-                }
-                val pos = binding.waveformView.millisecsToPixels(ms)
-                cursorPos = pos
-                binding.waveformView.setPlayback(pos)
-                binding.waveformView.invalidate()
-                binding.tvCurrentTime.text = formatTime(ms)
-                handler.postDelayed(this, 50)
-            }
-        }
-    }
+    // 播放轮询版本号：每次 startPlayback 递增，旧 runnable 检测到版本不匹配则自裁
+    private var playbackGeneration = 0
+    // 当前活跃的轮询 Runnable（用于精确移除）
+    private var activePlayRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -184,7 +177,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         binding.btnRewind.setOnClickListener {
             player?.seekTo(0)
             cursorPos = 0
-            currentPlaybackEndMs = if (hasSelection) {
+            currentPlaybackEndMs = if (hasValidSelection) {
                 binding.waveformView.pixelsToMillisecs(selectionEndPx)
             } else {
                 binding.waveformView.pixelsToMillisecs(endPos)
@@ -195,7 +188,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         }
 
         binding.btnFfwd.setOnClickListener {
-            val targetEndPx = if (hasSelection) selectionEndPx else endPos
+            val targetEndPx = if (hasValidSelection) selectionEndPx else endPos
             val endMs = binding.waveformView.pixelsToMillisecs(targetEndPx)
             player?.seekTo(endMs)
             cursorPos = targetEndPx
@@ -271,7 +264,6 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
         // Selection action bar
         binding.btnSelectAll.setOnClickListener {
-            hasSelection = true
             selectionStartPx = 0
             selectionEndPx = endPos
             cursorPos = 0
@@ -284,7 +276,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         }
 
         binding.btnDeleteSelected.setOnClickListener {
-            if (hasSelection) {
+            if (hasValidSelection) {
                 val startMs = binding.waveformView.pixelsToMillisecs(selectionStartPx)
                 val endMs = binding.waveformView.pixelsToMillisecs(selectionEndPx)
                 performDeleteSelected(startMs, endMs)
@@ -292,7 +284,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         }
 
         binding.btnKeepOnly.setOnClickListener {
-            if (hasSelection) {
+            if (hasValidSelection) {
                 val startMs = binding.waveformView.pixelsToMillisecs(selectionStartPx)
                 val endMs = binding.waveformView.pixelsToMillisecs(selectionEndPx)
                 performKeepOnly(startMs, endMs)
@@ -309,12 +301,12 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
     /**
      * 刷新编辑操作按钮的启用状态。
-     * - 删/留：需要 hasSelection=true
+     * - 删/留：需要 hasValidSelection=true
      * - 撤销：需要 undoStack 非空
      */
     private fun updateEditActionsState() {
-        binding.btnDeleteSelected.isEnabled = hasSelection
-        binding.btnKeepOnly.isEnabled = hasSelection
+        binding.btnDeleteSelected.isEnabled = hasValidSelection
+        binding.btnKeepOnly.isEnabled = hasValidSelection
         binding.btnUndo.isEnabled = undoStack.isNotEmpty()
     }
 
@@ -400,7 +392,6 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         endPos = binding.waveformView.maxPos()
         offset = 0
         // 加载后默认全选（播放起止点 = 整个音频范围），红色光标在 0
-        hasSelection = true
         selectionStartPx = 0
         selectionEndPx = endPos
         cursorPos = 0
@@ -468,7 +459,6 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         endPos = binding.waveformView.maxPos()
         offset = 0
         // 加载后默认全选（播放起止点 = 整个音频范围），红色光标在 0
-        hasSelection = true
         selectionStartPx = 0
         selectionEndPx = endPos
         cursorPos = 0
@@ -541,7 +531,6 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         endPos = binding.waveformView.maxPos()
         offset = 0
         // 加载后默认全选（播放起止点 = 整个音频范围），红色光标在 0
-        hasSelection = true
         selectionStartPx = 0
         selectionEndPx = endPos
         cursorPos = 0
@@ -609,17 +598,23 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
              Toast.makeText(this, "后台解码中，请稍候...", Toast.LENGTH_SHORT).show()
             return
         }
-        // 统一逻辑：从当前选区计算播放范围，设置光标，开始播放
-        val startMs = if (hasSelection) {
+        // 清除旧的轮询回调，防止多次调用后 handler 队列堆积
+        activePlayRunnable?.let { handler.removeCallbacks(it) }
+        // 始终从选区像素值计算播放范围（选区像素由 waveformView 绘制管理，不会丢失）
+        // 当选区有效（start < end）时使用选区，否则从光标位置播放到音频末尾
+        val startMs = if (hasValidSelection) {
             binding.waveformView.pixelsToMillisecs(selectionStartPx)
         } else {
             binding.waveformView.pixelsToMillisecs(cursorPos)
         }
-        val endMs = if (hasSelection) {
+        val endMs = if (hasValidSelection) {
             binding.waveformView.pixelsToMillisecs(selectionEndPx)
         } else {
             binding.waveformView.pixelsToMillisecs(endPos)
         }
+        LogCollector.i(TAG, "startPlayback: startMs=$startMs, endMs=$endMs, " +
+                "selPx=[$selectionStartPx,$selectionEndPx], endPos=$endPos, " +
+                "hasValidSel=$hasValidSelection, gen=$playbackGeneration")
         p.setLooping(false)
         isLoopingSelection = false
         p.setPlaybackRange(startMs, endMs)
@@ -628,34 +623,71 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         isPlaying = true
         binding.btnPlay.setImageResource(R.drawable.ic_pause)
         // 光标同步到播放起点
-        val cursorPx = if (hasSelection) selectionStartPx else cursorPos
+        val cursorPx = if (hasValidSelection) selectionStartPx else cursorPos
         cursorPos = cursorPx
         binding.waveformView.setPlayback(cursorPx)
         binding.waveformView.invalidate()
         binding.tvCurrentTime.text = formatTime(startMs)
-        handler.post(updatePlayPosition)
+        postPlayPositionPoller()
     }
 
     private fun pausePlayback() {
         player?.pause()
         isPlaying = false
         binding.btnPlay.setImageResource(R.drawable.ic_play)
-        handler.removeCallbacks(updatePlayPosition)
+        activePlayRunnable?.let { handler.removeCallbacks(it) }
     }
 
     /**
-     * 播放完成（updatePlayPosition 轮询到达 currentPlaybackEndMs 时触发）。
+     * 投递播放位置轮询 Runnable。每次调用递增 generation，旧 runnable 自动自裁。
+     */
+    private fun postPlayPositionPoller() {
+        val gen = ++playbackGeneration
+        LogCollector.i(TAG, "postPlayPositionPoller: gen=$gen, endMs=$currentPlaybackEndMs")
+        val runnable = object : Runnable {
+            override fun run() {
+                if (gen != playbackGeneration) {
+                    LogCollector.i(TAG, "poller: gen mismatch $gen != $playbackGeneration, exit")
+                    return  // 已被新播放取代，自裁
+                }
+                if (!isPlaying) return
+                val p = player ?: return
+                val ms = p.getCurrentPosition()
+                LogCollector.d(TAG, "poller: pos=${ms}ms, endMs=$currentPlaybackEndMs")
+                if (currentPlaybackEndMs > 0 && ms >= currentPlaybackEndMs - 5) {
+                    LogCollector.i(TAG, "poller: reached end → onPlaybackComplete")
+                    onPlaybackComplete()
+                    return
+                }
+                val pos = binding.waveformView.millisecsToPixels(ms)
+                cursorPos = pos
+                binding.waveformView.setPlayback(pos)
+                binding.waveformView.invalidate()
+                binding.tvCurrentTime.text = formatTime(ms)
+                handler.postDelayed(this, 50)
+            }
+        }
+        activePlayRunnable = runnable
+        handler.post(runnable)
+    }
+
+    /**
+     * 播放完成（轮询 Runnable 到达 currentPlaybackEndMs 时触发）。
      * 复位 UI：按钮变播放、光标移到选区首（或 0）、停止位置刷新。
      */
     private fun onPlaybackComplete() {
         if (!isPlaying) return  // 已被手动暂停/停止，防止重入
+        LogCollector.i(TAG, "onPlaybackComplete: gen=$playbackGeneration, endMs=$currentPlaybackEndMs")
+        // 立即设置 false + 递增 generation，形成原子门控，防止并发 runnable 重入
         isPlaying = false
+        playbackGeneration++  // 使所有旧 runnable 的 generation 检查失败
+        activePlayRunnable?.let { handler.removeCallbacks(it) }
         binding.btnPlay.setImageResource(R.drawable.ic_play)
-        handler.removeCallbacks(updatePlayPosition)
         isLoopingSelection = false
         player?.setLooping(false)
+        player?.stop()
         // 光标回到选区首（无选区则回到 0）
-        val newCursor = if (hasSelection) selectionStartPx else 0
+        val newCursor = if (hasValidSelection) selectionStartPx else 0
         cursorPos = newCursor
         binding.waveformView.setPlayback(newCursor)
         binding.waveformView.invalidate()
@@ -683,12 +715,12 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
     private fun performExport(dirUri: Uri, format: AudioEncoder.OutputFormat) {
         val decoded = decodedAudio ?: return
-        val startMs = if (hasSelection) {
+        val startMs = if (hasValidSelection) {
             binding.waveformView.pixelsToMillisecs(selectionStartPx)
         } else {
             binding.waveformView.pixelsToMillisecs(startPos)
         }
-        val endMs = if (hasSelection) {
+        val endMs = if (hasValidSelection) {
             binding.waveformView.pixelsToMillisecs(selectionEndPx)
         } else {
             binding.waveformView.pixelsToMillisecs(endPos)
@@ -905,9 +937,9 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         }
 
         // Show selection info during drag or after selection is finalized
-        val showSelection = hasSelection ||
+        val showSelection = hasValidSelection ||
             (isDraggingSelection && Math.abs(selectionEndPx - selectionStartPx) > 5) ||
-            (isAdjustingBoundary && hasSelection)
+            (isAdjustingBoundary && hasValidSelection)
 
         binding.btnExport.text = if (showSelection) getString(R.string.ae_export_selection) else getString(R.string.ae_export_label)
 
@@ -938,7 +970,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
     // === Undo ===
 
     private fun pushUndo() {
-        undoStack.addLast(Triple(startPos, endPos, hasSelection))
+        undoStack.addLast(UndoState(startPos, endPos, selectionStartPx, selectionEndPx))
         // Limit stack size
         if (undoStack.size > 20) undoStack.removeFirst()
     }
@@ -948,13 +980,16 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             Toast.makeText(this, getString(R.string.ae_nothing_to_undo), Toast.LENGTH_SHORT).show()
             return
         }
-        val (savedStart, savedEnd, savedSelection) = undoStack.removeLast()
-        startPos = savedStart
-        endPos = savedEnd
-        hasSelection = savedSelection
-        if (!hasSelection) {
+        val state = undoStack.removeLast()
+        startPos = state.startPos
+        endPos = state.endPos
+        selectionStartPx = state.selStart
+        selectionEndPx = state.selEnd
+        if (!hasValidSelection) {
             binding.waveformView.clearSelection()
             stopLoopPlayback()
+        } else {
+            binding.waveformView.setSelection(selectionStartPx, selectionEndPx)
         }
         updateDisplay()
         Toast.makeText(this, getString(R.string.ae_undone), Toast.LENGTH_SHORT).show()
@@ -1027,7 +1062,6 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         endPos = binding.waveformView.maxPos()
         offset = 0
         // 拼接后：音频已重置，选区失效，回到默认全选状态，红色光标在 0
-        hasSelection = true
         selectionStartPx = 0
         selectionEndPx = endPos
         cursorPos = 0
@@ -1050,7 +1084,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         val pos = binding.waveformView.getOffset() + x.toInt()
         touchDownPos = pos
 
-        if (hasSelection) {
+        if (hasValidSelection) {
             val distToStart = Math.abs(pos - selectionStartPx)
             val distToEnd = Math.abs(pos - selectionEndPx)
             when {
@@ -1072,7 +1106,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                 }
                 else -> {
                     // Touch outside selection 鈥?clear existing selection, start new one
-                    hasSelection = false
+                    clearSelectionState()
             updateEditActionsState()
                     binding.waveformView.clearSelection()
                     isDraggingSelection = true
@@ -1097,7 +1131,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         // 选区内触摸后滑动超过阈值 → 清除旧选区，开始新选区拖拽
         if (isPendingInsideSelection && Math.abs(pos - touchDownPos) > boundaryTouchThreshold) {
             isPendingInsideSelection = false
-            hasSelection = false
+            clearSelectionState()
             updateEditActionsState()
             binding.waveformView.clearSelection()
             isDraggingSelection = true
@@ -1140,7 +1174,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             cursorPos = touchDownPos
             val tapMs = binding.waveformView.pixelsToMillisecs(cursorPos)
             player?.seekTo(tapMs)
-            currentPlaybackEndMs = if (hasSelection) {
+            currentPlaybackEndMs = if (hasValidSelection) {
                 binding.waveformView.pixelsToMillisecs(selectionEndPx)
             } else {
                 binding.waveformView.pixelsToMillisecs(endPos)
@@ -1152,7 +1186,6 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             isDraggingSelection = false
             val distance = Math.abs(selectionEndPx - selectionStartPx)
             if (distance > 5) {
-                hasSelection = true
                 updateEditActionsState()
                 if (selectionEndPx < selectionStartPx) {
                     val tmp = selectionStartPx; selectionStartPx = selectionEndPx; selectionEndPx = tmp
@@ -1163,11 +1196,11 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                 binding.waveformView.invalidate()
                 binding.tvCurrentTime.text = formatTime(binding.waveformView.pixelsToMillisecs(cursorPos))
             } else {
-                if (hasSelection && touchDownPos in selectionStartPx..selectionEndPx) {
+                if (hasValidSelection && touchDownPos in selectionStartPx..selectionEndPx) {
                     return
                 }
                 // Tap: move playback position indicator to tap point, no auto-play
-                hasSelection = false
+                clearSelectionState()
             updateEditActionsState()
                 binding.waveformView.clearSelection()
                 if (isPlaying) {
@@ -1177,7 +1210,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                 val tapMs = binding.waveformView.pixelsToMillisecs(cursorPos)
                 player?.seekTo(tapMs)
                 // 同步播放终点：有选区用选区尾，无选区用音频末尾
-                currentPlaybackEndMs = if (hasSelection) {
+                currentPlaybackEndMs = if (hasValidSelection) {
                     binding.waveformView.pixelsToMillisecs(selectionEndPx)
                 } else {
                     binding.waveformView.pixelsToMillisecs(endPos)
@@ -1191,7 +1224,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
     }
 
     override fun waveformLongPress(pos: Int) {
-        if (!hasSelection || pos !in selectionStartPx..selectionEndPx) {
+        if (!hasValidSelection || pos !in selectionStartPx..selectionEndPx) {
             return
         }
         showSegmentActionMenu()
@@ -1239,7 +1272,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                 p.start()
                 isPlaying = true
                 binding.btnPlay.setImageResource(R.drawable.ic_pause)
-                handler.post(updatePlayPosition)
+                postPlayPositionPoller()
             }
             isLoopingSelection = true
         }
@@ -1296,14 +1329,14 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         // If selection is at start or end, just adjust range (no PCM splice needed)
         if (delStartMs <= currentStartMs) {
             startPos = binding.waveformView.millisecsToPixels(delEndMs)
-            hasSelection = false
+            clearSelectionState()
             updateEditActionsState()
             binding.waveformView.clearSelection()
             stopLoopPlayback()
             updateDisplay()
         } else if (delEndMs >= currentEndMs) {
             endPos = binding.waveformView.millisecsToPixels(delStartMs)
-            hasSelection = false
+            clearSelectionState()
             updateEditActionsState()
             binding.waveformView.clearSelection()
             stopLoopPlayback()
@@ -1332,7 +1365,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         if (keepStartMs <= currentStartMs) {
             // Keep from start to keepEnd
             endPos = binding.waveformView.millisecsToPixels(keepEndMs)
-            hasSelection = false
+            clearSelectionState()
             updateEditActionsState()
             binding.waveformView.clearSelection()
             stopLoopPlayback()
@@ -1340,7 +1373,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         } else if (keepEndMs >= currentEndMs) {
             // Keep from keepStart to end
             startPos = binding.waveformView.millisecsToPixels(keepStartMs)
-            hasSelection = false
+            clearSelectionState()
             updateEditActionsState()
             binding.waveformView.clearSelection()
             stopLoopPlayback()
@@ -1369,7 +1402,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        handler.removeCallbacks(updatePlayPosition)
+        activePlayRunnable?.let { handler.removeCallbacks(it) }
         player?.release()
         scope.cancel()
         audioFile?.let { if (it.exists() && it.absolutePath.contains(cacheDir.absolutePath)) it.delete() }
