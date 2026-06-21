@@ -89,6 +89,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
     private var touchDownPos = 0
     private var isDraggingSelection = false
     private var isAdjustingBoundary = false
+    private var isPendingInsideSelection = false  // 触摸落在选区内部，等待判断是拖拽还是点击
     private var boundaryTouchThreshold = 30f
 
     // Undo stack: (startPos, endPos, hasSelection)
@@ -1057,7 +1058,8 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                     binding.waveformView.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                 }
                 pos in selectionStartPx..selectionEndPx -> {
-                    // Touch inside selection 鈥?do nothing, wait for long press or boundary adjust
+                    // Touch inside selection — wait to see if user drags (new selection) or taps (set cursor)
+                    isPendingInsideSelection = true
                     isDraggingSelection = false
                     isAdjustingBoundary = false
                 }
@@ -1083,6 +1085,18 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
     override fun waveformTouchMove(x: Float) {
         val pos = binding.waveformView.getOffset() + x.toInt()
+
+        // 选区内触摸后滑动超过阈值 → 清除旧选区，开始新选区拖拽
+        if (isPendingInsideSelection && Math.abs(pos - touchDownPos) > boundaryTouchThreshold) {
+            isPendingInsideSelection = false
+            hasSelection = false
+            updateEditActionsState()
+            binding.waveformView.clearSelection()
+            isDraggingSelection = true
+            selectionStartPx = touchDownPos
+            selectionEndPx = touchDownPos
+        }
+
         if (isAdjustingBoundary) {
             if (Math.abs(pos - selectionStartPx) < Math.abs(pos - selectionEndPx)) {
                 selectionStartPx = pos.coerceIn(0, selectionEndPx - 1)
@@ -1106,6 +1120,20 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         if (isAdjustingBoundary) {
             isAdjustingBoundary = false
             // Don't auto-play after boundary adjustment
+        } else if (isPendingInsideSelection) {
+            // Tap inside selection — set cursor to tap position, keep selection
+            isPendingInsideSelection = false
+            cursorPos = touchDownPos
+            val tapMs = binding.waveformView.pixelsToMillisecs(cursorPos)
+            player?.seekTo(tapMs)
+            currentPlaybackEndMs = if (hasSelection) {
+                binding.waveformView.pixelsToMillisecs(selectionEndPx)
+            } else {
+                binding.waveformView.pixelsToMillisecs(endPos)
+            }
+            binding.waveformView.setPlayback(cursorPos)
+            binding.waveformView.invalidate()
+            binding.tvCurrentTime.text = formatTime(tapMs)
         } else if (isDraggingSelection) {
             isDraggingSelection = false
             val distance = Math.abs(selectionEndPx - selectionStartPx)
