@@ -73,7 +73,8 @@ data class CompressConfig(
         if (resolution != "original") {
             val scaleFactor = SCALE_FACTORS.find { it.id == resolution }
             if (scaleFactor != null) {
-                filters.add("scale=iw/${scaleFactor.factor}:ih/${scaleFactor.factor}")
+                // 确保缩放后宽高为偶数（HEVC/H264 编码器要求）
+                filters.add("scale=trunc(iw/${scaleFactor.factor}/2)*2:trunc(ih/${scaleFactor.factor}/2)*2")
             }
             // Clear rotation metadata when resizing to avoid orientation confusion
             cmd.append("-metadata:s:v:0 rotate=0 ")
@@ -89,13 +90,17 @@ data class CompressConfig(
         }
         
         // Audio
-        cmd.append("-c:a $audioEncoder ")
-        if (audioEncoder != "copy") {
-            if (audioBitrate != "copy") {
-                cmd.append("-b:a ${audioBitrate}k ")
-            }
-            if (audioSampleRate != "copy") {
-                cmd.append("-ar $audioSampleRate ")
+        if (audioEncoder == "none") {
+            cmd.append("-an ")
+        } else {
+            cmd.append("-c:a $audioEncoder ")
+            if (audioEncoder != "copy") {
+                if (audioBitrate != "copy") {
+                    cmd.append("-b:a ${audioBitrate}k ")
+                }
+                if (audioSampleRate != "copy") {
+                    cmd.append("-ar $audioSampleRate ")
+                }
             }
         }
 
@@ -161,6 +166,7 @@ data class CompressConfig(
         )
 
         val AUDIO_ENCODERS = listOf(
+            "none" to "无",
             "copy" to "复制",
             "aac" to "AAC",
             "libmp3lame" to "MP3",

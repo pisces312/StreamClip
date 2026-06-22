@@ -266,7 +266,7 @@
     <string name="cfg_help_preset">Software encoding preset speed. 9 levels from ultrafast to veryslow; slower = better compression = smaller file.</string>
     <string name="cfg_help_framerate">Frames per second. Original keeps the source; lowering reduces file size but may affect smoothness.</string>
     <string name="cfg_help_resolution">Output resolution. Original keeps the source size; lowering reduces file size significantly.</string>
-    <string name="cfg_help_audio">Audio encoder. Copy preserves original audio (fastest); AAC has best compatibility.</string>
+    <string name="cfg_help_audio">Audio encoder. None = remove audio; Copy = preserve original (fastest); AAC = best compatibility.</string>
     <string name="cfg_help_audio_bitrate">Audio bitrate. Higher = better quality but larger file. 128k is typical.</string>
     <string name="cfg_help_audio_sample_rate">Audio sample rate. Original keeps the source; lowering reduces file size.</string>
 

@@ -79,7 +79,7 @@ class AudioCompressFragment : Fragment() {
             android.R.layout.simple_spinner_dropdown_item,
             CompressConfig.AUDIO_ENCODERS.map { it.second }
         )
-        binding.spinnerAudioEncoder.setSelection(1) // AAC default
+        binding.spinnerAudioEncoder.setSelection(2) // AAC default (index 0=none, 1=copy)
 
         // Audio Bitrate
         binding.spinnerAudioBitrate.adapter = ArrayAdapter(
@@ -104,11 +104,11 @@ class AudioCompressFragment : Fragment() {
         binding.spinnerAudioEncoder.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val encoder = CompressConfig.AUDIO_ENCODERS[position].first
-                binding.panelAudioOptions.visibility = if (encoder == "copy") View.GONE else View.VISIBLE
+                binding.panelAudioOptions.visibility = if (encoder == "copy" || encoder == "none") View.GONE else View.VISIBLE
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
-        binding.panelAudioOptions.visibility = View.VISIBLE
+        binding.panelAudioOptions.visibility = View.VISIBLE // AAC default (index 2)
     }
 
     private fun setupHelpButtons() {
@@ -255,13 +255,17 @@ class AudioCompressFragment : Fragment() {
             if (!isAudioOnlyInput) {
                 append("-c:v copy ")
             }
-            append("-c:a $audioEncoder ")
-            if (audioEncoder != "copy") {
-                if (audioBitrate != "copy") {
-                    append("-b:a ${audioBitrate}k ")
-                }
-                if (audioSampleRate != "copy") {
-                    append("-ar $audioSampleRate ")
+            if (audioEncoder == "none") {
+                append("-an ")
+            } else {
+                append("-c:a $audioEncoder ")
+                if (audioEncoder != "copy") {
+                    if (audioBitrate != "copy") {
+                        append("-b:a ${audioBitrate}k ")
+                    }
+                    if (audioSampleRate != "copy") {
+                        append("-ar $audioSampleRate ")
+                    }
                 }
             }
             if (isAudioOnlyInput) {

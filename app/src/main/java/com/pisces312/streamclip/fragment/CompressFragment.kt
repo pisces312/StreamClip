@@ -206,7 +206,7 @@ class CompressFragment : Fragment() {
             android.R.layout.simple_spinner_dropdown_item,
             CompressConfig.AUDIO_ENCODERS.map { it.second }
         )
-        binding.spinnerAudioHw.setSelection(0) // copy default
+        binding.spinnerAudioHw.setSelection(1) // copy default (index 0 = none)
 
         // Audio Bitrate
         binding.spinnerAudioBitrateHw.adapter = ArrayAdapter(
@@ -277,7 +277,7 @@ class CompressFragment : Fragment() {
             android.R.layout.simple_spinner_dropdown_item,
             CompressConfig.AUDIO_ENCODERS.map { it.second }
         )
-        binding.spinnerAudioSw.setSelection(0) // copy default
+        binding.spinnerAudioSw.setSelection(1) // copy default (index 0 = none)
 
         // Audio Bitrate
         binding.spinnerAudioBitrateSw.adapter = ArrayAdapter(
@@ -302,12 +302,12 @@ class CompressFragment : Fragment() {
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
                 val encoder = CompressConfig.AUDIO_ENCODERS[position].first
-                panel.visibility = if (encoder == "copy") View.GONE else View.VISIBLE
+                panel.visibility = if (encoder == "copy" || encoder == "none") View.GONE else View.VISIBLE
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
-        // Initial state: AAC default (index 1), so panel visible
-        panel.visibility = View.VISIBLE
+        // Initial state: copy default (index 1), so panel hidden
+        panel.visibility = View.GONE
     }
 
     private fun setupHelpButtons() {

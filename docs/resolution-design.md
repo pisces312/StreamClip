@@ -106,12 +106,15 @@ val SCALE_FACTORS = listOf(
 if (resolution != "original") {
     val scaleFactor = SCALE_FACTORS.find { it.id == resolution }
     if (scaleFactor != null) {
-        filters.add("scale=iw/${scaleFactor.factor}:ih/${scaleFactor.factor}")
+        // 确保缩放后宽高为偶数（HEVC/H264 编码器要求）
+        filters.add("scale=trunc(iw/${scaleFactor.factor}/2)*2:trunc(ih/${scaleFactor.factor}/2)*2")
     }
 }
 ```
 
-生成的 FFmpeg 参数示例：`vf scale=iw/1.5:ih/1.5`
+生成的 FFmpeg 参数示例：`vf scale=trunc(iw/1.5/2)*2:trunc(ih/1.5/2)*2`
+
+> **注意**：必须使用 `trunc(.../2)*2` 确保偶数对齐。某些源视频（如 720x1582）缩放后高度为奇数（703），会导致 HEVC MediaCodec 编码器初始化失败，输出 0 帧。
 
 ## 5. 行为总结
 
@@ -119,3 +122,13 @@ if (resolution != "original") {
 |------|-----------|----------------|
 | 单文件 1920×1080 | 不缩放 | 缩放至 1280×720 |
 | 多文件（分辨率不同） | 不缩放 | 各视频按自身分辨率缩放至 67% |
+
+## 6. 已知问题与修复记录
+
+### 缩放后奇数分辨率导致编码失败（2026-06-22 修复）
+
+**现象**：选择"音频为无"时，某些视频压缩报错 `Nothing was written into output file, because at least one of its streams received no packets`，`frame=0`。
+
+**根因**：`scale=iw/2.25:ih/2.25` 缩放后，如 720x1582 → 320x**703**（奇数高度），HEVC/H264 MediaCodec 编码器要求宽高为偶数，初始化失败。
+
+**修复**：scale 表达式改为 `trunc(iw/factor/2)*2:trunc(ih/factor/2)*2`，确保缩放后宽高始终为偶数。
