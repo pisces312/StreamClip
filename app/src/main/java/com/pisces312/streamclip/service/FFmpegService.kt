@@ -95,9 +95,9 @@ object FFmpegService {
                     val cs = s.optString("colorspace", "")
                         .takeIf { it.isNotEmpty() && it != "unknown" } ?: ""
 
-                    // Rotation from side_data
+                    // Rotation from side_data (display matrix in tkhd)
                     var rotation = 0
-                    val sideDataList = s.optJSONArray("side_data")
+                    val sideDataList = s.optJSONArray("side_data_list")
                     if (sideDataList != null) {
                         for (j in 0 until sideDataList.length()) {
                             val sd = sideDataList.getJSONObject(j)
