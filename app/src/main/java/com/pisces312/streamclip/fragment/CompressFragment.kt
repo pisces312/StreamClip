@@ -28,6 +28,7 @@ import com.pisces312.streamclip.service.FFmpegService
 import com.pisces312.streamclip.adapter.FfmpegLogAdapter
 import com.pisces312.streamclip.util.FileUtils
 import com.pisces312.streamclip.util.LogCollector
+import com.pisces312.streamclip.util.Mp4RotationUtils
 import com.pisces312.streamclip.util.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -93,6 +94,9 @@ class CompressFragment : Fragment() {
             binding.cardOutputInfo.visibility = View.GONE
             // Show all resolution options for batch (multiple videos may have different resolutions)
             updateResolutionOptions(null)
+            // Reset rotation to "保持不变" for batch
+            binding.spinnerRotationHw.setSelection(0)
+            binding.spinnerRotationSw.setSelection(0)
             result.data?.clipData?.let { clipData ->
                 for (i in 0 until clipData.itemCount) {
                     val uri = clipData.getItemAt(i).uri
@@ -224,6 +228,14 @@ class CompressFragment : Fragment() {
         )
         binding.spinnerAudioSampleRateHw.setSelection(0) // copy default
 
+        // Rotation
+        binding.spinnerRotationHw.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.ROTATIONS.map { it.second }
+        )
+        binding.spinnerRotationHw.setSelection(0) // 保持不变 default
+
         setupAudioVisibilityListener(binding.spinnerAudioHw, binding.panelAudioOptionsHw)
     }
 
@@ -295,6 +307,14 @@ class CompressFragment : Fragment() {
         )
         binding.spinnerAudioSampleRateSw.setSelection(0) // copy default
 
+        // Rotation
+        binding.spinnerRotationSw.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            CompressConfig.ROTATIONS.map { it.second }
+        )
+        binding.spinnerRotationSw.setSelection(0) // 保持不变 default
+
         setupAudioVisibilityListener(binding.spinnerAudioSw, binding.panelAudioOptionsSw)
     }
 
@@ -326,7 +346,9 @@ class CompressFragment : Fragment() {
             binding.btnHelpAudioBitrateHw to "audioBitrate",
             binding.btnHelpAudioBitrateSw to "audioBitrate",
             binding.btnHelpAudioSampleRateHw to "audioSampleRate",
-            binding.btnHelpAudioSampleRateSw to "audioSampleRate"
+            binding.btnHelpAudioSampleRateSw to "audioSampleRate",
+            binding.btnHelpRotationHw to "rotation",
+            binding.btnHelpRotationSw to "rotation"
         )
 
         helpMap.forEach { (view, key) ->
@@ -347,6 +369,7 @@ class CompressFragment : Fragment() {
             "audio" -> getString(R.string.cfg_audio)
             "audioBitrate" -> getString(R.string.cfg_audio_bitrate)
             "audioSampleRate" -> getString(R.string.cfg_audio_sample_rate)
+            "rotation" -> getString(R.string.cfg_rotation)
             else -> getString(R.string.info_help)
         }
         val messageRes = CompressConfig.HELP_TEXTS[key]
@@ -385,6 +408,7 @@ class CompressFragment : Fragment() {
                         )
                         // Update resolution spinners based on source video
                         updateResolutionOptions(info)
+
                     }
                 }
             }
@@ -433,6 +457,8 @@ class CompressFragment : Fragment() {
         binding.spinnerResolutionSw.setSelection(0)
     }
 
+
+
     private fun showVideoInfoCard(
         card: android.view.View,
         title: android.widget.TextView,
@@ -444,7 +470,7 @@ class CompressFragment : Fragment() {
         lines.add("${getString(R.string.info_path)}: ${info.path}")
         lines.add("${getString(R.string.info_size)}: $fileSizeMB")
         lines.add("${getString(R.string.info_video)}: ${info.videoCodec} ${info.resolution} ${info.frameRate} ${info.videoBitrateKbps}${info.hdrTag}")
-        if (info.rotation != 0) lines.add("旋转: ${info.rotation}°")
+        lines.add("旋转: ${info.rotation}°")
         if (info.audioCodec.isNotEmpty()) lines.add("${getString(R.string.info_audio)}: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
         if (info.colorSpace.isNotEmpty()) lines.add("${getString(R.string.info_color_space)}: ${info.colorSpace}")
         if (info.colorPrimaries.isNotEmpty()) lines.add("${getString(R.string.info_color_primaries)}: ${info.colorPrimaries}")
@@ -652,6 +678,16 @@ class CompressFragment : Fragment() {
                 logDialog.onComplete(result.success)
 
                 if (result.success) {
+                    // Apply rotation by modifying MP4 tkhd display matrix (ffmpeg 6.0 can't do this via CLI)
+                    // With -noautorotate, source rotation is preserved in output tkhd.
+                    // config.rotation >= 0 means user explicitly chose a rotation — overwrite tkhd.
+                    // config.rotation == -1 ("保持不变") means keep source rotation — no touch needed.
+                    if (config.rotation >= 0) {
+                        val rotationApplied = Mp4RotationUtils.setRotation(outPath, config.rotation)
+                        if (!rotationApplied) {
+                            LogCollector.w("Compress", "Failed to apply rotation ${config.rotation}°")
+                        }
+                    }
                     val outFileName = outPath.substring(outPath.lastIndexOf('/') + 1)
                     FileUtils.scanFile(requireContext(), java.io.File(outPath))
                     val shootingDate = originalVideoInfo?.creationTime.orEmpty()
@@ -708,6 +744,7 @@ class CompressFragment : Fragment() {
                 audioEncoder = CompressConfig.AUDIO_ENCODERS[binding.spinnerAudioHw.selectedItemPosition].first,
                 audioBitrate = CompressConfig.AUDIO_BITRATES[binding.spinnerAudioBitrateHw.selectedItemPosition].first,
                 audioSampleRate = CompressConfig.AUDIO_SAMPLE_RATES[binding.spinnerAudioSampleRateHw.selectedItemPosition].first,
+                rotation = CompressConfig.ROTATIONS[binding.spinnerRotationHw.selectedItemPosition].first,
                 isHardware = true
             )
         } else {
@@ -720,6 +757,7 @@ class CompressFragment : Fragment() {
                 audioEncoder = CompressConfig.AUDIO_ENCODERS[binding.spinnerAudioSw.selectedItemPosition].first,
                 audioBitrate = CompressConfig.AUDIO_BITRATES[binding.spinnerAudioBitrateSw.selectedItemPosition].first,
                 audioSampleRate = CompressConfig.AUDIO_SAMPLE_RATES[binding.spinnerAudioSampleRateSw.selectedItemPosition].first,
+                rotation = CompressConfig.ROTATIONS[binding.spinnerRotationSw.selectedItemPosition].first,
                 isHardware = false
             )
         }

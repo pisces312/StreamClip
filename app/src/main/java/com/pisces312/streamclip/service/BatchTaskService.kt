@@ -209,6 +209,12 @@ class BatchTaskService : Service() {
                 onLog = { }
             ).let { result ->
                 if (result.success) {
+                    // Apply rotation by modifying MP4 tkhd display matrix (ffmpeg 6.0 can't do this via CLI)
+                    if (task.config.compressConfig.rotation >= 0) {
+                        com.pisces312.streamclip.util.Mp4RotationUtils.setRotation(
+                            task.outputPath, task.config.compressConfig.rotation
+                        )
+                    }
                     com.pisces312.streamclip.util.FileUtils.scanFile(
                         this,
                         java.io.File(task.outputPath)

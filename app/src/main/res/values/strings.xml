@@ -262,6 +262,8 @@
     <string name="cfg_help_framerate">帧率控制每秒画面帧数。原始保持原帧率，降低帧率可减小文件但影响流畅度。</string>
     <string name="cfg_help_resolution">输出视频分辨率。复制保持原尺寸，仅显示比原视频小的选项。</string>
     <string name="resolution_copy">复制</string>
+    <string name="cfg_rotation">旋转</string>
+    <string name="cfg_help_rotation">通过修改容器元数据实现无损旋转，秒级完成。默认读取原视频旋转角度。</string>
     <string name="cfg_help_audio">音频编码。无=删除音频，复制=不重新编码最快，AAC兼容性最好。</string>
     <string name="cfg_help_audio_bitrate">音频码率。越高音质越好文件越大。128k为常用值。</string>
     <string name="cfg_help_audio_sample_rate">音频采样率。原始保持原采样率，降低可减小文件。</string>

@@ -10,6 +10,7 @@ data class CompressConfig(
     val audioEncoder: String = "copy",
     val audioBitrate: String = "128",  // 音频码率 (kbps)
     val audioSampleRate: String = "copy", // 音频采样率（默认复制，避免 swresample native crash）
+    val rotation: Int = -1,            // 旋转角度 (-1=保持不变, 0/90/180/270)，通过修改 MP4 tkhd display matrix 实现无损旋转
     val isHardware: Boolean = true,
     val copyMetadata: Boolean = true   // Copy all metadata from source
 ) : java.io.Serializable {
@@ -27,12 +28,25 @@ data class CompressConfig(
         colorPrimaries: String = "",
         colorTransfer: String = ""
     ): String {
-        val cmd = StringBuilder("-y -i \"$inputPath\" ")
+        val cmd = StringBuilder("-y ")
 
-        // Copy all metadata first (before encoder settings)
+        // Prevent FFmpeg from auto-rotating pixels during decode.
+        // Without this, FFmpeg rotates pixels based on source tkhd, but then
+        // Mp4RotationUtils writes a NEW rotation matrix — causing double rotation
+        // (pixels already rotated + tkhd rotation = squished display).
+        // With -noautorotate, pixels stay in original orientation and tkhd controls display.
+        cmd.append("-noautorotate ")
+
+        cmd.append("-i \"$inputPath\" ")
+
+        // Copy all metadata from source (global + per-stream/chapter)
         if (copyMetadata) {
             cmd.append("-map_metadata 0 ")
         }
+
+        // Rotation is handled post-encoding by directly modifying the MP4 tkhd display matrix.
+        // FFmpeg 6.0+ (ffmpeg-kit 8.1) does not support -metadata rotate or -display_rotation for output.
+        // See Mp4RotationUtils.setRotation() called after ffmpeg completes.
 
         val isHdr = colorTransfer == "arib-std-b67" || colorTransfer == "smpte2084"
 
@@ -76,8 +90,6 @@ data class CompressConfig(
                 // 确保缩放后宽高为偶数（HEVC/H264 编码器要求）
                 filters.add("scale=trunc(iw/${scaleFactor.factor}/2)*2:trunc(ih/${scaleFactor.factor}/2)*2")
             }
-            // Clear rotation metadata when resizing to avoid orientation confusion
-            cmd.append("-metadata:s:v:0 rotate=0 ")
         }
 
         if (filters.isNotEmpty()) {
@@ -198,6 +210,15 @@ data class CompressConfig(
             "60" to "60 fps"
         )
 
+        // Rotation options (tkhd display matrix, zero-loss)
+        val ROTATIONS = listOf(
+            -1 to "保持不变",
+            0 to "0°",
+            90 to "90°",
+            180 to "180°",
+            270 to "270°"
+        )
+
         // Help texts
         val HELP_TEXTS = mapOf(
             "encoder" to "cfg_help_encoder",
@@ -208,7 +229,8 @@ data class CompressConfig(
             "resolution" to "cfg_help_resolution",
             "audio" to "cfg_help_audio",
             "audioBitrate" to "cfg_help_audio_bitrate",
-            "audioSampleRate" to "cfg_help_audio_sample_rate"
+            "audioSampleRate" to "cfg_help_audio_sample_rate",
+            "rotation" to "cfg_help_rotation"
         )
     }
 }
