@@ -30,8 +30,8 @@ esac
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_DIR="$PROJECT_DIR/app"
-BUILD_TOOLS="D:/nili/dev/android_sdk/build-tools/34.0.0"
-KEYSTORE="D:/nili/my-git-projects/my-backup/backup-settings/my-android-release.keystore"
+BUILD_TOOLS="D:/dev/android_sdk/build-tools/36.0.0"
+KEYSTORE="D:/my-projects/my-backup/backup-settings/my-android-release.keystore"
 KEYSTORE_PASS="${KEY_STORE_PASSWORD:-}"
 KEY_ALIAS="${KEY_ALIAS:-pisces312}"
 
