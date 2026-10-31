@@ -250,6 +250,7 @@
     <string name="info_creation_time">Date Taken</string>
     <string name="info_file_creation_time">Date Created</string>
     <string name="info_location">Location</string>
+    <string name="info_mdta">Type-2 metadata</string>
     <string name="info_path">Path</string>
     <string name="info_format_error">Unrecognized file format</string>
     <string name="info_no_help">No help available</string>

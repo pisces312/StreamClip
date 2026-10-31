@@ -226,6 +226,17 @@ class BatchTaskService : Service() {
                                 task.inputPath, task.outputPath
                             )
                         }
+                        // Vendor camera/lens keys (mdta) cannot be expressed by the mov muxer's
+                        // fixed 4cc whitelist — transplant the source `meta` box afterwards.
+                        // The `colr` box is likewise rewritten from the bitstream, so copy it too.
+                        if (task.config.compressConfig.copyMetadata) {
+                            com.pisces312.streamclip.util.Mp4MetadataUtils.copyColorTag(
+                                task.inputPath, task.outputPath
+                            )
+                            com.pisces312.streamclip.util.Mp4MetadataUtils.copyCameraMetadata(
+                                task.inputPath, task.outputPath
+                            )
+                        }
                     }
                     com.pisces312.streamclip.util.FileUtils.scanFile(
                         this,
@@ -263,7 +274,7 @@ class BatchTaskService : Service() {
         val sourceH = info?.displayHeight ?: 1080
         val command = task.config.compressConfig.toFFmpegCommand(
             task.inputPath, task.outputPath, sourceW, sourceH,
-            info?.colorSpace ?: "", info?.colorPrimaries ?: "", info?.colorTransfer ?: ""
+            info?.colorTransfer ?: ""
         )
         return Pair(command, info)
     }

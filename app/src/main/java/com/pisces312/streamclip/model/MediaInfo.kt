@@ -12,7 +12,14 @@ data class MediaInfo(
     val video: VideoStreamInfo? = null,
 
     // First audio stream (null if no audio)
-    val audio: AudioStreamInfo? = null
+    val audio: AudioStreamInfo? = null,
+
+    /**
+     * "Type-2" metadata: the mdta `keys`/`ilst` table in `moov/meta`, where vendors keep camera
+     * and lens data (`com.honor.lens.model`, `com.apple.quicktime.model`, ...). Parsed from the
+     * container instead of ffprobe's format tags so every key is listed.
+     */
+    val mdtaTags: Map<String, String> = emptyMap()
 ) {
     /** Duration in seconds, -1.0 if unknown */
     val durationSec: Double get() = if (durationMs >= 0) durationMs / 1000.0 else -1.0

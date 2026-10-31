@@ -15,17 +15,15 @@ data class CompressConfig(
     val copyMetadata: Boolean = true   // Copy all metadata from source
 ) : java.io.Serializable {
     /**
-     * @param colorSpace color_space from probe (e.g. "bt709"), empty for SDR
-     * @param colorPrimaries color_primaries from probe (e.g. "bt709"), empty for SDR
-     * @param colorTransfer color_transfer from probe (e.g. "bt709"/"arib-std-b67"/"smpte2084"), empty for SDR
+     * @param colorTransfer `color_transfer` from probe (`bt709`, `arib-std-b67`, `smpte2084`, ...),
+     *        empty when unknown. Only used to detect HDR — see the note inside about why no colour
+     *        tag is written to the output.
      */
     fun toFFmpegCommand(
         inputPath: String,
         outputPath: String,
         sourceWidth: Int = 1920,
         sourceHeight: Int = 1080,
-        colorSpace: String = "",
-        colorPrimaries: String = "",
         colorTransfer: String = ""
     ): String {
         val cmd = StringBuilder("-y ")
@@ -50,16 +48,26 @@ data class CompressConfig(
 
         val isHdr = colorTransfer == "arib-std-b67" || colorTransfer == "smpte2084"
 
-        // Write color metadata to MOV container (nclx box).
-        // hevc_mediacodec does NOT write color info to bitstream VUI — only the container nclx box gets set.
-        // Players (including Android MediaCodec decoder) read nclx box, so these flags are necessary.
-        // Note: hevc_metadata BSF was tested to also write VUI, but it causes playback issues (video freezes).
-        // As a result, ffprobe on Android (ffmpeg-kit 6.0, only reads VUI) shows bt470bg for compressed videos.
-        // Desktop ffprobe (reads both VUI and nclx box) shows the correct value.
-        if (colorPrimaries.isNotEmpty()) cmd.append("-color_primaries $colorPrimaries ")
-        if (colorTransfer.isNotEmpty()) cmd.append("-color_trc $colorTransfer ")
-        if (colorSpace.isNotEmpty()) cmd.append("-colorspace $colorSpace ")
-        cmd.append("-color_range tv ")
+        // Colour tags are deliberately NOT forced here.
+        //
+        // The old block passed -color_primaries / -color_trc / -colorspace / -color_range tv, but
+        // none of them did what it looked like:
+        //   - `-color_primaries` and `-color_trc` are input-side options; measured against a real
+        //     recording they never reached the encoder context, so neither VUI nor `colr` changed.
+        //   - `-colorspace` does reach the encoder, but writing only the matrix leaves primaries
+        //     and transfer coming from the bitstream — one file with two sources of truth.
+        //   - `-color_range tv` is a no-op for full-range sources (`yuvj420p`); output stays `pc`,
+        //     which is what the pixel data actually is.
+        // Encoding with and without the whole block produces byte-identical files (md5 equal),
+        // so removing it is behaviour-preserving.
+        //
+        // ffmpeg fills the encoder context from the first decoded frame, so the output carries
+        // whatever the source *bitstream* signalled (VUI). Vendor recordings can disagree with
+        // their own container: the HONOR sample writes bt470bg/smpte170m into `colr` while its
+        // HEVC VUI says bt709/sRGB, and decoders only honour the VUI. Preserving the bitstream
+        // keeps playback identical — see AGENTS.md "陷阱 9".
+        // If colour tags ever must be forced, use
+        // `-vf setparams=color_primaries=…:color_trc=…:colorspace=…:range=…` instead.
 
         if (isHdr) {
 
@@ -116,10 +124,8 @@ data class CompressConfig(
             }
         }
 
-        // Note: hevc_metadata BSF to write VUI was tested but causes playback issues
-        // (video freezes on one frame). Only container-level nclx box flags are used.
-        // On Android, ffprobe reads bitstream VUI (empty → bt470bg default),
-        // while desktop ffprobe reads both VUI and nclx box → correct values.
+        // Note: hevc_metadata BSF was tested to force VUI into the bitstream but causes playback
+        // issues (video freezes on one frame), so it is not used.
 
         // Format: use MOV format to preserve GPS metadata (moov/udta/xyz atom)
         // Android MediaMetadataRetriever reads xyz atom, not loci

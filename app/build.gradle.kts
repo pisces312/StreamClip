@@ -81,4 +81,9 @@ dependencies {
 
     // Host JVM regression tests (see app/src/test/.../Mp4RotationUtilsTest.kt)
     testImplementation("junit:junit:4.13.2")
+    // Real org.json for unit tests. `unitTests.isReturnDefaultValues = true` only stubs the
+    // android.jar copy, whose JSONObject returns null from every getter — MediaProbeParser and
+    // MediaInfo would then be untestable (or worse, look broken). Test-only; production keeps
+    // using the platform implementation.
+    testImplementation("org.json:json:20260814")
 }

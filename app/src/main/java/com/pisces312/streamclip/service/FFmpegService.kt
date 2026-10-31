@@ -7,10 +7,7 @@ import com.arthenica.ffmpegkit.FFprobeKit
 import com.arthenica.ffmpegkit.ReturnCode
 import com.arthenica.ffmpegkit.StatisticsCallback
 import com.pisces312.streamclip.util.LogCollector
-import com.pisces312.streamclip.model.AudioStreamInfo
 import com.pisces312.streamclip.model.MediaInfo
-import com.pisces312.streamclip.model.VideoStreamInfo
-import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -86,75 +83,8 @@ object FFmpegService {
                 return null
             }
 
-            val json = JSONObject(output)
-
-            // Parse format
-            val format = json.optJSONObject("format")
-            val durationMs = format?.optString("duration", "-1")?.toDoubleOrNull()
-                ?.let { (it * 1000).toLong() } ?: -1L
-            val formatName = format?.optString("format_name", "") ?: ""
-            val tags = format?.optJSONObject("tags") ?: JSONObject()
-
-            // Parse streams
-            val streams = json.optJSONArray("streams") ?: return null
-            var videoStream: VideoStreamInfo? = null
-            var audioStream: AudioStreamInfo? = null
-
-            for (i in 0 until streams.length()) {
-                val s = streams.getJSONObject(i)
-                val codecType = s.optString("codec_type", "")
-
-                if (codecType == "video" && videoStream == null) {
-                    val cp = s.optString("color_primaries", "")
-                        .takeIf { it.isNotEmpty() && it != "unknown" } ?: ""
-                    val ct = s.optString("color_transfer", "")
-                        .takeIf { it.isNotEmpty() && it != "unknown" } ?: ""
-                    val cs = s.optString("colorspace", "")
-                        .takeIf { it.isNotEmpty() && it != "unknown" } ?: ""
-
-                    // Rotation from side_data (display matrix in tkhd)
-                    var rotation = 0
-                    val sideDataList = s.optJSONArray("side_data_list")
-                    if (sideDataList != null) {
-                        for (j in 0 until sideDataList.length()) {
-                            val sd = sideDataList.getJSONObject(j)
-                            if (sd.has("rotation")) {
-                                rotation = sd.optInt("rotation", 0)
-                                break
-                            }
-                        }
-                    }
-
-                    videoStream = VideoStreamInfo(
-                        width = s.optInt("width", 0),
-                        height = s.optInt("height", 0),
-                        codec = s.optString("codec_name", ""),
-                        frameRate = s.optString("r_frame_rate", ""),
-                        pixelFormat = s.optString("pix_fmt", ""),
-                        bitRate = s.optString("bit_rate", "0").toLongOrNull() ?: 0L,
-                        rotation = rotation,
-                        colorPrimaries = cp,
-                        colorTransfer = ct,
-                        colorSpace = cs
-                    )
-                } else if (codecType == "audio" && audioStream == null) {
-                    audioStream = AudioStreamInfo(
-                        codec = s.optString("codec_name", ""),
-                        sampleRate = s.optInt("sample_rate", 0),
-                        bitRate = s.optString("bit_rate", "0").toLongOrNull() ?: 0L,
-                        channelLayout = s.optString("channel_layout", "")
-                    )
-                }
-            }
-
-            MediaInfo(
-                path = path,
-                durationMs = durationMs,
-                formatName = formatName,
-                formatTags = tags,
-                video = videoStream,
-                audio = audioStream
-            ).also {
+            // Field mapping lives in MediaProbeParser so it can be unit-tested on the host JVM.
+            MediaProbeParser.parse(path, output)?.also {
                 LogCollector.i("FFmpegService", "probeMediaInfo: ${it.videoCodec} ${it.resolution} ${it.audioCodec} dur=${it.durationMs}ms")
             }
         } catch (e: Exception) {

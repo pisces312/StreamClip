@@ -1,5 +1,19 @@
 # 轻剪辑 更新日志
 
+## [Unreleased]
+
+### 新增
+- **输入/输出信息卡显示全部第二类元数据**：直接解析 MP4 的 `moov/meta`（mdta `keys` + `ilst`），把厂商相机/镜头键逐条列出，如 `com.honor.lens.model = back_main`、`com.apple.quicktime.model = iPhone 15 Pro`。ffprobe 只暴露 demuxer 映射到的那部分键，直接读容器才能保证「全部」；文本、整数、浮点分别格式化，二进制值只显示前 16 字节预览
+
+### 修复
+- **压缩后色彩空间/色域/传输与原片不一致**：源片的容器 `colr` atom 与码流 VUI 是两套独立标签（荣耀样本容器为 bt470bg/bt709/smpte170m，码流 VUI 为 bt709/sRGB/bt709），重编码后 ffmpeg 从码流属性重写容器标签，信息卡读到的三值随之改变。现在编码完成后把源 `stsd` 里的 `colr` box 原样移植进输出（与 mdta `meta` 移植同一手法），输出容器三值恒等于源容器；码流 VUI 保持编码器写出的值，播放行为不变
+- **信息卡「色彩空间」一行从不显示**：`probeMediaInfo()` 读的是 ffprobe 的 `colorspace` 键，而 ffprobe 实际输出 `color_space`，取值恒为空串。修正后输入/输出卡片都会显示矩阵（如 `smpte170m` / `bt709`）
+- **移除从不生效的色彩参数**：`-color_primaries` / `-color_trc` 属于 ffmpeg 输入侧选项，`-colorspace` 只写矩阵（会让容器与码流各说一半），`-color_range tv` 对全范围源是空操作；实测带与不带这段参数输出逐字节相同，故整体删除。容器标签改由上面的 `colr` 移植负责
+- **压缩后丢失相机与镜头信息**：厂商把相机/镜头型号写在 MP4 的 mdta 元数据键里（荣耀 `com.honor.lens.model` / `com.honor.product.model`，iPhone `com.apple.quicktime.make` / `.model` / `.lens_model`）。FFmpeg 的 mov 封装器只写固定的 4cc 白名单（`©nam`/`©mak`/`©mod`/`©xyz` 等），`-map_metadata 0` 无法带出 mdta 键，压缩后这些信息全部丢失。现在编码完成后把源文件的 `meta` box 原样移植进输出 `moov`，同时保留 Android 读取位置所依赖的 `©xyz` atom；单任务与批量任务两条链路都已修复
+
+### 测试
+- **补齐色彩与相机元数据的单元测试**：把 ffprobe 的 JSON 解析从 `FFmpegService` 抽到 `MediaProbeParser`（原类依赖 ffmpeg-kit，宿主 JVM 加载不了），新增 `MediaProbeParserTest` 13 例——JSON 取自真实 `ffprobe` 输出，锁死 `color_space` 键名（改回 `colorspace` 立即失败）、`unknown` 归一为空串、`side_data_list` 旋转、多流取首条、mdta 合并；`MediaInfoColorTest` 8 例覆盖三色标签透传、`isHdr` 只看 transfer、`is10bit` 与 `hdrTag` 组合；`Mp4MetadataUtilsTest` 扩到 23 例，新增 64 位 `moov` 的 largesize 改写、Apple 全键保序、UTF-16/整数/浮点解码、NUL 裁剪、二进制预览、`keys` 无 `ilst`、ilst 索引越界、截断文件、源文件缺失、源=目标等边界。单测总数 42 → 76
+
 ## [2.2.3] - 2026-10-31
 
 ### 新增

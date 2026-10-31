@@ -29,6 +29,7 @@ import com.pisces312.streamclip.adapter.FfmpegLogAdapter
 import com.pisces312.streamclip.util.FileUtils
 import com.pisces312.streamclip.util.FileOpenHelper
 import com.pisces312.streamclip.util.LogCollector
+import com.pisces312.streamclip.util.Mp4MetadataUtils
 import com.pisces312.streamclip.util.Mp4RotationUtils
 import com.pisces312.streamclip.util.SettingsManager
 import kotlinx.coroutines.Dispatchers
@@ -504,6 +505,12 @@ class CompressFragment : Fragment() {
         if (info.creationTime.isNotEmpty()) lines.add("${getString(R.string.info_creation_time)}: ${info.creationTime}")
         if (info.fileCreationTime.isNotEmpty()) lines.add("${getString(R.string.info_file_creation_time)}: ${info.fileCreationTime}")
         if (info.location.isNotEmpty()) lines.add("${getString(R.string.info_location)}: ${info.location}")
+        // Type-2 (mdta) metadata: camera/lens keys such as com.honor.lens.model or
+        // com.apple.quicktime.model, listed verbatim so input and output can be compared.
+        if (info.mdtaTags.isNotEmpty()) {
+            lines.add("${getString(R.string.info_mdta)} (${info.mdtaTags.size}):")
+            info.mdtaTags.forEach { (key, value) -> lines.add("  $key = $value") }
+        }
         infoView.text = lines.joinToString("\n")
         card.visibility = android.view.View.VISIBLE
     }
@@ -673,16 +680,16 @@ class CompressFragment : Fragment() {
             requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
 
-        val colorArgs = originalVideoInfo?.let {
-            Triple(it.colorSpace, it.colorPrimaries, it.colorTransfer)
-        } ?: Triple("", "", "")
+        // Only HDR detection needs a probe value; colour tags themselves are left to the encoder
+        // (see the note in CompressConfig.toFFmpegCommand).
+        val colorTransfer = originalVideoInfo?.colorTransfer.orEmpty()
         val sourceW = originalVideoInfo?.displayWidth ?: 1920
         val sourceH = originalVideoInfo?.displayHeight ?: 1080
-        val logDialog = showFfmpegLogDialog(config.toFFmpegCommand(path, outPath, sourceW, sourceH, colorArgs.first, colorArgs.second, colorArgs.third))
+        val logDialog = showFfmpegLogDialog(config.toFFmpegCommand(path, outPath, sourceW, sourceH, colorTransfer))
 
         val compressJob = viewLifecycleOwner.lifecycleScope.launch {
             val totalTimeMs = originalVideoInfo?.durationMs ?: -1L
-            val command = config.toFFmpegCommand(path, outPath, sourceW, sourceH, colorArgs.first, colorArgs.second, colorArgs.third)
+            val command = config.toFFmpegCommand(path, outPath, sourceW, sourceH, colorTransfer)
             LogCollector.d("Compress", "Command: $command")
 
             logDialog.onCancel = {
@@ -741,6 +748,24 @@ class CompressFragment : Fragment() {
                         val rotationApplied = Mp4RotationUtils.copyRotation(path, outPath)
                         if (!rotationApplied) {
                             LogCollector.w("Compress", "Failed to preserve source rotation")
+                        }
+                    }
+                    // Camera / lens metadata lives in vendor mdta keys (com.honor.lens.model,
+                    // com.apple.quicktime.model, ...). FFmpeg's mov muxer only writes a fixed 4cc
+                    // whitelist, so -map_metadata cannot carry them; transplant the source `meta`
+                    // box into the output moov instead.
+                    if (config.copyMetadata) {
+                        // Container colour tags are rewritten from the *bitstream* values, so a
+                        // recording whose own colr and VUI disagree would come out labelled
+                        // differently from the source. Copy the box; the bitstream stays as the
+                        // encoder wrote it, so playback is unchanged.
+                        val colorCopied = Mp4MetadataUtils.copyColorTag(path, outPath)
+                        if (!colorCopied) {
+                            LogCollector.w("Compress", "Failed to preserve colour tags")
+                        }
+                        val metaCopied = Mp4MetadataUtils.copyCameraMetadata(path, outPath)
+                        if (!metaCopied) {
+                            LogCollector.w("Compress", "Failed to preserve camera metadata")
                         }
                     }
                     val outFileName = outPath.substring(outPath.lastIndexOf('/') + 1)

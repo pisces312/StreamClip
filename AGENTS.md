@@ -212,6 +212,59 @@ ISO-BMFF 的 box 头有三种写法：`size=1` 表示随后 8 字节是 64 位 `
 
 H.264/H.265 MediaCodec 对奇数输出尺寸可能初始化失败或输出 0 帧。修改分辨率计算或 scale filter 时，不要移除 `CompressConfig` 中的 `trunc(.../2)*2` 偶数对齐。
 
+### 8. mov muxer 丢弃厂商相机 / 镜头元数据（mdta）
+
+厂商把相机与镜头型号写进 `moov/meta` 的 **mdta** 键表（`hdlr` handler type 为 `mdta`，内容为 `keys` + `ilst`），而不是传统 4cc `udta` atom：
+
+| 厂商 | 键 |
+|---|---|
+| 荣耀 MagicOS | `com.honor.lens.model`、`com.honor.product.model` |
+| Apple | `com.apple.quicktime.make` / `.model` / `.lens_model` / `.location.ISO6709` |
+
+`mov_write_udta_tag()`（`libavformat/movenc.c`）在 `MODE_MOV`（即 `-f mov`）且未启用 `use_metadata_tags` 时只写死白名单 `©nam`/`©ART`/`©mak`/`©mod`/`©xyz`/`©swr` 等，**mdta 键被静默丢弃**——`-map_metadata 0` 只是把键塞进 AVFormatContext 的 metadata 字典，muxer 不会写。
+
+**不能**用 `-movflags +use_metadata_tags` 替代：该开关把 `mov_write_udta_tag()` 切到 else 分支，`©xyz` 不再写出（Android `MediaMetadataRetriever` 读位置靠它），并且会把 `major_brand`/`minor_version`/`compatible_brands` 一并写成 mdta 键、产生 `qt  ;mp42` 这类重复值。
+
+正确做法：编码完成后调用 `Mp4MetadataUtils.copyCameraMetadata(源文件, 输出文件)`，把源的 `meta` box **原样追加**到输出 `moov`（同时支持 `moov/meta` 与 `moov/udta/meta` 两种位置）。
+
+前提与边界：
+- 输出 `moov` 必须是**最后一个顶层 box**（本项目压缩输出不加 `-movflags +faststart`，满足）。否则追加会让后续数据整体后移、`stco`/`co64` 偏移失效，此时方法返回 `false` 并记日志，**不改文件**。
+- 只移植 `hdlr == mdta` 的 `meta`；iTunes（`mdir`）`meta` 跳过，避免与 `udta` 的标题/作者重复。
+- 单任务（`CompressFragment`）与批量任务（`BatchTaskService`）两条压缩链路都要调，且需在旋转处理之后（两者互不影响：meta 追加在 moov 末尾，tkhd 在 moov 前部）。
+- 无损裁剪 / 合并走的是 `-c copy -map_metadata 0`，同一根因下也会丢 mdta 键；截至 2.2.3 只在压缩链路修复。
+
+> 实测样本：`VID_20261031_112937.mp4`（荣耀 BKQ-AN80，`moov` 在文件末尾，`udta/©xyz` + `moov/meta` 两个 mdta 键）。修复前输出只剩 `creation_time`/`location`，两个 `com.honor.*` 键消失；修复后 `ffprobe` 与源完全一致，`©xyz` 仍在，全片解码无错误。
+
+### 9. 色彩标签有两份，容器 `colr` 与码流 VUI 可能互相矛盾
+
+同一个 MP4 里色彩信息存两处，厂商机型上两者可以完全不同：
+
+| 来源 | primaries | transfer | matrix | range |
+|---|---|---|---|---|
+| 容器 `stsd/colr`（荣耀样本是 `nclx`） | bt470bg (5) | bt709 (1) | smpte170m (6) | full (0x80) |
+| 码流 VUI（HEVC SPS） | bt709 (1) | iec61966-2-1 (13) | bt709 (1) | full |
+
+- `ffprobe` 报的是**容器**值（`mov_read_colr()` 解析后覆盖 `codecpar`）；解码器只认**码流 VUI**。
+- 编码时 ffmpeg 把解码帧属性（来自 VUI）交给编码器，`movenc.c: mov_write_colr_tag()` 再从 `codecpar` 写回容器（`MODE_MOV` 走 `nclc`，**没有** full-range 字节）。
+- 所以压缩后 ffprobe 看到的从容器值变成 VUI 值——**不是 ffprobe 读错**，文件里的 atom 确实被重写了。
+
+区分两者：`ffmpeg -i in.mp4 -c copy -f hevc raw.hevc` 剥出裸流再 ffprobe，拿到的就是 VUI 值。
+
+两个坑：
+- `-color_primaries` / `-color_trc` 在 ffmpeg CLI 里属于**输入侧**选项，只有 `-colorspace` 会落到输出编码器（实测 `-color_primaries bt470bg` 无效、`-colorspace smpte170m` 生效）。要强制三件套必须用 `-vf setparams=color_primaries=…:color_trc=…:colorspace=…:range=…`，否则会出现「矩阵跟容器、色域/传输跟码流」的混合标签。
+- `-color_range tv` 对 `yuvj420p` 全范围源实际是空操作（输出仍是 `pc`）。判断是否真做了范围转换，对比同帧 `signalstats` 的 `YAVG` 即可（样本 129.47 → 129.91，未转换）。
+
+另：`probeMediaInfo()` 读矩阵要用 ffprobe 的键 `color_space`，不是 `colorspace`；写错会静默拿到空串，「色彩空间」一行永远不显示。
+
+**当前策略（方案 C：容器 `colr` 移植）**：不向编码器强写任何色彩标签，改为编码完成后把源视频 `stsd` 里的 `colr` box **原样搬进**输出（`Mp4MetadataUtils.copyColorTag()`，与 `meta` 移植同一手法）。这样：
+
+- 输出容器的三值恒等于**源容器**的三值，ffprobe / 相册 / 信息卡看到的就是原片的标签；
+- 码流 VUI 保持编码器写出的值，**播放行为不变**（改 VUI 会真的改变解码器的色彩解释）。
+
+实现要点：`colr` 是 VisualSampleEntry 的子 box，子 box 从条目头部（8 字节 box 头）之后 **78 字节**处开始；追加/替换后必须把 `colr` 的**所有**祖先尺寸都加上同一个 delta —— `entry`(hvc1/hev1) → `stsd` → `stbl` → `minf` → `mdia` → `trak` → `moov`，漏掉样本条目自身会让后续解析直接越过 box 末尾（`Mp4ColorTagTest` 的链式校验就是查这个）。moov 必须是文件最后一个 box，否则拒绝并记日志。
+
+历史方案（已弃用）：曾用 `-color_primaries` / `-color_trc` / `-colorspace` / `-color_range` 强写，实测这些参数要么是输入侧空转，要么让容器与码流各说一半；加与不加输出逐字节相同（md5 一致），故整体删除。要强制三件套只能改用 `-vf setparams=color_primaries=…:color_trc=…:colorspace=…:range=…`，且四者必须同时给。
+
 ## 回归测试
 
 旋转/容器相关改动必须跑一遍回归：
@@ -223,7 +276,10 @@ $env:ANDROID_HOME = "D:\dev\android_sdk"
 .\gradlew.bat :app:testDebugUnitTest
 ```
 
-- 用例：`app/src/test/java/com/pisces312/streamclip/util/Mp4RotationUtilsTest.kt`（host JVM，无需设备，全部用例约 0.3 秒）
+- 用例：`app/src/test/java/com/pisces312/streamclip/util/Mp4RotationUtilsTest.kt`（host JVM，无需设备，全部用例约 0.3 秒）；容器元数据见 `Mp4MetadataUtilsTest.kt`（23 个用例：mdta 追加 / 幂等 / `udta` 内嵌 `meta` / moov 非末尾时拒绝 / 源无 meta / iTunes meta 跳过 / 64 位 `moov` largesize 改写 / 源文件缺失 / 源=目标 / Apple 全键保序 / UTF-16 与整数浮点解码 / NUL 裁剪 / 二进制预览 / `keys` 无 `ilst` / ilst 索引越界 / 截断文件）
+- 探测字段映射见 `service/MediaProbeParserTest.kt`（13 个用例，JSON 取自真实 `ffprobe` 输出，锁死 `color_space` 键名、`unknown` 归一为空、`side_data_list` 旋转、多流取首条、mdta 合并）；色彩/HDR 派生值见 `model/MediaInfoColorTest.kt`（8 个用例：三色标签透传、`isHdr` 只看 transfer、`is10bit`、`hdrTag` 组合）
+- 命令形状见 `model/CompressConfigTest.kt`（3 个用例，防止 `-color_*` 参数被加回来）
+- 单测若要真正解析 JSON，`org.json` 必须走 `testImplementation("org.json:json:20260814")`：`unitTests.isReturnDefaultValues = true` 只是让 android.jar 的桩返回默认值，`JSONObject` 的 getter 会一律返回 null，测试会误判成"功能坏了"。
 - 测试数据由 `Mp4Fixture.kt` **在内存里合成**：`Mp4RotationUtils` 只看 box 头、`tkhd` 矩阵和 `hdlr`，从不读 `mdat` 内容，所以真实视频不是必需品，仓库里也不放二进制素材。
 - 已覆盖的容器形态：64 位 `mdat`（size field == 1）在 `moov` 之前、32 位 `mdat`、`size == 0` 的空盒、v1 `tkhd`、音频轨在前（靠 `hdlr` 而非旧启发式识别视频轨）、矩阵 9 字段逐字复制（`tx = 0` 与 `tx = height` 两种 muxer 风格）、分辨率变化时 tx/ty 缩放、`tkhd` 宽高不得交换、以及各类异常输入。
 - 合成数据的保真度由 `builder_reproduces_real_tkhd_bytes` 钉死：它拿两个原始视频里截出来的 92 字节 `tkhd` 当黄金样本比对。改 `Mp4Fixture` 时这条必须先绿，否则合成数据就失去意义了。
