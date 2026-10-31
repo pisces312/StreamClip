@@ -205,11 +205,6 @@ class MainActivity : BaseActivity() {
     }
 
     internal fun showDonateDialog() {
-        if (BuildConfig.DISTRIBUTION == "store") {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/pisces312/StreamClip")))
-            return
-        }
-
         val scrollView = android.widget.ScrollView(this)
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

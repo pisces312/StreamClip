@@ -210,9 +210,16 @@ class BatchTaskService : Service() {
             ).let { result ->
                 if (result.success) {
                     // Apply rotation by modifying MP4 tkhd display matrix (ffmpeg 6.0 can't do this via CLI)
+                    // rotation >= 0: explicit user choice — overwrite tkhd.
+                    // rotation == -1 ("保持不变"): FFmpeg 8.1 drops the display matrix on transcode
+                    // (only -c copy propagates it), so copy the source rotation explicitly.
                     if (task.config.compressConfig.rotation >= 0) {
                         com.pisces312.streamclip.util.Mp4RotationUtils.setRotation(
                             task.outputPath, task.config.compressConfig.rotation
+                        )
+                    } else {
+                        com.pisces312.streamclip.util.Mp4RotationUtils.copyRotation(
+                            task.inputPath, task.outputPath
                         )
                     }
                     com.pisces312.streamclip.util.FileUtils.scanFile(

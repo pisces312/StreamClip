@@ -2,8 +2,8 @@
 # StreamClip Build Script for Termux/proot Ubuntu (aarch64)
 # 在手机本地（Termux + proot ubuntu）上构建 APK，构建产物直接落在 sdcard 上
 #
-# Usage: ./build-termux.sh [debug|release] [full|github|store]
-#   默认: debug full
+# Usage: ./build-termux.sh [debug|release]
+#   默认: debug
 #
 # 要求环境：
 #   /usr/lib/jvm/java-21-openjdk-arm64    (Gradle 9.4 daemon 用)
@@ -17,10 +17,8 @@
 set -e
 
 BUILD_TYPE="${1:-debug}"
-FLAVOR="${2:-full}"
 
-case "$BUILD_TYPE" in debug|release) ;; *) echo "Usage: $0 [debug|release] [full|github|store]"; exit 1 ;; esac
-case "$FLAVOR" in full|github|store) ;; *) echo "Usage: $0 [debug|release] [full|github|store]"; exit 1 ;; esac
+case "$BUILD_TYPE" in debug|release) ;; *) echo "Usage: $0 [debug|release]"; exit 1 ;; esac
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_DIR="$PROJECT_DIR/app"
@@ -49,11 +47,10 @@ fi
 VERSION=$(grep 'versionName' "$APP_DIR/build.gradle.kts" | head -1 | sed 's/.*versionName *= *"\([^"]*\)".*/\1/')
 [[ -z "$VERSION" ]] && VERSION="unknown"
 
-FLAVOR_CAP="$(echo "$FLAVOR" | sed 's/\b./\u&/')"
 BUILD_TYPE_CAP="$(echo "$BUILD_TYPE" | sed 's/\b./\u&/')"
-TASK="assemble${FLAVOR_CAP}${BUILD_TYPE_CAP}"
+TASK="assemble${BUILD_TYPE_CAP}"
 
-echo "=== Building StreamClip v$VERSION ($BUILD_TYPE/$FLAVOR) on $(uname -m) ==="
+echo "=== Building StreamClip v$VERSION ($BUILD_TYPE) on $(uname -m) ==="
 
 cd "$PROJECT_DIR"
 # sdcard 不支持 chmod +x，用 bash 调用 gradlew
@@ -70,18 +67,18 @@ bash ./gradlew "$TASK" --no-daemon --max-workers=1 \
     "-Dorg.gradle.jvmargs=$JVM_HEAP -Dfile.encoding=UTF-8"
 
 # 找产物
-BUILD_DIR="$APP_DIR/build/outputs/apk/$FLAVOR/$BUILD_TYPE"
+BUILD_DIR="$APP_DIR/build/outputs/apk/$BUILD_TYPE"
 if [[ "$BUILD_TYPE" == "debug" ]]; then
-    APK="$BUILD_DIR/app-$FLAVOR-debug.apk"
+    APK="$BUILD_DIR/app-debug.apk"
 else
-    APK="$BUILD_DIR/app-$FLAVOR-release-unsigned.apk"
+    APK="$BUILD_DIR/app-release-unsigned.apk"
 fi
 
 [[ -f "$APK" ]] || { echo "ERROR: APK 没找到: $APK"; ls "$BUILD_DIR" 2>/dev/null || true; exit 1; }
 
 # 输出路径（项目就在 sdcard 上，无需再拷贝）
 if [[ "$BUILD_TYPE" == "release" ]]; then
-    OUT="$PROJECT_DIR/StreamClip-v${VERSION}-${FLAVOR}-release-signed.apk"
+    OUT="$PROJECT_DIR/StreamClip-v${VERSION}-release-signed.apk"
     ALIGNED="$BUILD_DIR/app-aligned.apk"
 
     echo "=== Aligning ==="
@@ -98,7 +95,7 @@ if [[ "$BUILD_TYPE" == "release" ]]; then
 
     rm -f "$ALIGNED"
 else
-    OUT="$PROJECT_DIR/StreamClip-v${VERSION}-${FLAVOR}-${BUILD_TYPE}.apk"
+    OUT="$PROJECT_DIR/StreamClip-v${VERSION}-${BUILD_TYPE}.apk"
     cp -f "$APK" "$OUT"
 fi
 

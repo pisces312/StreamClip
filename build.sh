@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
 # StreamClip Build Script
-# Usage: ./build.sh [debug|release] [arm64] [full|github|store] [--no-minify]
-#   (default: release arm64 full; only arm64 supported due to local AAR)
+# Usage: ./build.sh [debug|release] [arm64] [--no-minify]
+#   (default: release arm64; only arm64 supported due to local AAR)
 #
 # Examples:
-#   ./build.sh                  # Build release, arm64, full flavor
-#   ./build.sh debug            # Build debug, arm64, full flavor
-#   ./build.sh release arm64 store --no-minify   # Build store release without minify
+#   ./build.sh                  # Build release, arm64
+#   ./build.sh debug            # Build debug, arm64
+#   ./build.sh release arm64 --no-minify   # Build release without minify
 
 set -e
 
 BUILD_TYPE="${1:-release}"
 ABI="${2:-arm64}"
-FLAVOR="${3:-full}"
 NO_MINIFY=false
 
 # Parse optional flags
@@ -22,10 +21,10 @@ for arg in "$@"; do
     esac
 done
 
-# Validate FLAVOR
-case "$FLAVOR" in
-    full|github|store) ;;
-    *) echo "Usage: $0 [debug|release] [arm64] [full|github|store] [--no-minify]"; exit 1 ;;
+# Validate BUILD_TYPE
+case "$BUILD_TYPE" in
+    debug|release) ;;
+    *) echo "Usage: $0 [debug|release] [arm64] [--no-minify]"; exit 1 ;;
 esac
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -46,12 +45,6 @@ if [[ -z "$VERSION" ]]; then
 fi
 VERSION="v$VERSION"
 
-# Validate BUILD_TYPE
-case "$BUILD_TYPE" in
-    debug|release) ;;
-    *) echo "Usage: $0 [debug|release] [arm64] [full|github|store] [--no-minify]"; exit 1 ;;
-esac
-
 # Only arm64 supported (local AAR is arm64-only)
 case "$ABI" in
     arm64) ;;
@@ -60,10 +53,9 @@ esac
 
 ABI_FILTER="arm64-v8a"
 BUILD_TYPE_CAP="$(echo "$BUILD_TYPE" | sed 's/\b./\u&/')"
-FLAVOR_CAP="$(echo "$FLAVOR" | sed 's/\b./\u&/')"
-GRADLE_TASK="assemble${FLAVOR_CAP}${BUILD_TYPE_CAP}"
+GRADLE_TASK="assemble${BUILD_TYPE_CAP}"
 
-echo "=== Building StreamClip $VERSION for $BUILD_TYPE / $ABI / $FLAVOR ==="
+echo "=== Building StreamClip $VERSION for $BUILD_TYPE / $ABI ==="
 
 # Validate signing env vars for release
 if [[ "$BUILD_TYPE" == "release" ]]; then
@@ -83,12 +75,12 @@ fi
 ./gradlew "$GRADLE_TASK" $GRADLE_ARGS
 
 # Find APK
-BUILD_DIR="$APP_DIR/build/outputs/apk/$FLAVOR/$BUILD_TYPE"
+BUILD_DIR="$APP_DIR/build/outputs/apk/$BUILD_TYPE"
 UNSIGNED_APK=""
 if [[ "$BUILD_TYPE" == "release" ]]; then
-    UNSIGNED_APK="$BUILD_DIR/app-$FLAVOR-release-unsigned.apk"
+    UNSIGNED_APK="$BUILD_DIR/app-release-unsigned.apk"
 else
-    UNSIGNED_APK="$BUILD_DIR/app-$FLAVOR-debug.apk"
+    UNSIGNED_APK="$BUILD_DIR/app-debug.apk"
 fi
 
 if [[ ! -f "$UNSIGNED_APK" ]]; then
@@ -101,7 +93,7 @@ fi
 SIGNED_APK=""
 if [[ "$BUILD_TYPE" == "release" ]]; then
     ALIGNED_APK="$BUILD_DIR/app-release-aligned.apk"
-    SIGNED_APK="$PROJECT_DIR/StreamClip-${VERSION}-${ABI}-${FLAVOR}-signed.apk"
+    SIGNED_APK="$PROJECT_DIR/StreamClip-${VERSION}-${ABI}-signed.apk"
 
     echo "=== Aligning ==="
     "$BUILD_TOOLS/zipalign" -f 4 "$UNSIGNED_APK" "$ALIGNED_APK"
@@ -117,7 +109,7 @@ if [[ "$BUILD_TYPE" == "release" ]]; then
 
     rm -f "$ALIGNED_APK"
 else
-    SIGNED_APK="$PROJECT_DIR/StreamClip-${VERSION}-${ABI}-${FLAVOR}-debug.apk"
+    SIGNED_APK="$PROJECT_DIR/StreamClip-${VERSION}-${ABI}-debug.apk"
     cp -f "$UNSIGNED_APK" "$SIGNED_APK"
 fi
 

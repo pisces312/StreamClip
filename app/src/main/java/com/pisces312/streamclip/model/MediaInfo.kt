@@ -35,8 +35,11 @@ data class MediaInfo(
         .ifEmpty { formatTags.optString("location-eng", "") }
 
     // Orientation & aspect ratio (considering rotation)
-    val displayWidth: Int get() = if (rotation % 180 == 90) height else width
-    val displayHeight: Int get() = if (rotation % 180 == 90) width else height
+    // rotation comes from ffprobe side_data and can be negative
+    // (e.g. -90 for Android portrait videos); normalize before comparing.
+    val normalizedRotation: Int get() = ((rotation % 360) + 360) % 360
+    val displayWidth: Int get() = if (normalizedRotation == 90 || normalizedRotation == 270) height else width
+    val displayHeight: Int get() = if (normalizedRotation == 90 || normalizedRotation == 270) width else height
     val isLandscape: Boolean get() = displayWidth >= displayHeight
     val isPortrait: Boolean get() = displayHeight > displayWidth
     val pixelCount: Int get() = displayWidth * displayHeight
@@ -106,7 +109,7 @@ data class MediaInfo(
                 audioCodec == other.audioCodec &&
                 frameRate == other.frameRate &&
                 pixelFormat == other.pixelFormat &&
-                rotation == other.rotation
+                normalizedRotation == other.normalizedRotation
     }
 
     fun getIncompatibleFields(other: MediaInfo): List<Pair<String, String>> {
@@ -116,7 +119,7 @@ data class MediaInfo(
         if (audioCodec != other.audioCodec) fields.add("audioCodec" to "$audioCodec ≠ ${other.audioCodec}")
         if (frameRate != other.frameRate) fields.add("frameRate" to "$frameRate ≠ ${other.frameRate}")
         if (pixelFormat != other.pixelFormat) fields.add("pixelFormat" to "$pixelFormat ≠ ${other.pixelFormat}")
-        if (rotation != other.rotation) fields.add("rotation" to "$rotation° ≠ ${other.rotation}°")
+        if (normalizedRotation != other.normalizedRotation) fields.add("rotation" to "$rotation° ≠ ${other.rotation}°")
         return fields
     }
 

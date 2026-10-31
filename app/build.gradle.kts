@@ -28,22 +28,6 @@ android {
         }
     }
 
-    flavorDimensions += "distribution"
-    productFlavors {
-        create("full") {
-            dimension = "distribution"
-            buildConfigField("String", "DISTRIBUTION", "\"full\"")
-        }
-        create("github") {
-            dimension = "distribution"
-            buildConfigField("String", "DISTRIBUTION", "\"github\"")
-        }
-        create("store") {
-            dimension = "distribution"
-            buildConfigField("String", "DISTRIBUTION", "\"store\"")
-        }
-    }
-
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17

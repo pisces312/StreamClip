@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 # StreamClip AAB Build Script for Google Play Store
-# Usage: ./build-aab.sh [full|github|store] [--no-minify]
-#   (default: store flavor, since AAB is for Play Store)
+# Usage: ./build-aab.sh [--no-minify]
 # Note: AAB does NOT need local signing - Google signs it after upload.
 
 set -e
 
-FLAVOR="${1:-store}"
 NO_MINIFY=false
 
 for arg in "$@"; do
@@ -15,21 +13,15 @@ for arg in "$@"; do
     esac
 done
 
-case "$FLAVOR" in
-    full|github|store) ;;
-    *) echo "Usage: $0 [full|github|store] [--no-minify]"; exit 1 ;;
-esac
-
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_DIR="$PROJECT_DIR/app"
 
 VERSION=$(grep 'versionName' "$APP_DIR/build.gradle.kts" | head -1 | sed 's/.*versionName *= *"\([^"]*\)".*/\1/')
-VERSION="v${VERSION:-2.1.2}"
+VERSION="v${VERSION:-2.2.0}"
 
-FLAVOR_CAP="$(echo "$FLAVOR" | sed 's/\b./\u&/')"
-GRADLE_TASK="bundle${FLAVOR_CAP}Release"
+GRADLE_TASK="bundleRelease"
 
-echo "=== Building StreamClip $VERSION AAB for $FLAVOR ==="
+echo "=== Building StreamClip $VERSION AAB ==="
 
 cd "$PROJECT_DIR"
 GRADLE_ARGS="-PbuildAbi=arm64-v8a"
@@ -37,8 +29,8 @@ GRADLE_ARGS="-PbuildAbi=arm64-v8a"
 
 ./gradlew "$GRADLE_TASK" $GRADLE_ARGS
 
-BUILD_DIR="$APP_DIR/build/outputs/bundle/${FLAVOR}Release"
-AAB="$BUILD_DIR/app-$FLAVOR-release.aab"
+BUILD_DIR="$APP_DIR/build/outputs/bundle/release"
+AAB="$BUILD_DIR/app-release.aab"
 
 if [[ ! -f "$AAB" ]]; then
     echo "ERROR: AAB not found at $AAB"
@@ -46,7 +38,7 @@ if [[ ! -f "$AAB" ]]; then
     exit 1
 fi
 
-OUTPUT="$PROJECT_DIR/StreamClip-${VERSION}-${FLAVOR}.aab"
+OUTPUT="$PROJECT_DIR/StreamClip-${VERSION}.aab"
 cp "$AAB" "$OUTPUT"
 
 SIZE=$(du -h "$OUTPUT" | cut -f1)

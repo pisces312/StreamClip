@@ -66,6 +66,64 @@ object Mp4RotationUtils {
     }
 
     /**
+     * Copy the rotation (tkhd display matrix) from the source file's video track to the
+     * dest file's video track, preserving display orientation exactly.
+     *
+     * Why this is needed: FFmpeg 8.1 (ffmpeg-kit) only propagates stream side data
+     * (including the display matrix) for stream copy (`-c copy`, streamcopy_init() in
+     * ffmpeg_mux_init.c). When video is re-encoded with -noautorotate, the output loses
+     * the display matrix entirely and plays in raw pixel orientation. So "keep original
+     * rotation" must be implemented by copying the source rotation after encoding.
+     *
+     * The source matrix 2x2 part is matched against the known axis-aligned rotation
+     * patterns of [buildRotationMatrix]; the matched pattern is rewritten into dest with
+     * translation and swapped width/height recomputed from the dest dimensions.
+     * This byte-pattern matching avoids the sign-convention trap between ffprobe's
+     * "rotation" value (av_display_rotation_get = -atan2(m[1], m[0]), e.g. -90) and this
+     * class's clockwise degrees (the same matrix is "90" here) — normalizing -90 to 270
+     * would produce a matrix rotated 180° from the source.
+     *
+     * @return true if rotation was copied, or the source has no rotation (nothing to do);
+     *         false on failure or unsupported source matrix (flip / arbitrary angle)
+     */
+    fun copyRotation(sourcePath: String, destPath: String): Boolean {
+        return try {
+            val srcDegrees = RandomAccessFile(sourcePath, "r").use { file ->
+                val matrixOffset = findVideoTkhdOffset(file)
+                    ?: throw IllegalStateException("Source video tkhd box not found")
+                file.seek(matrixOffset.toLong())
+                val matrix = IntArray(9) { readUInt32(file).toInt() }
+                classifyRotation(matrix)
+                    ?: throw IllegalStateException("Unsupported source display matrix: ${matrix.joinToString()}")
+            }
+            if (srcDegrees == 0) return true // source has no rotation; fresh encode is already identity
+            setRotation(destPath, srcDegrees)
+        } catch (e: Exception) {
+            LogCollector.e("Mp4RotationUtils", "Failed to copy rotation: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Match a 3x3 display matrix (16.16 fixed point, [a,b,u, c,d,v, tx,ty,w] layout)
+     * against the four axis-aligned rotation patterns used by [buildRotationMatrix].
+     *
+     * @return 0/90/180/270 in this class's convention, or null if the matrix is not
+     *         axis-aligned (flip or arbitrary angle) and cannot be reproduced
+     */
+    private fun classifyRotation(m: IntArray): Int? {
+        val one = 0x10000
+        val a = m[0]; val b = m[1]; val c = m[3]; val d = m[4]
+        return when {
+            a == one && d == one && b == 0 && c == 0 -> 0
+            a == -one && d == -one && b == 0 && c == 0 -> 180
+            a == 0 && d == 0 && b == one && c == -one -> 90
+            a == 0 && d == 0 && b == -one && c == one -> 270
+            else -> null
+        }
+    }
+
+    /**
      * Find the offset of the display matrix in the video track's tkhd box.
      * Returns the byte offset of the first matrix element, or null if not found.
      */

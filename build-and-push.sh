@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # StreamClip Build & Push to Device
-# Usage: ./build-and-push.sh [debug|release] [arm64] [full|github|store] [--no-minify] [-d <device_id>]
+# Usage: ./build-and-push.sh [debug|release] [arm64] [--no-minify] [-d <device_id>]
 #   先调用 build.sh 构建，再安装到指定设备（模拟器或真机）
 #   -d <device_id>  指定目标设备，省略则交互选择
 #

@@ -679,13 +679,20 @@ class CompressFragment : Fragment() {
 
                 if (result.success) {
                     // Apply rotation by modifying MP4 tkhd display matrix (ffmpeg 6.0 can't do this via CLI)
-                    // With -noautorotate, source rotation is preserved in output tkhd.
+                    // With -noautorotate, pixels stay in original orientation and tkhd controls display.
                     // config.rotation >= 0 means user explicitly chose a rotation — overwrite tkhd.
-                    // config.rotation == -1 ("保持不变") means keep source rotation — no touch needed.
+                    // config.rotation == -1 ("保持不变"): FFmpeg 8.1 does NOT propagate the source
+                    // display matrix through the transcode path (only -c copy propagates it), so the
+                    // source rotation must be copied into the output explicitly.
                     if (config.rotation >= 0) {
                         val rotationApplied = Mp4RotationUtils.setRotation(outPath, config.rotation)
                         if (!rotationApplied) {
                             LogCollector.w("Compress", "Failed to apply rotation ${config.rotation}°")
+                        }
+                    } else {
+                        val rotationApplied = Mp4RotationUtils.copyRotation(path, outPath)
+                        if (!rotationApplied) {
+                            LogCollector.w("Compress", "Failed to preserve source rotation")
                         }
                     }
                     val outFileName = outPath.substring(outPath.lastIndexOf('/') + 1)
