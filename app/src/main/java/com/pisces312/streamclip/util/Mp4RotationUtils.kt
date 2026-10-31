@@ -14,7 +14,8 @@ import java.nio.ByteOrder
  * This works by:
  * 1. Parsing the MP4 box structure to find the video track's tkhd box
  * 2. Writing the appropriate 3x3 display matrix (16.16 fixed point)
- * 3. Swapping width/height in tkhd for 90°/270° rotations
+ * 3. Leaving tkhd width/height at the coded (unrotated) size — orientation lives only
+ *    in the matrix, matching what Apple/iPhone and ffmpeg's own muxer produce
  *
  * Supported formats: MP4, MOV (ISOBMFF)
  * Supported rotations: 0°, 90° CW, 180°, 270° CW
@@ -39,24 +40,21 @@ object Mp4RotationUtils {
                 val videoTkhdOffset = findVideoTkhdOffset(file)
                     ?: throw IllegalStateException("Video tkhd box not found")
 
-                // Read current width/height from tkhd (immediately after the 36-byte matrix)
+                // Coded (unrotated) frame size from tkhd; only used to compute the
+                // matrix translation so the rotated frame lands in the positive quadrant.
                 val whOffset = videoTkhdOffset + 36
                 file.seek(whOffset.toLong())
                 val width = (readUInt32(file) shr 16).toInt()
                 val height = (readUInt32(file) shr 16).toInt()
 
-                // Build rotation matrix and new width/height
-                val (matrix, newWidth, newHeight) = buildRotationMatrix(normalizedDegrees, width, height)
+                val matrix = buildRotationMatrix(normalizedDegrees, width, height)
 
-                // Write matrix (starts at videoTkhdOffset)
+                // Write matrix (starts at videoTkhdOffset). tkhd width/height are left
+                // untouched on purpose — see buildRotationMatrix().
                 file.seek(videoTkhdOffset.toLong())
                 for (value in matrix) {
                     writeInt32(file, value)
                 }
-
-                // Write swapped width/height
-                writeInt32(file, newWidth shl 16)
-                writeInt32(file, newHeight shl 16)
             }
             true
         } catch (e: Exception) {
@@ -76,8 +74,8 @@ object Mp4RotationUtils {
      * rotation" must be implemented by copying the source rotation after encoding.
      *
      * The source matrix 2x2 part is matched against the known axis-aligned rotation
-     * patterns of [buildRotationMatrix]; the matched pattern is rewritten into dest with
-     * translation and swapped width/height recomputed from the dest dimensions.
+     * patterns of [buildRotationMatrix]; the matched pattern is rewritten into dest using
+     * dest's own coded dimensions for the translation terms (tkhd width/height untouched).
      * This byte-pattern matching avoids the sign-convention trap between ffprobe's
      * "rotation" value (av_display_rotation_get = -atan2(m[1], m[0]), e.g. -90) and this
      * class's clockwise degrees (the same matrix is "90" here) — normalizing -90 to 270
@@ -253,35 +251,35 @@ object Mp4RotationUtils {
     }
 
     /**
-     * Build a 3x3 display matrix for the given rotation.
-     * Returns (matrix as IntArray of 9 elements, newWidth, newHeight).
+     * Build a 3x3 display matrix for the given rotation, in 16.16 fixed point
+     * (except the last element, which is 2.30).
      *
-     * Matrix is in 16.16 fixed point (except w which is 2.30).
+     * [width]/[height] are the coded (unrotated) frame dimensions; they only feed the
+     * translation terms.
+     *
+     * IMPORTANT: tkhd width/height must NOT be swapped for 90°/270°. Reference files
+     * (iPhone recordings, ffmpeg's own muxer) keep tkhd w/h at the coded size and carry
+     * orientation purely in this matrix. Android's MPEG4Extractor stores tkhd w/h as
+     * kKeyDisplayWidth/Height without transposing them, so a pre-swapped value makes
+     * thumbnail generators scale the decoded frame into a transposed box — a portrait
+     * video ends up with a stretched, landscape-looking thumbnail.
      */
-    private fun buildRotationMatrix(degrees: Int, width: Int, height: Int): Triple<IntArray, Int, Int> {
+    private fun buildRotationMatrix(degrees: Int, width: Int, height: Int): IntArray {
         return when (degrees) {
-            0 -> Triple(
-                intArrayOf(0x10000, 0, 0, 0, 0x10000, 0, 0, 0, 0x40000000),
-                width, height
-            )
-            90 -> Triple(
+            90 -> intArrayOf(
                 // 90° CW: | 0  1  0 |    | -1  0  0 |    | h  0  1 |
-                intArrayOf(0, 0x10000, 0, -0x10000, 0, 0, height shl 16, 0, 0x40000000),
-                height, width
+                0, 0x10000, 0, -0x10000, 0, 0, height shl 16, 0, 0x40000000
             )
-            180 -> Triple(
+            180 -> intArrayOf(
                 // 180°: | -1  0  0 |    | 0  -1  0 |    | w  h  1 |
-                intArrayOf(-0x10000, 0, 0, 0, -0x10000, 0, width shl 16, height shl 16, 0x40000000),
-                width, height
+                -0x10000, 0, 0, 0, -0x10000, 0, width shl 16, height shl 16, 0x40000000
             )
-            270 -> Triple(
+            270 -> intArrayOf(
                 // 270° CW: | 0  -1  0 |    | 1  0  0 |    | 0  w  1 |
-                intArrayOf(0, -0x10000, 0, 0x10000, 0, 0, 0, width shl 16, 0x40000000),
-                height, width
+                0, -0x10000, 0, 0x10000, 0, 0, 0, width shl 16, 0x40000000
             )
-            else -> Triple(
-                intArrayOf(0x10000, 0, 0, 0, 0x10000, 0, 0, 0, 0x40000000),
-                width, height
+            else -> intArrayOf(
+                0x10000, 0, 0, 0, 0x10000, 0, 0, 0, 0x40000000
             )
         }
     }

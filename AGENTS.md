@@ -114,11 +114,19 @@ FFmpeg 通过 **ffmpeg-kit 8.1 自编译 AAR**（`app/libs/ffmpeg-kit-8.1.aar`�
 
 **绝不要**把 `-90` 归一化成 `270` 再 `setRotation()`，会错 180°。正确做法是按矩阵字节模式分类（`Mp4RotationUtils.copyRotation` 即如此实现）。
 
-### 3. 负角度与取模
+### 3. tkhd 宽高不能为 90°/270° 交换
+
+`tkhd` 的 width/height 必须保持**编码尺寸（未旋转）**，方向只由 matrix 表达。iPhone / ffmpeg 生成的文件都如此（4K 竖拍源实测：`tkhd 3840x2160` + 90° 矩阵）。
+
+Android `MPEG4Extractor` 把 tkhd 宽高原样存成 `kKeyDisplayWidth/Height`（注释即 "presentation display size"），**不会**按矩阵转置。若写成 `2160x3840`，下游按 display 尺寸缩放时就会把竖屏画面塞进横框，表现为**缩略图是横屏且被压扁**；而播放器只看 matrix，播放仍正常，从而掩盖问题。
+
+`Mp4RotationUtils` 早期版本会交换宽高，已修正为只写矩阵。
+
+### 4. 负角度与取模
 
 Kotlin 中 `-90 % 180 == -90`（不是 90）。判断横竖屏必须用 `MediaInfo.normalizedRotation`，不要直接 `rotation % 180 == 90`。
 
-### 4. 色彩元数据来源
+### 5. 色彩元数据来源
 
 - `hevc_mediacodec` 只写容器 nclx box，不写 bitstream VUI
 - 部分视频 nclx 与 VUI 不一致（如 nclx=BT.601 而 VUI=BT.709）
