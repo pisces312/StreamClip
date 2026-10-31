@@ -44,6 +44,13 @@ android {
         viewBinding = true
         buildConfig = true
     }
+
+    testOptions {
+        // Mp4RotationUtils logs through LogCollector (android.util.Log). Unit tests exercise
+        // the real container parsing on host JVM, so Android stubs must return defaults
+        // instead of throwing "not mocked".
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -70,4 +77,7 @@ dependencies {
     // VideoCompressor native dependencies
     implementation(files("libs/isoparser-1.0.6.jar"))
     implementation(files("libs/aspectjrt-1.7.3.jar"))
+
+    // Host JVM regression tests (see app/src/test/.../Mp4RotationUtilsTest.kt)
+    testImplementation("junit:junit:4.13.2")
 }

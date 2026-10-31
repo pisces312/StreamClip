@@ -112,7 +112,18 @@ FFmpeg 通过 **ffmpeg-kit 8.1 自编译 AAR**（`app/libs/ffmpeg-kit-8.1.aar`�
 
 `av_display_rotation_get()` 公式为 `-atan2(m[1], m[0])`，所以 ffprobe 显示 `-90` 的文件，其 tkhd 矩阵等价于 `Mp4RotationUtils` 的 **"90"** 分支。
 
-**绝不要**把 `-90` 归一化成 `270` 再 `setRotation()`，会错 180°。正确做法是按矩阵字节模式分类（`Mp4RotationUtils.copyRotation` 即如此实现）。
+**绝不要**把 `-90` 归一化成 `270` 再 `setRotation()`，会错 180°。`copyRotation` 已改为**逐字段原样复制**源矩阵（不再按 0/90/180/270 分类后重建），从根本上规避该陷阱。
+
+### 2b. 不同 muxer 的 tkhd 平移量不同
+
+同一旋转的矩阵 2x2 部分一致，但 tx/ty 会因 muxer 而异。实测两个竖拍源，都是 ffprobe `-90`：
+
+| 源文件 | 矩阵（16 进制） | tx |
+|---|---|---|
+| 微信导出 4K | `0, 00010000, 0, FFFF0000, 0, 0, 08700000, 0, 40000000` | `2160 << 16`（= 编码高度） |
+| 手机相机 720p | `0, 00010000, 0, FFFF0000, 0, 0, 0, 0, 40000000` | `0` |
+
+因此**不能统一重建矩阵**，只能把源的 9 个 32 位字段原样写入目标（编码尺寸变化时才按比例缩放 tx/ty）。
 
 ### 3. tkhd 宽高不能为 90°/270° 交换
 
@@ -131,6 +142,56 @@ Kotlin 中 `-90 % 180 == -90`（不是 90）。判断横竖屏必须用 `MediaIn
 - `hevc_mediacodec` 只写容器 nclx box，不写 bitstream VUI
 - 部分视频 nclx 与 VUI 不一致（如 nclx=BT.601 而 VUI=BT.709）
 - 统一以 **ffprobe 读到的 bitstream VUI**（`color_primaries` / `color_transfer` / `colorspace`）为准，见 `FFmpegService.probeVideoInfo()` 与 `CompressConfig.toFFmpegCommand()`
+
+### 6. 64 位 box size（size 字段 == 1）必须优先处理
+
+ISO-BMFF 的 box 头有三种写法：`size=1` 表示随后 8 字节是 64 位 `largesize`（头部 16 字节）；`size=0` 表示延伸到文件末尾；其余为 32 位 size。
+
+**`size=1` 必须在"size < 8 视为非法"的检查之前判断**，否则 64 位 box 会被当成非法并中断遍历。`mp4`/`mov` 容器常见 `mdat` 用 64 位形式，即使文件只有 100 MB。
+
+> 实际故障：`VID_20261026_202905.mp4` 结构为 `ftyp / free / mdat(64bit) / moov`，旧版 `findVideoTkhdOffset()` 在 `mdat` 处 `break` 返回 null，`copyRotation` 静默失败 → 输出无旋转元数据 → 竖屏视频播放成"左转 90°"。同期的微信导出文件（`moov` 在前）不受影响，因此该 bug 隐藏了一轮迭代。
+
+另外：视频轨识别优先用 `mdia/hdlr` 的 handler type `vide`，仅当读不到 handler 时回退到旧启发式（`volume == 0 && tkhd w > 0 && h > 0`）。
+
+## 回归测试
+
+旋转/容器相关改动必须跑一遍回归：
+
+```powershell
+$env:JAVA_HOME = "D:\dev\jdk-17.0.2"
+$env:PATH = "D:\dev\jdk-17.0.2\bin;$env:PATH"
+$env:ANDROID_HOME = "D:\dev\android_sdk"
+.\gradlew.bat :app:testDebugUnitTest
+```
+
+- 用例：`app/src/test/java/com/pisces312/streamclip/util/Mp4RotationUtilsTest.kt`（host JVM，无需设备，全部用例约 0.3 秒）
+- 测试数据由 `Mp4Fixture.kt` **在内存里合成**：`Mp4RotationUtils` 只看 box 头、`tkhd` 矩阵和 `hdlr`，从不读 `mdat` 内容，所以真实视频不是必需品，仓库里也不放二进制素材。
+- 已覆盖的容器形态：64 位 `mdat`（size field == 1）在 `moov` 之前、32 位 `mdat`、`size == 0` 的空盒、v1 `tkhd`、音频轨在前（靠 `hdlr` 而非旧启发式识别视频轨）、矩阵 9 字段逐字复制（`tx = 0` 与 `tx = height` 两种 muxer 风格）、分辨率变化时 tx/ty 缩放、`tkhd` 宽高不得交换、以及各类异常输入。
+- 合成数据的保真度由 `builder_reproduces_real_tkhd_bytes` 钉死：它拿两个原始视频里截出来的 92 字节 `tkhd` 当黄金样本比对。改 `Mp4Fixture` 时这条必须先绿，否则合成数据就失去意义了。
+- 验证过用例的有效性：把 `readBoxHeader()` 的 64 位分支改回旧逻辑，`copyRotation_restores_matrix_when_mdat_uses_64bit_size` 立即失败。
+- `testOptions.unitTests.isReturnDefaultValues = true` 是为了让 `LogCollector` 里的 `android.util.Log` 在 JVM 上不抛 "not mocked"
+
+### 可选：用真实素材交叉验证
+
+`real_recordings_still_parse_like_the_fixtures` 在 `test_data/` 存在时会解析两个原始问题视频（校验尺寸与矩阵，并做一次 `copyRotation` 往返），不存在则 skip。`test_data/` **已 gitignore**，日常开发不需要它，只在怀疑合成数据与真实 muxer 有偏差时才用。
+
+重新生成方式（从真实视频无损剪切，`-c copy` 会保留 display matrix）：
+
+```powershell
+$ffm = "D:\dev\ffmpeg\bin\ffmpeg.exe"
+
+# A: moov 在前 + 32 位 mdat（微信导出 4K，rotation -90）
+& $ffm -y -ss 3 -t 1 -i "E:\mmexport1793363542958.mp4" `
+    -map 0:v:0 -map 0:a:0 -c copy -movflags +faststart test_data\neg90_mdat32.mp4
+
+# B: mdat 在前 + 64 位 mdat（手机相机 720p，rotation -90）
+& $ffm -y -ss 3 -t 1.5 -i "E:\VID_20261026_202905.mp4" `
+    -map 0 -c copy test_data\neg90_mdat64_raw.mp4
+# 再把 B 的 mdat 头改写为 [size=1]["mdat"][64 位 largesize]，同时给 stco/co64 全部
+# 偏移 +8（插入 8 字节导致后续数据整体后移）。这一步没有 ffmpeg 现成参数，
+# 需要用脚本做字节手术；改完必须用 ffprobe 确认 rotation 仍为 -90 且能完整解码。
+```
+
 
 ## Build Configuration
 

@@ -46,3 +46,7 @@ obj/
 # app/libs/*.aar
 # app/libs/*.jar
 .workbuddy/
+
+# Regression fixtures (video samples with real-world rotation/container quirks).
+# Regenerate locally with the commands documented in AGENTS.md.
+test_data/
