@@ -263,7 +263,7 @@ Settings["Settings<br/>settings.gradle.kts"] --> AppBuild
 Props["Properties<br/>gradle.properties"] --> AppBuild
 Wrapper["Wrapper<br/>gradle-wrapper.properties"] --> AppBuild
 DaemonProps["Daemon Props<br/>gradle/gradle-daemon-jvm.properties"] --> AppBuild
-AppBuild --> FFmpegKit["FFmpeg Kit AAR<br/>app/libs/ffmpeg-kit-8.1.aar"]
+AppBuild --> FFmpegKit["FFmpeg Kit AAR<br/>app/libs/ffmpeg-kit-8.1.3.aar"]
 AppBuild --> Media3["Media3 Libraries<br/>media3-exoplayer, media3-ui, media3-common"]
 AppBuild --> AndroidX["AndroidX Libraries<br/>core-ktx, appcompat, material, lifecycle"]
 AppBuild --> Desugaring["Core Library Desugaring<br/>desugar_jdk_libs"]

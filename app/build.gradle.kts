@@ -63,8 +63,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0")
     
-    // FFmpeg Kit 8.1 (arthenica)
-    implementation(files("libs/ffmpeg-kit-8.1.aar"))
+    // FFmpeg Kit 8.1.3 (自编译 ffmpeg-kit fork，FFmpeg n8.1.3 + x264/x265/lame4.0 + MediaCodec)
+    // 回退：改回 files("libs/ffmpeg-kit-8.1.aar")
+    implementation(files("libs/ffmpeg-kit-8.1.3.aar"))
 
     // Media3 for video preview
     implementation("androidx.media3:media3-exoplayer:1.6.1")

@@ -295,7 +295,7 @@ EmitProgress --> End
 
 ```mermaid
 graph TB
-Gradle["build.gradle.kts"] --> AAR["ffmpeg-kit-8.1.aar"]
+Gradle["build.gradle.kts"] --> AAR["ffmpeg-kit-8.1.3.aar"]
 FSvc["FFmpegService"] --> Kit["FFmpegKit API"]
 FragC["CompressFragment"] --> FSvc
 FragT["Trim2Fragment"] --> FSvc

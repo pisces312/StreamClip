@@ -6,7 +6,7 @@
 - [build.sh](file://build.sh)
 - [build-and-push.sh](file://build-and-push.sh)
 - [app/build.gradle.kts](file://app/build.gradle.kts)
-- [app/libs/ffmpeg-kit-8.1.aar](file://app/libs/ffmpeg-kit-8.1.aar)
+- [app/libs/ffmpeg-kit-8.1.3.aar](file://app/libs/ffmpeg-kit-8.1.3.aar)
 - [docs/swresample-crash-analysis.md](file://docs/swresample-crash-analysis.md)
 </cite>
 
@@ -45,7 +45,7 @@ BPS["build-and-push.sh"]
 end
 subgraph "App Module"
 BG["app/build.gradle.kts"]
-AAR["app/libs/ffmpeg-kit-8.1.aar"]
+AAR["app/libs/ffmpeg-kit-8.1.3.aar"]
 end
 SFB --> AAR
 BS --> BG
@@ -58,14 +58,14 @@ BG --> AAR
 - [build.sh](file://build.sh)
 - [build-and-push.sh](file://build-and-push.sh)
 - [app/build.gradle.kts](file://app/build.gradle.kts)
-- [app/libs/ffmpeg-kit-8.1.aar](file://app/libs/ffmpeg-kit-8.1.aar)
+- [app/libs/ffmpeg-kit-8.1.3.aar](file://app/libs/ffmpeg-kit-8.1.3.aar)
 
 **Section sources**
 - [start_ffmpeg_build.sh](file://start_ffmpeg_build.sh)
 - [build.sh](file://build.sh)
 - [build-and-push.sh](file://build-and-push.sh)
 - [app/build.gradle.kts](file://app/build.gradle.kts)
-- [app/libs/ffmpeg-kit-8.1.aar](file://app/libs/ffmpeg-kit-8.1.aar)
+- [app/libs/ffmpeg-kit-8.1.3.aar](file://app/libs/ffmpeg-kit-8.1.3.aar)
 
 ## Core Components
 - FFmpeg build script: Configures and compiles FFmpeg for Android with selected codecs and APIs. It sets Android SDK/NDK roots and passes flags for GPL, encoders, and API level.
@@ -77,14 +77,14 @@ Key responsibilities:
 - build.sh: Drives Gradle tasks, manages signing and alignment for release builds, and produces the final APK
 - build-and-push.sh: Builds the app and installs to a device/emulator for quick testing
 - app/build.gradle.kts: Declares the AAR dependency and build type configuration
-- app/libs/ffmpeg-kit-8.1.aar: Prebuilt FFmpeg Kit artifact containing native libraries
+- app/libs/ffmpeg-kit-8.1.3.aar: Prebuilt FFmpeg Kit artifact containing native libraries
 
 **Section sources**
 - [start_ffmpeg_build.sh](file://start_ffmpeg_build.sh)
 - [build.sh](file://build.sh)
 - [build-and-push.sh](file://build-and-push.sh)
 - [app/build.gradle.kts](file://app/build.gradle.kts)
-- [app/libs/ffmpeg-kit-8.1.aar](file://app/libs/ffmpeg-kit-8.1.aar)
+- [app/libs/ffmpeg-kit-8.1.3.aar](file://app/libs/ffmpeg-kit-8.1.3.aar)
 
 ## Architecture Overview
 The native compilation pipeline integrates external native builds with the Android Gradle build system. FFmpeg is built separately and packaged into an AAR, which the app module consumes as a dependency. The Gradle build then packages the AAR’s native libraries alongside Kotlin/Java code into the final APK.
@@ -93,7 +93,7 @@ The native compilation pipeline integrates external native builds with the Andro
 sequenceDiagram
 participant Dev as "Developer"
 participant SFB as "start_ffmpeg_build.sh"
-participant AAR as "ffmpeg-kit-8.1.aar"
+participant AAR as "ffmpeg-kit-8.1.3.aar"
 participant BG as "app/build.gradle.kts"
 participant GR as "Gradle"
 participant APK as "APK"
@@ -108,7 +108,7 @@ Dev->>APK : Install to device/emulator
 **Diagram sources**
 - [start_ffmpeg_build.sh](file://start_ffmpeg_build.sh)
 - [app/build.gradle.kts](file://app/build.gradle.kts)
-- [app/libs/ffmpeg-kit-8.1.aar](file://app/libs/ffmpeg-kit-8.1.aar)
+- [app/libs/ffmpeg-kit-8.1.3.aar](file://app/libs/ffmpeg-kit-8.1.3.aar)
 
 ## Detailed Component Analysis
 
@@ -196,14 +196,14 @@ Note:
 - The project’s build scripts currently target ARM64 only, so only arm64-v8a is produced and packaged
 
 **Section sources**
-- [app/libs/ffmpeg-kit-8.1.aar](file://app/libs/ffmpeg-kit-8.1.aar)
+- [app/libs/ffmpeg-kit-8.1.3.aar](file://app/libs/ffmpeg-kit-8.1.3.aar)
 
 ## Dependency Analysis
 The app depends on a prebuilt FFmpeg Kit AAR. The Gradle build resolves this dependency and packages the included native libraries into the APK. The build-and-push script orchestrates the entire process from build to installation.
 
 ```mermaid
 graph LR
-A["app/build.gradle.kts"] --> D["Dependency: ffmpeg-kit-8.1.aar"]
+A["app/build.gradle.kts"] --> D["Dependency: ffmpeg-kit-8.1.3.aar"]
 D --> N["Native libs (jni/arm64-v8a)"]
 A --> P["APK packaging"]
 P --> I["Installed APK"]
@@ -211,11 +211,11 @@ P --> I["Installed APK"]
 
 **Diagram sources**
 - [app/build.gradle.kts](file://app/build.gradle.kts)
-- [app/libs/ffmpeg-kit-8.1.aar](file://app/libs/ffmpeg-kit-8.1.aar)
+- [app/libs/ffmpeg-kit-8.1.3.aar](file://app/libs/ffmpeg-kit-8.1.3.aar)
 
 **Section sources**
 - [app/build.gradle.kts](file://app/build.gradle.kts)
-- [app/libs/ffmpeg-kit-8.1.aar](file://app/libs/ffmpeg-kit-8.1.aar)
+- [app/libs/ffmpeg-kit-8.1.3.aar](file://app/libs/ffmpeg-kit-8.1.3.aar)
 
 ## Performance Considerations
 - Compiler/linker flags: Adding optimization flags (e.g., architecture-specific flags, strict aliasing, section garbage collection) can reduce binary size and improve runtime performance. See the Troubleshooting Guide for recommended flags.

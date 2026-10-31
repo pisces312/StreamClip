@@ -244,7 +244,6 @@ class AudioCompressFragment : Fragment() {
                 "aac" -> "m4a"
                 "libmp3lame" -> "mp3"
                 "flac" -> "flac"
-                "libopus" -> "opus"
                 else -> originalMediaInfo?.audioExtension ?: "m4a"
             }
         } else {

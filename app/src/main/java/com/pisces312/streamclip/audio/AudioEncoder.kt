@@ -163,7 +163,12 @@ class AudioEncoder {
         }
 
         // 采样率
-        val targetSampleRate = if (config.sampleRate > 0) config.sampleRate else srcSampleRate
+        var targetSampleRate = if (config.sampleRate > 0) config.sampleRate else srcSampleRate
+        if (config.format == OutputFormat.OPUS) {
+            // FFmpeg 内置 opus 编码器只接受 48000/24000/16000/12000/8000，
+            // 且不像 libopus wrapper 那样内部重采样 —— 非这几个值会直接报错，必须强制 48 kHz
+            targetSampleRate = 48000
+        }
         sb.append(" -ar $targetSampleRate")
 
         // 声道
@@ -196,13 +201,11 @@ class AudioEncoder {
                 sb.append(" -c:a pcm_s16le")
             }
             OutputFormat.OPUS -> {
-                sb.append(" -c:a libopus")
-                if (config.bitrateMode == BitrateMode.VBR) {
-                    // Opus VBR is default, use -vbr on with target bitrate range
-                    sb.append(" -vbr on -b:a ${config.bitrate}")
-                } else {
-                    sb.append(" -b:a ${config.bitrate} -vbr off")
-                }
+                // 用 FFmpeg 内置 opus 编码器（AAR 未编入 libopus）。
+                // 1) 内置编码器带 AV_CODEC_CAP_EXPERIMENTAL，不加 -strict -2 会被拒绝
+                // 2) 没有 -vbr 选项（那是 libopus wrapper 私有的），只能给 -b:a；
+                //    编码器本身只做 VBR，所以 CBR/VBR 两种模式输出一致
+                sb.append(" -c:a opus -strict -2 -b:a ${config.bitrate}")
             }
         }
 

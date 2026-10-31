@@ -828,6 +828,8 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                         getString(R.string.ae_saved, fullPath), Toast.LENGTH_LONG).show()
                 } else {
                     tempOutput.delete()
+                    // SAF 文档在编码前就建好了，失败时必须删掉，否则输出目录留下 0 字节空文件
+                    outputFile.delete()
                     LogCollector.e(TAG, "performExport: FFmpeg failed: ${result.errorMessage}")
                     binding.tvStatus.text = result.errorMessage
                     Toast.makeText(this@AudioEditorActivity, getString(R.string.ae_export_failed), Toast.LENGTH_LONG).show()
@@ -835,6 +837,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
             } catch (e: Exception) {
                 LogCollector.e(TAG, "performExport exception: ${e.javaClass.simpleName}: ${e.message}", e)
                 tempOutput.delete()
+                outputFile.delete()
                 binding.tvStatus.text = getString(R.string.ae_export_error, e.message ?: "")
                 Toast.makeText(this@AudioEditorActivity, getString(R.string.ae_export_error, e.message ?: ""), Toast.LENGTH_LONG).show()
             } finally {
