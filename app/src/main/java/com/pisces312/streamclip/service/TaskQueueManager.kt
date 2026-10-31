@@ -52,9 +52,18 @@ object TaskQueueManager {
         }
     }
 
-    @Synchronized
     fun markCompleted(taskId: String) {
-        allTasks[taskId]?.let { task ->
+        // Snapshot the output path under the lock, then do the file I/O outside it:
+        // holding the object monitor during File.length() would stall every other
+        // queue operation (batch progress updates come in hot from the statistics callback).
+        val outputPath = synchronized(this) { allTasks[taskId]?.outputPath } ?: return
+        val outputSize = try {
+            java.io.File(outputPath).length()
+        } catch (e: Exception) {
+            0L
+        }
+        synchronized(this) {
+            val task = allTasks[taskId] ?: return
             // Terminal-state guard: a cancelled task must never be flipped back to COMPLETED
             // by a late FFmpeg success callback (race: cancel clicked as encode finished).
             if (task.status == TaskStatus.CANCELLED) return
@@ -64,7 +73,7 @@ object TaskQueueManager {
                 status = TaskStatus.COMPLETED,
                 completedAt = System.currentTimeMillis(),
                 progress = 100,
-                outputSizeBytes = java.io.File(task.outputPath).length()
+                outputSizeBytes = outputSize
             )
             emitUpdate()
         }

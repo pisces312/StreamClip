@@ -18,15 +18,31 @@ import kotlin.coroutines.resume
 
 object FFmpegService {
 
-    @Volatile
-    private var currentSessionId: Long = -1
+    /**
+     * All FFmpeg sessions started via [executeCommand], keyed by sessionId.
+     * Value = start timestamp, used to pick the most recent one on cancel.
+     *
+     * Replaces the old single `currentSessionId` field: with concurrent sessions
+     * (e.g. batch queue + a tab the user started manually) a single field was
+     * overwritten by the newest session, and a completing session cleared the
+     * id of a still-running one — both made cancelCurrentSession() miss.
+     *
+     * cancelCurrentSession() cancels the MOST RECENTLY STARTED session: the
+     * single-task cancel buttons are pressed for the task the user just started
+     * in that tab. Known limitation (same as the old behavior): if a batch task
+     * started after the user's manual task, the batch session is the most recent
+     * one. Batch-side cancellation is precise — it goes through coroutine job
+     * cancellation + invokeOnCancellation, which targets its own session id.
+     */
+    private val activeSessions =
+        java.util.concurrent.ConcurrentHashMap<Long, Long>()
 
     fun cancelCurrentSession() {
-        val id = currentSessionId
-        if (id != -1L) {
-            FFmpegKit.cancel(id)
-            currentSessionId = -1
-            LogCollector.i("FFmpegService", "Cancelled session $id")
+        val latest = activeSessions.entries.maxByOrNull { it.value }
+        if (latest != null) {
+            FFmpegKit.cancel(latest.key)
+            activeSessions.remove(latest.key)
+            LogCollector.i("FFmpegService", "Cancelled session ${latest.key}")
         }
     }
 
@@ -162,7 +178,7 @@ object FFmpegService {
 
             val session = if (onProgress != null || onLog != null) {
                 FFmpegKit.executeAsync(command, { session ->
-                    currentSessionId = -1
+                    activeSessions.remove(session.sessionId)
                     val returnCode = session.returnCode
                     val success = ReturnCode.isSuccess(returnCode)
                     val error = if (success) null else (session.output.takeIf { it.isNotEmpty() } ?: "Unknown error")
@@ -214,7 +230,7 @@ object FFmpegService {
                 })
             } else {
                 FFmpegKit.executeAsync(command, { session ->
-                    currentSessionId = -1
+                    activeSessions.remove(session.sessionId)
                     val returnCode = session.returnCode
                     val success = ReturnCode.isSuccess(returnCode)
                     val error = if (success) null else (session.output.takeIf { it.isNotEmpty() } ?: "Unknown error")
@@ -231,11 +247,11 @@ object FFmpegService {
                 })
             }
 
-            currentSessionId = session.sessionId
+            activeSessions[session.sessionId] = System.currentTimeMillis()
 
             continuation.invokeOnCancellation {
                 FFmpegKit.cancel(session.sessionId)
-                currentSessionId = -1
+                activeSessions.remove(session.sessionId)
             }
         }
     }

@@ -98,7 +98,7 @@ FFmpeg 通过 **ffmpeg-kit 8.1 自编译 AAR**（`app/libs/ffmpeg-kit-8.1.aar`�
   - 压缩：可配置编码器（`hevc_mediacodec` / `h264_mediacodec` / `libx265` / `libx264`）、码率或 CRF、缩放、帧率、色彩参数
   - 自定义命令：用户直接输入 FFmpeg 或 FFprobe 参数
 
-`FFmpegService.executeCommand()` 只管理经它创建的异步会话，`currentSessionId` 不是全局互斥或串行队列。`MetadataService`、`AudioEncoder`、`FFmpegWaveformLoader` 等路径会直接同步调用 `FFmpegKit.execute()`；修改会话管理、取消或 native crash 相关逻辑时，必须同时检查这些旁路。
+`FFmpegService.executeCommand()` 用 `activeSessions`（ConcurrentHashMap）追踪自己创建的全部异步会话；`cancelCurrentSession()` 取消**最近启动的一个**会话（调用方都是单任务 UI 的取消按钮）。已知局限：批量任务与单任务并发时，取消按钮可能命中批量会话；批量侧取消走协程 job.cancel → `invokeOnCancellation` 按自身 sessionId 精确取消，不受此影响。`MetadataService`、`AudioEncoder`、`FFmpegWaveformLoader` 等路径会直接同步调用 `FFmpegKit.execute()`，不经该追踪体系；修改会话管理、取消或 native crash 相关逻辑时，必须同时检查这些旁路。
 
 ### File Picking
 

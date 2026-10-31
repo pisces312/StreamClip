@@ -218,14 +218,18 @@ class BatchTaskService : Service() {
                     // rotation >= 0: explicit user choice — overwrite tkhd.
                     // rotation == -1 ("保持不变"): FFmpeg 8.1 drops the display matrix on transcode
                     // (only -c copy propagates it), so copy the source rotation explicitly.
-                    if (task.config.compressConfig.rotation >= 0) {
-                        com.pisces312.streamclip.util.Mp4RotationUtils.setRotation(
-                            task.outputPath, task.config.compressConfig.rotation
-                        )
-                    } else {
-                        com.pisces312.streamclip.util.Mp4RotationUtils.copyRotation(
-                            task.inputPath, task.outputPath
-                        )
+                    // Only COMPRESS produces a video output; running tkhd surgery on
+                    // EXTRACT_AUDIO (.m4a) or arbitrary CUSTOM_COMMAND outputs is dead logic.
+                    if (task.type == TaskType.COMPRESS) {
+                        if (task.config.compressConfig.rotation >= 0) {
+                            com.pisces312.streamclip.util.Mp4RotationUtils.setRotation(
+                                task.outputPath, task.config.compressConfig.rotation
+                            )
+                        } else {
+                            com.pisces312.streamclip.util.Mp4RotationUtils.copyRotation(
+                                task.inputPath, task.outputPath
+                            )
+                        }
                     }
                     com.pisces312.streamclip.util.FileUtils.scanFile(
                         this,

@@ -34,7 +34,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 BUILD_TOOLS_DIR="$ANDROID_HOME/build-tools/35.0.0"
 
 # 检查
-[[ -d "$ANDROID_HOME/platforms/android-36" ]] || { echo "ERROR: $ANDROID_HOME/platforms/android-36 不存在"; exit 1; }
+[[ -d "$ANDROID_HOME/platforms/android-37" ]] || { echo "ERROR: $ANDROID_HOME/platforms/android-37 不存在"; exit 1; }
 [[ -x "$BUILD_TOOLS_DIR/aapt2" ]] || { echo "ERROR: aapt2 不可执行"; exit 1; }
 
 # release 预检

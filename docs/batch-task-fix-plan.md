@@ -1,7 +1,7 @@
 # 批量任务链路修复计划
 
 - 日期：2026-10-31
-- 状态：第一批（取消/重试/状态机）已实施
+- 状态：第一批（取消/重试/状态机）已提交 e6ec2c4；第二批（#8/#9/#11/#12/#13）已实施
 - 背景：审阅发现 `BatchTaskService` 的取消/暂停/恢复机制在 UI 层完全不可达，取消与重试功能实际失效
 
 ## 一、问题清单（2026-10-31 审阅结论）
@@ -59,14 +59,23 @@
 - `.\gradlew.bat :app:testDebugUnitTest` + `:app:compileDebugKotlin`
 - 真机手动回归项（后续）：批量压缩中途取消（RUNNING/PENDING 各一）、失败后重试、Service 存活时取消
 
+## 第二批修复（同日实施）
+
+| # | 修复 | 方案 |
+|---|------|------|
+| 8 | `currentSessionId` 并发覆盖 | 改为 `activeSessions` ConcurrentHashMap 追踪全部活跃会话；`cancelCurrentSession()` 取消最近启动的一个（调用方均为单任务 UI，行为不变）；会话完成/协程取消只移除自身，不再互踩 |
+| 9 | 非压缩任务跑 rotation | 成功路径 `task.type == COMPRESS` 才执行 tkhd 操作；时间戳回写保留全类型 |
+| 11 | termux 脚本误查 android-36 | 改为 android-37 |
+| 12 | `markCompleted` 持锁 I/O | 锁内取路径，锁外 `File.length()`，再入锁提交状态 |
+| 13 | `VideoController.copyFile` 死代码（含 `transferTo(1,…)` 漏首字节 bug） | 删除方法与未用的 `FileChannel` 导入 |
+
+#8 已知局限（与旧行为一致、非回归）：批量与单任务并发时，单任务取消按钮命中最近启动的会话，可能是批量的。彻底解需按调用方分发会话句柄，涉及全部单任务 Fragment，收益低暂不做。
+
 ## 六、遗留问题（后续批次）
 
 | 优先级 | 项 |
 |---|---|
-| 中 | #8 `FFmpegService.currentSessionId` 多会话支持（涉单任务，需单独评估） |
 | 中 | #5 pause/resume 接通 UI 并修正语义 |
-| 中 | #9 成功路径按 `taskType` 分流 rotation/时间戳逻辑 |
-| 低 | #10 队列持久化（产品需求确认后决定） |
-| 低 | #11 build-termux.sh android-36 检查 |
-| 低 | #6/#7 VideoController 返回值与取消、原始分辨率提示 |
-| 低 | #12 持锁 I/O、#13 死代码清理、#14 同步旁路治理 |
+| 中 | #10 队列持久化（产品需求确认后决定） |
+| 低 | #6/#7 VideoController 返回值与取消、原始分辨率提示（debug 实验页，低价值） |
+| 低 | #14 同步旁路治理 |
