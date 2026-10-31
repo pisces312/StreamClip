@@ -38,8 +38,8 @@ StreamClip（轻剪辑）— Android 视频/音频处理工具，基于 FFmpeg �
 本机沙箱 shell 的 PATH 被裁剪，`java` / `git` / `adb` 常不在 PATH 中，构建前需显式设置：
 
 ```powershell
-$env:JAVA_HOME = "D:\dev\jdk-17.0.2"
-$env:PATH = "D:\dev\jdk-17.0.2\bin;$env:PATH"
+$env:JAVA_HOME = "D:\dev\jdk-25"
+$env:PATH = "D:\dev\jdk-25\bin;$env:PATH"
 $env:ANDROID_HOME = "D:\dev\android_sdk"
 .\gradlew.bat :app:assembleDebug
 ```
@@ -57,7 +57,7 @@ git 在 `D:\dev\git\cmd\git.exe`。
 
 ### 测试
 
-**仓库没有任何测试设施** —— 无 JUnit、无 Espresso、无 `src/test` / `src/androidTest`。验证靠真机/模拟器手动跑。
+**只有 host JVM 单元测试**：`app/src/test/`（JUnit，当前仅覆盖 `Mp4RotationUtils` 容器解析，约 0.3 s）。**无 Espresso / 无 `src/androidTest`**，功能验证仍靠真机手动跑。
 
 ## Architecture
 
@@ -158,8 +158,8 @@ ISO-BMFF 的 box 头有三种写法：`size=1` 表示随后 8 字节是 64 位 `
 旋转/容器相关改动必须跑一遍回归：
 
 ```powershell
-$env:JAVA_HOME = "D:\dev\jdk-17.0.2"
-$env:PATH = "D:\dev\jdk-17.0.2\bin;$env:PATH"
+$env:JAVA_HOME = "D:\dev\jdk-25"
+$env:PATH = "D:\dev\jdk-25\bin;$env:PATH"
 $env:ANDROID_HOME = "D:\dev\android_sdk"
 .\gradlew.bat :app:testDebugUnitTest
 ```
@@ -195,9 +195,10 @@ $ffm = "D:\dev\ffmpeg\bin\ffmpeg.exe"
 
 ## Build Configuration
 
-- **AGP 9.2.0**（Kotlin 编译由 AGP 内置 KGP 提供，根 `build.gradle.kts` 只声明 `com.android.application`）
-- **Gradle 9.4.1**（wrapper，腾讯云镜像）
-- compileSdk 36 / targetSdk 36 / minSdk 26
+- **AGP 9.4.0**（Kotlin 编译由 AGP 内置 KGP 2.2.10 提供，根 `build.gradle.kts` 只声明 `com.android.application`）
+- **Gradle 9.6.1**（wrapper，腾讯云镜像）。AGP 9.4.0 的硬性下限是 Gradle 9.6.0，两者必须同批升级
+- **daemon JVM = Java 25**（`D:\dev\jdk-25`）。由 `gradle/gradle-daemon-jvm.properties` 的 `toolchainVersion=25` 钉住，**优先级高于 `JAVA_HOME`**——只改 `JAVA_HOME` 不会切换 daemon JVM。该文件的 `toolchainUrl.*` 已移除，因此要求本机自带 JDK 25，不会自动下载
+- compileSdk 37 / targetSdk 37 / minSdk 26（compileSdk 37 需 build-tools ≥ 37 或 AGP 自带；targetSdk 37 对应 Android 17 行为变更，真机验证重点见 `docs/toolchain-upgrade-2026-10-agp94-gradle96-jdk25.md`）
 - Java / Kotlin target：JVM 17
 - View Binding 开启、Data Binding 关闭、`buildConfig = true`
 - Core library desugaring 开启（`desugar_jdk_libs 2.1.4`）
@@ -240,6 +241,7 @@ $ffm = "D:\dev\ffmpeg\bin\ffmpeg.exe"
 | `native-video-compress-design.md` | Native 压缩路径设计 |
 | `resolution-design.md` | 分辨率处理 |
 | `build-on-termux-ubuntu.md` | 手机本地构建流程 |
+| `toolchain-upgrade-2026-10-agp94-gradle96-jdk25.md` | AGP 9.4 / Gradle 9.6 / JDK 25 / compileSdk 37 升级记录与取证 |
 | `ffmpeg-kit-migration-plan.md` | ffmpeg-kit 迁移记录 |
 | `*-crash-analysis.md` | 历史崩溃分析（aac / swresample / ffmpeg-kit 8.1） |
 | `capture-native-crash-log.md` | 原生崩溃日志抓取 |

@@ -6,8 +6,10 @@
 #   默认: debug
 #
 # 要求环境：
-#   /usr/lib/jvm/java-21-openjdk-arm64    (Gradle 9.4 daemon 用)
-#   $HOME/android-sdk                      (含 build-tools/35.0.0 aarch64 + platforms/android-36)
+#   /usr/lib/jvm/java-21-openjdk-arm64    (仅作回退；主线要求 JDK 25，Termux 无此包，见下)
+# 注意：主线 gradle/gradle-daemon-jvm.properties 要求 JDK 25，Termux 无此包，
+#       构建前需临时 mv 掉该文件，让 Gradle 回落到 JAVA_HOME 的 21。
+#   $HOME/android-sdk                      (含 build-tools/35.0.0 aarch64 + platforms/android-37)
 #
 # release 签名所需环境变量：
 #   STREAMCLIP_KEYSTORE   keystore 路径

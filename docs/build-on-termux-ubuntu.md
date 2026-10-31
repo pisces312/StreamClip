@@ -21,7 +21,7 @@ sudo apt install -y \
 注：
 
 - **JDK 17**：项目源码 `jvmTarget = 17`，AGP 用它跑 javac/kotlinc。
-- **JDK 21**：Gradle 9.4.1 daemon 要求 21。
+- **JDK 21**：**旧版** Gradle 9.4.1 daemon 要求 21。当前主线已升到 Gradle 9.6.1，`gradle/gradle-daemon-jvm.properties` 要求 **JDK 25**；Debian 仓库尚无 `openjdk-25-jdk`，手机端得临时删除该文件（或改成 21）才能构建——见第 6 节。
 - Debian 仓库里 `android-sdk-build-tools` 只有 **29.0.3**，且用不了——后面会用社区 aarch64 版替换。
 - `android-sdk-platform-tools` 提供 aarch64 版 adb，OK。
 
@@ -41,13 +41,17 @@ unzip -q /tmp/sdk-tools.zip -d /tmp/sdk-tools
 # 然后用 aarch64 native 二进制覆盖（aapt2/aapt/zipalign/aidl/dexdump/split-select）
 # 如果没装 Debian 的 build-tools，可手动从 https://dl.google.com/android/repository/build-tools_r35-linux.zip 拿 jar 部分
 sudo cp -r /usr/lib/android-sdk/build-tools/29.0.3 $HOME/android-sdk/build-tools/35.0.0
-# ↑ 注意：版本号写 35.0.0 是因为 AGP 8.9.1 期望该版本。如果用 35.0.2 也行，但要在 build.gradle.kts 里显式声明
+# ↑ 注意：版本号写 35.0.0 是因为当时的 AGP 8.9.1 期望该版本。如果用 35.0.2 也行，但要在 build.gradle.kts 里显式声明
+#   当前主线是 AGP 9.4.0 + compileSdk 37，本节的 aarch64 build-tools 组合尚未在 9.4.0 上验证（见第 6 节）
 sudo chown -R $USER:$USER $HOME/android-sdk
 for f in aapt aapt2 aidl zipalign dexdump split-select; do
   cp -f /tmp/sdk-tools/build-tools/$f $HOME/android-sdk/build-tools/35.0.0/$f
 done
 
 # === platform-36 (android.jar 纯 Java) ===
+# 注意：这一段对应旧主线（AGP 8.9 / compileSdk 36）。当前主线 compileSdk 已升到 37，
+# 需替换为对应的 platform-37 包（同目录下 platform-37_rXX.zip，具体 revision 需按镜像实际文件名核对，
+# 不要照抄下面的 36 写法）。平台目录名在 SDK 里是 `android-37.0` 形式。
 curl -L -o /tmp/platform-36.zip https://mirrors.cloud.tencent.com/AndroidSDK/platform-36_r02.zip
 unzip -q /tmp/platform-36.zip -d /tmp/p36
 mv /tmp/p36/android-36 $HOME/android-sdk/platforms/android-36
@@ -145,8 +149,13 @@ GitHub 与 services.gradle.org 经常断。
 - AGP / Maven 走阿里镜像（已改）
 - 下别的二进制（lzhiyong release、Google platform 包）尽量挂代理或腾讯镜像
 
-### compileSdk 36 但 build-tools 只有 35
-AGP 8.9 + buildTools 35.0.0 + platform-36 是验证过的可用组合。社区现在没有 aarch64 build-tools 36，等出来了再升。
+### compileSdk 37 但 aarch64 build-tools 只有 35
+AGP 8.9 + buildTools 35.0.0 + platform-36 曾是验证过的可用组合；主线现在已是 **AGP 9.4.0 + compileSdk 37 + Gradle 9.6.1 + JDK 25**，该组合只在 x86_64 Windows 上验证过，手机端未验证。社区仍无 aarch64 build-tools 36/37。
+
+手机端若要跟上主线，需额外处理两件事：
+
+1. **daemon JVM**：`gradle/gradle-daemon-jvm.properties` 要求 JDK 25，而 Debian/Termux 无此包 → 临时把该文件改名（Gradle 回落到 `JAVA_HOME` 的 21）再构建；
+2. **platform**：需把 `platforms/android-37` 的 `android.jar` 单独放到 SDK 目录（纯 Java，可跨架构）。
 
 ## 7. 安装到手机
 - **debug**：直接点 APK 安装。包名带 `.debug` 后缀，与已装的 release 版可共存。

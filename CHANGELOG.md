@@ -1,5 +1,13 @@
 # 轻剪辑 更新日志
 
+## [Unreleased]
+
+### 构建
+- **AGP 9.2.0 → 9.4.0，Gradle 9.4.1 → 9.6.1**：AGP 9.4.0 硬性要求 Gradle ≥ 9.6.0，两者必须同批升级
+- **Gradle daemon JVM 由 Java 21 切换到 Java 25**（`gradle/gradle-daemon-jvm.properties` 的 `toolchainVersion=25`）。该文件优先级高于 `JAVA_HOME`，仅改 `JAVA_HOME` 不会切换 daemon JVM
+- **compileSdk 36 → 37，targetSdk 36 → 37**：对齐 Android 17（API 37）。targetSdk 提升会启用 Android 17 的运行时行为变更，需真机回归
+- 详见 `docs/toolchain-upgrade-2026-10-agp94-gradle96-jdk25.md`
+
 ## [2.2.1] - 2026-10-31
 
 ### 修复

@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace = "com.pisces312.streamclip"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.pisces312.streamclip"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 13
         versionName = "2.2.1"
     }
