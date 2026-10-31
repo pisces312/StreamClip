@@ -55,6 +55,11 @@ object TaskQueueManager {
     @Synchronized
     fun markCompleted(taskId: String) {
         allTasks[taskId]?.let { task ->
+            // Terminal-state guard: a cancelled task must never be flipped back to COMPLETED
+            // by a late FFmpeg success callback (race: cancel clicked as encode finished).
+            if (task.status == TaskStatus.CANCELLED) return
+            // Defensive: a task reaching a terminal state must not linger in the queue.
+            queue.removeAll { it.id == taskId }
             allTasks[taskId] = task.copy(
                 status = TaskStatus.COMPLETED,
                 completedAt = System.currentTimeMillis(),
@@ -68,6 +73,9 @@ object TaskQueueManager {
     @Synchronized
     fun markFailed(taskId: String, error: String?) {
         allTasks[taskId]?.let { task ->
+            if (task.status == TaskStatus.CANCELLED) return
+            // Defensive: a task reaching a terminal state must not linger in the queue.
+            queue.removeAll { it.id == taskId }
             allTasks[taskId] = task.copy(
                 status = TaskStatus.FAILED,
                 completedAt = System.currentTimeMillis(),
@@ -80,6 +88,11 @@ object TaskQueueManager {
     @Synchronized
     fun markCancelled(taskId: String) {
         allTasks[taskId]?.let { task ->
+            // A completed task cannot be un-completed by a late cancel.
+            if (task.status == TaskStatus.COMPLETED) return
+            // Also drop it from the pending queue, otherwise processQueue()
+            // would still pick it up and overwrite the status back to RUNNING.
+            queue.removeAll { it.id == taskId }
             allTasks[taskId] = task.copy(status = TaskStatus.CANCELLED)
             emitUpdate()
         }
@@ -118,28 +131,41 @@ object TaskQueueManager {
         emitUpdate()
     }
 
+    /**
+     * Re-enqueue a FAILED / CANCELLED task as a fresh PENDING copy.
+     * Returns the new task so the caller can (re)start BatchTaskService —
+     * enqueueing alone is not enough, the service may have already stopped itself.
+     */
     @Synchronized
-    fun retryTask(taskId: String) {
-        allTasks[taskId]?.let { task ->
-            if (task.status == TaskStatus.FAILED || task.status == TaskStatus.CANCELLED) {
-                val newTask = task.copy(
-                    id = java.util.UUID.randomUUID().toString(),
-                    status = TaskStatus.PENDING,
-                    progress = 0,
-                    errorMessage = null,
-                    createdAt = System.currentTimeMillis(),
-                    startedAt = null,
-                    completedAt = null
-                )
-                allTasks[newTask.id] = newTask
-                queue.addLast(newTask)
-                emitUpdate()
-            }
-        }
+    fun retryTask(taskId: String): BatchTaskItem? {
+        val task = allTasks[taskId] ?: return null
+        if (task.status != TaskStatus.FAILED && task.status != TaskStatus.CANCELLED) return null
+        val newTask = task.copy(
+            id = java.util.UUID.randomUUID().toString(),
+            status = TaskStatus.PENDING,
+            progress = 0,
+            errorMessage = null,
+            createdAt = System.currentTimeMillis(),
+            startedAt = null,
+            completedAt = null
+        )
+        allTasks[newTask.id] = newTask
+        queue.addLast(newTask)
+        emitUpdate()
+        return newTask
     }
 
     @Synchronized
     private fun emitUpdate() {
         _taskFlow.value = allTasks.values.toList().sortedBy { it.createdAt }
+    }
+
+    /** Test-only: reset the singleton state between unit tests. */
+    @Synchronized
+    fun clearForTesting() {
+        queue.clear()
+        allTasks.clear()
+        isPaused = false
+        emitUpdate()
     }
 }

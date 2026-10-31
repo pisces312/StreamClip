@@ -30,11 +30,26 @@ class BatchTaskActivity : BaseActivity() {
 
         adapter = BatchTaskAdapter(
             onRetry = { taskId ->
-                TaskQueueManager.retryTask(taskId)
+                // Enqueue alone is not enough: the service may have already stopped
+                // itself when the queue drained, so (re)start it with the new task.
+                TaskQueueManager.retryTask(taskId)?.let { task ->
+                    BatchTaskService.start(this, listOf(task))
+                }
                 refreshTasks()
             },
             onCancel = { taskId ->
-                TaskQueueManager.markCancelled(taskId)
+                try {
+                    if (BatchTaskService.isRunning) {
+                        // Real cancellation: kills the running coroutine + FFmpeg session.
+                        BatchTaskService.cancelTask(this, taskId)
+                    } else {
+                        // Service already gone — just fix the stored status / dequeue.
+                        TaskQueueManager.markCancelled(taskId)
+                    }
+                } catch (e: Exception) {
+                    // startService can throw if the app somehow left the foreground.
+                    TaskQueueManager.markCancelled(taskId)
+                }
                 refreshTasks()
             },
             onOpen = { outputPath ->

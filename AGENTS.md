@@ -4,11 +4,11 @@
 
 ## Project Overview
 
-StreamClip（轻剪辑）— Android 视频/音频处理工具，基于 FFmpeg 实现视频无损裁剪、合并、音频提取、视频压缩（硬/软编码）、音频压缩与音频编辑、自定义 FFmpeg 命令、元数据查看等功能。
+StreamClip（轻剪辑）— Android 视频/音频处理工具，基于 FFmpeg 实现视频无损裁剪、合并、音频提取、视频压缩（硬/软编码）、音频压缩与音频编辑、自定义 FFmpeg/FFprobe 命令、元数据查看与编辑等功能。
 
 - 单模块 Kotlin 项目（`:app`），`namespace = com.pisces312.streamclip`
-- 当前版本 `versionCode 12` / `versionName 2.2.0`
-- 仅支持 arm64-v8a（自编译 AAR 只含该 ABI）
+- 当前版本 `versionCode 13` / `versionName 2.2.1`
+- FFmpegKit 主路径仅支持 arm64-v8a（自编译 AAR 只含该 ABI）；Gradle 未额外配置 `abiFilters` 或 ABI splits
 - **无 productFlavors**（2026-10-30 已移除原 full/github/store 三 flavor；差异仅是一个捐赠入口开关，详见 git `15f9c77`）
 
 ## Build & Run
@@ -32,6 +32,8 @@ StreamClip（轻剪辑）— Android 视频/音频处理工具，基于 FFmpeg �
 # 手机本地构建（Termux + proot ubuntu, aarch64）
 ./build-termux.sh debug
 ```
+
+> Termux 使用 JDK 21 回退，构建前需手动临时移走 `gradle/gradle-daemon-jvm.properties`，脚本不会自动处理。当前 `build-termux.sh` 仍检查 `platforms/android-36`，与 `compileSdk 37` 不一致，使用前需先修正。
 
 ### 构建环境（本机 Windows）
 
@@ -57,16 +59,18 @@ git 在 `D:\dev\git\cmd\git.exe`。
 
 ### 测试
 
-**只有 host JVM 单元测试**：`app/src/test/`（JUnit，当前仅覆盖 `Mp4RotationUtils` 容器解析，约 0.3 s）。**无 Espresso / 无 `src/androidTest`**，功能验证仍靠真机手动跑。
+**只有 host JVM 单元测试**：`app/src/test/`（JUnit，当前仅覆盖 `Mp4RotationUtils` 容器解析，约 0.3 s）。**无 Espresso / 无 `src/androidTest`**；FFmpeg 执行、Native 压缩、音频 PCM 编辑、批量队列和外部 Intent 均需真机手动回归。
 
 ## Architecture
 
-**单 Activity + Fragment**，`ViewPager2 + TabLayout` 做标签页导航，无 MVVM、无依赖注入、无 RxJava。Fragment 直接用 `lifecycleScope` 协程管理状态。
+**主界面为 `MainActivity + Fragment`**，`ViewPager2 + TabLayout` 做标签页导航，无 MVVM、无依赖注入、无 RxJava。Fragment 直接用 `lifecycleScope` 协程管理状态。
+
+项目另有音频编辑、批量任务、日志、标签排序等独立 Activity。`CompressActivity` / `TrimActivity` / `ExtractActivity` / `MetadataActivity` 是 exported 的轻量容器，接收外部 `video/*` 的 `ACTION_VIEW`，复用对应 Fragment 并通过 `external_video_uri` 传入 `intent.data`。
 
 ### 标签页（`TabOrderManager.DEFAULT_ORDER`，用户可拖拽排序）
 
 release 9 个：`settings`（设置）、`trim`（裁剪）、`merge`（合并）、`extract`（提取音频）、`compress`（压缩）、`audio_compress`（音频压缩）、`audio_editor`（音频编辑）、`custom`（自定义命令）、`metadata`（元数据）。
-debug 额外含 `native_compress`（`NativeCompressFragment` 实验入口，release 不出现）。
+debug 额外含 `native_compress`（`NativeCompressFragment` 实验入口，release 不出现）。`trim2` / `Trim2Fragment` 仍保留映射，但不在 `DEFAULT_ORDER` 中，不是默认可达标签。
 
 > 新增标签页时必须同步更新：`TabOrderManager`（`DEFAULT_ORDER` + `TAB_ICONS`）、`MainPagerAdapter`、`MainActivity`、`TabOrderActivity`。
 
@@ -92,11 +96,32 @@ FFmpeg 通过 **ffmpeg-kit 8.1 自编译 AAR**（`app/libs/ffmpeg-kit-8.1.aar`�
   - 合并：concat demuxer
   - 提取音频：`-c:a copy`（无损）
   - 压缩：可配置编码器（`hevc_mediacodec` / `h264_mediacodec` / `libx265` / `libx264`）、码率或 CRF、缩放、帧率、色彩参数
-  - 自定义命令：用户直接输入参数
+  - 自定义命令：用户直接输入 FFmpeg 或 FFprobe 参数
+
+`FFmpegService.executeCommand()` 只管理经它创建的异步会话，`currentSessionId` 不是全局互斥或串行队列。`MetadataService`、`AudioEncoder`、`FFmpegWaveformLoader` 等路径会直接同步调用 `FFmpegKit.execute()`；修改会话管理、取消或 native crash 相关逻辑时，必须同时检查这些旁路。
 
 ### File Picking
 
-使用 SAF（`ActivityResultContracts`）。`FileUtils` 处理 URI→真实路径，回退顺序：直读 external storage → MediaStore → 复制到 cache。
+使用 SAF（`ActivityResultContracts`），但 FFmpeg 最终需要文件路径。`FileUtils.getPathResultFromUri()` 依次尝试 `file://`、ExternalStorage/Downloads/Media document URI、MediaStore `_data` 查询，全部失败后复制到 cache。返回的 `PathResult.isDirectRead` 区分原地直读与缓存复制，不能假设所有 `content://` URI 都能获得真实路径。
+
+## 当前实现边界（修改前必读）
+
+### Native 压缩
+
+- 仅在 debug 默认标签中出现，不接入批量队列；底层是 `MediaExtractor + MediaCodec + OpenGL + isoparser`，不是 FFmpeg 路径。
+- `VideoController` 只在目标宽高与原始宽高不同才重编码视频；选择“原始分辨率”时实际复制视频流，编码器、码率、帧率和 I 帧间隔等参数不会驱动视频重编码，音频也走流复制。
+- 当前 `convertVideo()` 最终固定 `return true`，Kotlin 封装的协程取消也不会立即终止阻塞中的 Java 转换循环。修改该路径必须核对 `VideoController.java`，不能只凭 `NativeVideoCompressor` 的 `Result` 判断真实成功或取消状态。
+
+### 音频编辑
+
+- 核心状态是完整解码后的 16-bit PCM；B/D 加载模式只加速波形预览，播放和编辑仍需完整 PCM，A 模式当前回退到 C。录音入口仍是开发占位。
+- 导出先把选区 PCM 写成临时 WAV，再由 `AudioEncoder` 同步调用 FFmpegKit；播放使用 `AudioTrack + Thread`，不是 Media3/ExoPlayer。
+
+### 批量任务
+
+- `BatchTaskService` 以前台 Service 顺序执行，失败默认重试一次。模型支持 `COMPRESS` / `EXTRACT_AUDIO` / `CUSTOM_COMMAND`，但当前 UI 只在压缩页创建批量任务。
+- 队列仅保存在内存，Service 为 `START_NOT_STICKY`，没有进程重启后的恢复能力。
+- 取消/重试链路已修复（2026-10-31，见 `docs/batch-task-fix-plan.md`）：取消经 `BatchTaskService.cancelTask()` 真正终止运行协程与 FFmpeg 会话；`markCancelled()` 会把任务移出队列；CANCELLED/COMPLETED 为终态，迟到回调不可覆盖。`pause()/resume()` 仍是死代码（无 UI 入口），语义未修。
 
 ## 关键陷阱（AAR 升级 / 视频处理前必读）
 
@@ -141,7 +166,7 @@ Kotlin 中 `-90 % 180 == -90`（不是 90）。判断横竖屏必须用 `MediaIn
 
 - `hevc_mediacodec` 只写容器 nclx box，不写 bitstream VUI
 - 部分视频 nclx 与 VUI 不一致（如 nclx=BT.601 而 VUI=BT.709）
-- 统一以 **ffprobe 读到的 bitstream VUI**（`color_primaries` / `color_transfer` / `colorspace`）为准，见 `FFmpegService.probeVideoInfo()` 与 `CompressConfig.toFFmpegCommand()`
+- 统一以 **ffprobe 读到的 bitstream VUI**（`color_primaries` / `color_transfer` / `colorspace`）为准，见 `FFmpegService.probeMediaInfo()` 与 `CompressConfig.toFFmpegCommand()`
 
 ### 6. 64 位 box size（size 字段 == 1）必须优先处理
 
@@ -152,6 +177,10 @@ ISO-BMFF 的 box 头有三种写法：`size=1` 表示随后 8 字节是 64 位 `
 > 实际故障：`VID_20261026_202905.mp4` 结构为 `ftyp / free / mdat(64bit) / moov`，旧版 `findVideoTkhdOffset()` 在 `mdat` 处 `break` 返回 null，`copyRotation` 静默失败 → 输出无旋转元数据 → 竖屏视频播放成"左转 90°"。同期的微信导出文件（`moov` 在前）不受影响，因此该 bug 隐藏了一轮迭代。
 
 另外：视频轨识别优先用 `mdia/hdlr` 的 handler type `vide`，仅当读不到 handler 时回退到旧启发式（`volume == 0 && tkhd w > 0 && h > 0`）。
+
+### 7. 缩放后的宽高必须保持偶数
+
+H.264/H.265 MediaCodec 对奇数输出尺寸可能初始化失败或输出 0 帧。修改分辨率计算或 scale filter 时，不要移除 `CompressConfig` 中的 `trunc(.../2)*2` 偶数对齐。
 
 ## 回归测试
 
@@ -201,6 +230,7 @@ $ffm = "D:\dev\ffmpeg\bin\ffmpeg.exe"
 - compileSdk 37 / targetSdk 37 / minSdk 26（compileSdk 37 需 build-tools ≥ 37 或 AGP 自带；targetSdk 37 对应 Android 17 行为变更，真机验证重点见 `docs/toolchain-upgrade-2026-10-agp94-gradle96-jdk25.md`）
 - Java / Kotlin target：JVM 17
 - View Binding 开启、Data Binding 关闭、`buildConfig = true`
+- debug 包名追加 `.debug`；release 默认启用 R8 minify 与 resource shrinking，可分别用 `-PenableMinify=false` / `-PenableShrinkResources=false` 关闭（`build.sh --no-minify` 同时关闭两者）
 - Core library desugaring 开启（`desugar_jdk_libs 2.1.4`）
 - 仓库走阿里云镜像（`settings.gradle.kts`）
 - `gradle.properties` 开启 `configuration-cache`
@@ -215,13 +245,13 @@ $ffm = "D:\dev\ffmpeg\bin\ffmpeg.exe"
 | `androidx.media3` 1.6.1（exoplayer / ui / common） | 裁剪页视频预览 |
 | `com.google.android.material` 1.13.0 | Material Design 3 组件 |
 | `androidx.documentfile` 1.0.1 | SAF 文件操作 |
-| `androidx.appcompat` 1.7.1 / `core-ktx` 1.18.0 / `lifecycle-*` 2.10.0 | 基础框架 |
+| `androidx.appcompat` 1.7.1 / `core-ktx` 1.18.0 / `activity-ktx` 1.13.0 / `lifecycle-*` 2.10.0 / `constraintlayout` 2.2.1 | 基础框架 |
 
 ## Coding Conventions
 
 - Service / Manager 用 Kotlin `object` 单例（`FFmpegService`、`TaskQueueManager` 等）
-- 所有异步用协程，不引入 RxJava
-- View Binding，不用 Data Binding、不用 findViewById
+- 新代码异步优先用协程，不引入 RxJava；Native 压缩和音频播放仍保留 Java `Thread` / `Handler` / 遗留 `AsyncTask`
+- 常规布局优先 View Binding，不用 Data Binding；动态视图和部分 Adapter 仍保留 `findViewById`
 - 无 MVVM：Fragment 直接持状态
 - Gradle 用 Kotlin DSL（`build.gradle.kts`）
 - 新 UI 文案必须同时加 `values/strings.xml`（中文默认）和 `values-en/strings.xml`
@@ -235,9 +265,9 @@ $ffm = "D:\dev\ffmpeg\bin\ffmpeg.exe"
 
 | 文件 | 内容 |
 |---|---|
-| `rotation-design.md` | 旋转/方向处理设计 |
+| `rotation-design.md` | 早期旋转/方向设计（含已过时结论，当前行为以源码和回归测试为准） |
 | `batch-queue-design.md` | 批量任务队列设计 |
-| `audio-editor-design.md` / `-changes` / `-scenarios` | 音频编辑器设计与变更 |
+| `audio-editor-design.md` / `audio-editor-changes.md` / `audio-editor-20260621-changes.md` / `audio-editor-scenarios.md` | 音频编辑器设计、变更与场景 |
 | `native-video-compress-design.md` | Native 压缩路径设计 |
 | `resolution-design.md` | 分辨率处理 |
 | `build-on-termux-ubuntu.md` | 手机本地构建流程 |
@@ -245,6 +275,8 @@ $ffm = "D:\dev\ffmpeg\bin\ffmpeg.exe"
 | `ffmpeg-kit-migration-plan.md` | ffmpeg-kit 迁移记录 |
 | `*-crash-analysis.md` | 历史崩溃分析（aac / swresample / ffmpeg-kit 8.1） |
 | `capture-native-crash-log.md` | 原生崩溃日志抓取 |
+
+文档时效性：根 `CHANGELOG.md` 与应用内 `app/src/main/assets/CHANGELOG.md` 是两套文件，关于页读取后者。README、早期设计文档和 crash 分析中的方案不一定已落地；与当前代码冲突时，以源码和自动化测试为准。
 
 ## Git 约定
 

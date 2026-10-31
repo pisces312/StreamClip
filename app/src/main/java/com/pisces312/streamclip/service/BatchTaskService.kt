@@ -59,7 +59,12 @@ class BatchTaskService : Service() {
                 action = ACTION_CANCEL_TASK
                 putExtra("task_id", taskId)
             }
-            ContextCompat.startForegroundService(context, intent)
+            // Control command, not new work: use startService so the service is NOT
+            // required to call startForeground() within 5s (handleCancelTask never does,
+            // which would crash with ForegroundServiceDidNotStartInTimeException if the
+            // service had been started via startForegroundService while already dead).
+            // The caller (BatchTaskActivity) runs in the foreground, so startService is allowed.
+            context.startService(intent)
         }
     }
 
@@ -286,9 +291,16 @@ class BatchTaskService : Service() {
         val taskId = intent.getStringExtra("task_id") ?: return
         TaskQueueManager.markCancelled(taskId)
 
-        // Cancel the running coroutine if it exists
+        // Cancel the running coroutine (and its FFmpeg session via
+        // invokeOnCancellation) if the task is currently executing.
         runningTaskJobs[taskId]?.cancel()
         runningTaskJobs.remove(taskId)
+
+        // If this intent (re)started the service just to deliver the cancel,
+        // there is nothing left to do — shut down instead of idling.
+        if (!isRunning && !TaskQueueManager.hasPending()) {
+            stopSelf()
+        }
     }
 
     private fun handlePause() {
