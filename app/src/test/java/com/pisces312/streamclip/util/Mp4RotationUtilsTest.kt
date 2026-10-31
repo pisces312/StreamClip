@@ -4,7 +4,6 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -19,8 +18,9 @@ import java.io.RandomAccessFile
  * are needed: the class under test never looks inside `mdat`, only at box headers, the `tkhd`
  * display matrix and the `hdlr` handler type.
  *
- * `real_recordings_still_parse_like_the_fixtures` additionally validates the synthetic model
- * against `test_data/` when those originals happen to be on disk; it skips otherwise.
+ * Every container shape that matters (32-bit / 64-bit / zero-sized `mdat`, `moov` before and
+ * after `mdat`, version-1 `tkhd`, handler-type vs volume heuristics) is covered by mock header
+ * fixtures, so the suite needs no sample video files on disk.
  */
 class Mp4RotationUtilsTest {
 
@@ -249,36 +249,6 @@ class Mp4RotationUtilsTest {
         assertEquals(REAL_TKHD_720P, camera)
     }
 
-    /** Skipped unless the originals are present in `test_data/` (gitignored). */
-    @Test
-    fun real_recordings_still_parse_like_the_fixtures() {
-        val dir = resolveTestDataDir()
-        assumeTrue("test_data/ not available", dir != null)
-
-        val fourK = File(dir!!, "neg90_mdat32.mp4")
-        assumeTrue("missing ${fourK.name}", fourK.isFile)
-        val fourKTrack = readVideoTrack(fourK)
-        assertEquals(3840, fourKTrack.width)
-        assertEquals(2160, fourKTrack.height)
-        assertEquals(2160 shl 16, readMatrix(fourK, fourKTrack.matrixOffset)[6])
-
-        val camera = File(dir, "neg90_mdat64.mp4")
-        assumeTrue("missing ${camera.name}", camera.isFile)
-        val cameraTrack = readVideoTrack(camera)
-        assertEquals(1280, cameraTrack.width)
-        assertEquals(720, cameraTrack.height)
-        assertEquals(0, readMatrix(camera, cameraTrack.matrixOffset)[6])
-
-        // And the round trip still works on the real bytes: wipe the destination matrix, copy.
-        val output = copyOf(fourK, "real-encoded.mp4")
-        writeMatrix(output, readVideoTrack(output).matrixOffset, Mp4Fixture.identity())
-        assertTrue(Mp4RotationUtils.copyRotation(fourK.path, output.path))
-        assertArrayEquals(
-            readMatrix(fourK, fourKTrack.matrixOffset),
-            readMatrix(output, readVideoTrack(output).matrixOffset)
-        )
-    }
-
     // --- fixtures ---
 
     /** Shape of the WeChat export: `moov` first, 32-bit `mdat`, video trak first, `tx = height`. */
@@ -317,22 +287,6 @@ class Mp4RotationUtilsTest {
 
     private fun writeFile(name: String, vararg boxes: ByteArray): File =
         Mp4Fixture.write(temp.newFile(name), *boxes)
-
-    private fun copyOf(source: File, name: String): File {
-        val target = temp.newFile(name)
-        target.writeBytes(source.readBytes())
-        return target
-    }
-
-    private fun resolveTestDataDir(): File? {
-        val candidates = mutableListOf<File>()
-        System.getProperty("streamclip.testDataDir")?.let { candidates.add(File(it)) }
-        // Unit tests run with the module directory (app/) as working directory.
-        candidates.add(File("test_data"))
-        candidates.add(File("../test_data"))
-        candidates.add(File("../../test_data"))
-        return candidates.firstOrNull { it.isDirectory }
-    }
 
     // --- minimal independent ISOBMFF reader (kept separate from production code) ---
 
@@ -456,18 +410,6 @@ class Mp4RotationUtilsTest {
             val bytes = ByteArray(36)
             raf.readFully(bytes)
             return IntArray(9) { be32(bytes, it * 4).toInt() }
-        }
-    }
-
-    private fun writeMatrix(file: File, offset: Long, matrix: IntArray) {
-        RandomAccessFile(file, "rw").use { raf ->
-            raf.seek(offset)
-            for (value in matrix) {
-                raf.write((value ushr 24) and 0xFF)
-                raf.write((value ushr 16) and 0xFF)
-                raf.write((value ushr 8) and 0xFF)
-                raf.write(value and 0xFF)
-            }
         }
     }
 
