@@ -20,15 +20,36 @@ the Free Software Foundation, either version 3 of the License, or
 
 ## 开源组件
 
-本应用使用以下开源组件：
+本应用打包了以下开源组件。**版本号与 `app/src/main/java/com/pisces312/streamclip/util/OssComponents.kt` 及 App 内「关于 → 开源许可」保持一致**，升级依赖时三处同步。
 
-| 组件 | 许可证 | 源码地址 |
-|------|--------|---------|
-| FFmpeg | GPL v3.0 | https://github.com/FFmpeg/FFmpeg |
-| FFmpegKit | LGPL v3.0 | https://github.com/arthenica/ffmpeg-kit |
-| x264 | GPL v2.0+ | https://github.com/mirror/x264 |
-| x265 | GPL v2.0+ | https://github.com/videolan/x265 |
-| cpu_features | Apache 2.0 | https://github.com/google/cpu_features |
+### 原生层（编入 `libffmpegkit.so` / `libav*.so`）
+
+| 组件 | 版本 | 许可证 | 源码地址 |
+|------|------|--------|---------|
+| FFmpeg | n8.1.3 | GPL-3.0 | https://github.com/FFmpeg/FFmpeg |
+| FFmpegKit | 8.1.3（pisces312 fork） | LGPL-3.0 | https://github.com/pisces312/ffmpeg-kit |
+| x264 | BUILD 164（`eaa68fa`） | GPL-2.0+ | https://code.videolan.org/videolan/x264 |
+| x265 | 4.2 / BUILD 216（`b81f650`） | GPL-2.0+ | https://bitbucket.org/multicoreware/x265_git |
+| LAME | 4.0 | LGPL-2.0 | https://lame.sourceforge.io |
+| cpu_features | 0.8.0 | Apache-2.0 | https://github.com/google/cpu_features |
+
+### Java / Kotlin 依赖
+
+| 组件 | 版本 | 许可证 | 坐标 |
+|------|------|--------|------|
+| AndroidX Core | 1.18.0 | Apache-2.0 | `androidx.core:core-ktx` |
+| AndroidX AppCompat | 1.7.1 | Apache-2.0 | `androidx.appcompat:appcompat` |
+| AndroidX Activity | 1.13.0 | Apache-2.0 | `androidx.activity:activity-ktx` |
+| AndroidX ConstraintLayout | 2.2.1 | Apache-2.0 | `androidx.constraintlayout:constraintlayout` |
+| AndroidX Lifecycle | 2.10.0 | Apache-2.0 | `androidx.lifecycle:lifecycle-runtime-ktx`、`lifecycle-viewmodel-ktx` |
+| AndroidX DocumentFile | 1.0.1 | Apache-2.0 | `androidx.documentfile:documentfile` |
+| Material Components | 1.13.0 | Apache-2.0 | `com.google.android.material:material` |
+| AndroidX Media3 | 1.6.1 | Apache-2.0 | `androidx.media3:media3-exoplayer`、`media3-ui`、`media3-common` |
+| MP4Parser (isoparser) | 1.0.6 | Apache-2.0 | `libs/isoparser-1.0.6.jar` |
+| AspectJ Runtime | 1.7.3 | EPL-1.0 | `libs/aspectjrt-1.7.3.jar` |
+| Desugar JDK Libs | 2.1.4 | GPL-2.0 (Classpath Exception) | `com.android.tools:desugar_jdk_libs` |
+
+> 完整许可证文本已随 APK 打包在 `res/raw/license_*.txt`，可在 App 内「关于 → 开源许可」逐条查看。
 
 ## 源码获取
 
@@ -41,8 +62,10 @@ the Free Software Foundation, either version 3 of the License, or
 ### FFmpegKit 定制构建
 
 本应用使用的 FFmpegKit 为基于官方源码的定制构建，包含以下修改：
-- 仅编译 arm64-v8a 架构
-- 启用 x264/x265 编码器支持
+- 基于 **FFmpeg n8.1.3** 源码
+- 仅编译 arm64-v8a 架构（NDK r27d，`aarch64-linux-android24`）
+- 静态链接 x264、x265、LAME 4.0，并启用 MediaCodec 硬编硬解
+- 修复 App 内 binder 线程池断言导致的 SIGABRT（见 ffmpeg-kit 仓库 `docs/ffmpeg-modifications.md`）
 
 定制构建脚本和文档：
 **https://github.com/pisces312/ffmpeg-kit**

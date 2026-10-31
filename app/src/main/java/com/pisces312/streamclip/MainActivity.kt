@@ -17,6 +17,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.pisces312.streamclip.util.CrashHandler
 import com.pisces312.streamclip.util.LogCollector
+import com.pisces312.streamclip.util.OssComponent
+import com.pisces312.streamclip.util.OssComponents
 import com.google.android.material.tabs.TabLayoutMediator
 import com.pisces312.streamclip.adapter.MainPagerAdapter
 import com.pisces312.streamclip.databinding.ActivityMainBinding
@@ -307,6 +309,14 @@ class MainActivity : BaseActivity() {
         }
         layout.addView(versionView)
 
+        // === 2.5 开源合规说明 ===
+        val licenseSummaryView = androidx.appcompat.widget.AppCompatTextView(this).apply {
+            text = getString(R.string.about_license_summary)
+            setTextIsSelectable(true)
+            textSize = 12f
+        }
+        layout.addView(licenseSummaryView)
+
         // === 3. 更新日志 ===
         val historyView = androidx.appcompat.widget.AppCompatTextView(this).apply {
             text = buildString {
@@ -385,36 +395,34 @@ class MainActivity : BaseActivity() {
     }
 
     private fun showLicensesDialog() {
-        val licenses = arrayOf(
-            Triple("FFmpeg (GPL v3.0)", R.raw.license_ffmpeg, "https://github.com/FFmpeg/FFmpeg"),
-            Triple("FFmpegKit (LGPL-3.0)", R.raw.license_ffmpegkit, "https://github.com/pisces312/ffmpeg-kit"),
-            Triple("x264 (GPL v2.0+)", R.raw.license_x264, "https://github.com/mirror/x264"),
-            Triple("x265 (GPL v2.0+)", R.raw.license_x265, "https://github.com/videolan/x265"),
-            Triple("cpu_features (Apache 2.0)", R.raw.license_cpu_features, "https://github.com/google/cpu_features"),
-            Triple(getString(R.string.gpl_compliance), 0, "https://github.com/pisces312/StreamClip/blob/main/GPL_COMPLIANCE.md")
-        )
-
-        val items = licenses.map { it.first }.toTypedArray()
+        val components = OssComponents.all()
+        val labels = components.map { it.label }.toTypedArray()
+        // 末位是纯链接项：GPL 合规声明（无许可全文）
+        val items = labels + getString(R.string.gpl_compliance)
 
         AlertDialog.Builder(this)
             .setTitle(R.string.about_licenses)
             .setItems(items) { _, which ->
-                val (_, resId, url) = licenses[which]
-                showLicenseDetailDialog(licenses[which].first, resId, url)
+                if (which == components.size) {
+                    startActivity(
+                        Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://github.com/pisces312/StreamClip/blob/main/GPL_COMPLIANCE.md")
+                        )
+                    )
+                } else {
+                    showLicenseDetailDialog(components[which])
+                }
             }
             .setPositiveButton(R.string.about_close, null)
             .show()
     }
 
-    private fun showLicenseDetailDialog(name: String, resId: Int, url: String) {
-        val text = if (resId != 0) {
-            try {
-                resources.openRawResource(resId).bufferedReader().use { it.readText() }
-            } catch (e: Exception) {
-                getString(R.string.about_license_not_found)
-            }
-        } else {
-            ""  // 外部链接，无本地文本
+    private fun showLicenseDetailDialog(component: OssComponent) {
+        val text = try {
+            resources.openRawResource(component.licenseRes).bufferedReader().use { it.readText() }
+        } catch (e: Exception) {
+            getString(R.string.about_license_not_found)
         }
 
         val scrollView = android.widget.ScrollView(this)
@@ -423,32 +431,48 @@ class MainActivity : BaseActivity() {
             setPadding(48, 32, 48, 32)
         }
 
-        // 源码地址链接
-        val urlView = androidx.appcompat.widget.AppCompatTextView(this).apply {
-            this.text = url
+        val linkColor = ContextCompat.getColor(this, com.google.android.material.R.color.design_default_color_primary)
+
+        // 构建信息（Maven 坐标 / 提交号 / configure 开关）
+        component.coordinate?.let { coordinate ->
+            layout.addView(androidx.appcompat.widget.AppCompatTextView(this).apply {
+                this.text = coordinate
+                setTextIsSelectable(true)
+                setPadding(0, 0, 0, 16)
+            })
+        }
+
+        // 许可证类型
+        layout.addView(androidx.appcompat.widget.AppCompatTextView(this).apply {
+            this.text = component.license
             setTextIsSelectable(true)
-            setTextColor(androidx.core.content.ContextCompat.getColor(context, com.google.android.material.R.color.design_default_color_primary))
+            setPadding(0, 0, 0, 16)
+        })
+
+        // 源码地址
+        layout.addView(androidx.appcompat.widget.AppCompatTextView(this).apply {
+            this.text = component.url
+            setTextIsSelectable(true)
+            setTextColor(linkColor)
             paint.isUnderlineText = true
             setOnClickListener {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(component.url)))
             }
             setPadding(0, 0, 0, 24)
-        }
-        layout.addView(urlView)
+        })
 
-        // 许可证文本（仅当 resId 不为 0 时显示）
+        // 许可证全文
         if (text.isNotEmpty()) {
-            val textView = androidx.appcompat.widget.AppCompatTextView(this).apply {
+            layout.addView(androidx.appcompat.widget.AppCompatTextView(this).apply {
                 this.text = text
                 setTextIsSelectable(true)
-            }
-            layout.addView(textView)
+            })
         }
 
         scrollView.addView(layout)
 
         AlertDialog.Builder(this)
-            .setTitle(name)
+            .setTitle("${component.name} ${component.version}")
             .setView(scrollView)
             .setPositiveButton(R.string.about_close, null)
             .show()

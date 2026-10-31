@@ -50,7 +50,7 @@
     <string name="about_changelog">更新日志</string>
     <string name="about_close">关闭</string>
     <string name="about_licenses">开源许可</string>
-    <string name="about_license_summary">本应用使用 FFmpeg 及相关开源库，受 LGPL-3.0 许可</string>
+    <string name="about_license_summary">以下为打包进本应用的全部开源组件及版本。因集成 x264/x265，本应用整体以 GPL-3.0 分发。</string>
     <string name="about_license_not_found">许可证文件未找到</string>
     <string name="title_donate">捐赠</string>
     <string name="donate_desc">如果轻剪辑帮到了你，欢迎打赏支持继续开发</string>

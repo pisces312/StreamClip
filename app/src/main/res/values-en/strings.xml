@@ -206,7 +206,7 @@
     <string name="about_changelog">Changelog</string>
     <string name="about_close">Close</string>
     <string name="about_licenses">Open Source Licenses</string>
-    <string name="about_license_summary">This app uses FFmpeg and related open source libraries, licensed under LGPL-3.0</string>
+    <string name="about_license_summary">All open source components bundled in this app, with versions. Because of x264/x265, the app as a whole is distributed under GPL-3.0.</string>
     <string name="about_license_not_found">License file not found</string>
 
     <!-- Tab Order -->
