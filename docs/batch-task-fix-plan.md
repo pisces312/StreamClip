@@ -1,7 +1,7 @@
 # 批量任务链路修复计划
 
 - 日期：2026-10-31
-- 状态：第一批（取消/重试/状态机）已提交 e6ec2c4；第二批（#8/#9/#11/#12/#13）已实施
+- 状态：第一批（取消/重试/状态机）已提交 e6ec2c4；第二批（#8/#9/#11/#12/#13）已提交 3db2ca9；第三批（#5 删除暂停/恢复）已实施
 - 背景：审阅发现 `BatchTaskService` 的取消/暂停/恢复机制在 UI 层完全不可达，取消与重试功能实际失效
 
 ## 一、问题清单（2026-10-31 审阅结论）
@@ -71,11 +71,15 @@
 
 #8 已知局限（与旧行为一致、非回归）：批量与单任务并发时，单任务取消按钮命中最近启动的会话，可能是批量的。彻底解需按调用方分发会话句柄，涉及全部单任务 Fragment，收益低暂不做。
 
+## 第三批修复（同日实施）
+
+#5 产品决策：不需要暂停/恢复，只保留取消。删除 `TaskQueueManager.pause()/resume()/isPaused`、`BatchTaskService` 的 `ACTION_PAUSE/ACTION_RESUME` 与 `handlePause/handleResume`、通知栏暂停按钮、对应测试用例与 `pause` 字符串资源（zh/en）。
+
+#14 同步旁路治理：新增 `FFmpegService.executeTrackedSync(command, onSessionStarted)`（executeAsync + CountDownLatch，会话运行期注册进 `activeSessions`）；`MetadataService`、`AudioEncoder`、`FFmpegWaveformLoader`（astats + PCM 解码两处）全部改走该入口，不再直接 `FFmpegKit.execute()`。附带修复：`AudioEncoder.cancel()` 原先在阻塞执行结束后才保存 session，永远无法取消运行中会话；现在通过 `onSessionStarted` 在执行期间捕获，取消真正生效。
+
 ## 六、遗留问题（后续批次）
 
 | 优先级 | 项 |
 |---|---|
-| 中 | #5 pause/resume 接通 UI 并修正语义 |
 | 中 | #10 队列持久化（产品需求确认后决定） |
 | 低 | #6/#7 VideoController 返回值与取消、原始分辨率提示（debug 实验页，低价值） |
-| 低 | #14 同步旁路治理 |

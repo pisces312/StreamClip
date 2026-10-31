@@ -29,8 +29,6 @@ class BatchTaskService : Service() {
         const val ACTION_START = "com.pisces312.streamclip.action.START_BATCH"
         const val ACTION_STOP = "com.pisces312.streamclip.action.STOP_BATCH"
         const val ACTION_CANCEL_TASK = "com.pisces312.streamclip.action.CANCEL_TASK"
-        const val ACTION_PAUSE = "com.pisces312.streamclip.action.PAUSE"
-        const val ACTION_RESUME = "com.pisces312.streamclip.action.RESUME"
         const val EXTRA_TASKS = "tasks"
 
         const val NOTIFICATION_ID = 1001
@@ -86,8 +84,6 @@ class BatchTaskService : Service() {
             ACTION_START -> handleStart(intent)
             ACTION_STOP -> handleStop()
             ACTION_CANCEL_TASK -> handleCancelTask(intent)
-            ACTION_PAUSE -> handlePause()
-            ACTION_RESUME -> handleResume()
         }
         return START_NOT_STICKY
     }
@@ -304,20 +300,6 @@ class BatchTaskService : Service() {
         // there is nothing left to do — shut down instead of idling.
         if (!isRunning && !TaskQueueManager.hasPending()) {
             stopSelf()
-        }
-    }
-
-    private fun handlePause() {
-        TaskQueueManager.pause()
-    }
-
-    private fun handleResume() {
-        TaskQueueManager.resume()
-        if (!isQueueProcessing) {
-            if (!serviceScope.isActive) {
-                serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-            }
-            serviceScope.launch { processQueue() }
         }
     }
 

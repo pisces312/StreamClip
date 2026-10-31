@@ -98,7 +98,7 @@ FFmpeg 通过 **ffmpeg-kit 8.1 自编译 AAR**（`app/libs/ffmpeg-kit-8.1.aar`�
   - 压缩：可配置编码器（`hevc_mediacodec` / `h264_mediacodec` / `libx265` / `libx264`）、码率或 CRF、缩放、帧率、色彩参数
   - 自定义命令：用户直接输入 FFmpeg 或 FFprobe 参数
 
-`FFmpegService.executeCommand()` 用 `activeSessions`（ConcurrentHashMap）追踪自己创建的全部异步会话；`cancelCurrentSession()` 取消**最近启动的一个**会话（调用方都是单任务 UI 的取消按钮）。已知局限：批量任务与单任务并发时，取消按钮可能命中批量会话；批量侧取消走协程 job.cancel → `invokeOnCancellation` 按自身 sessionId 精确取消，不受此影响。`MetadataService`、`AudioEncoder`、`FFmpegWaveformLoader` 等路径会直接同步调用 `FFmpegKit.execute()`，不经该追踪体系；修改会话管理、取消或 native crash 相关逻辑时，必须同时检查这些旁路。
+`FFmpegService.executeCommand()` 用 `activeSessions`（ConcurrentHashMap）追踪自己创建的全部异步会话；`cancelCurrentSession()` 取消**最近启动的一个**会话（调用方都是单任务 UI 的取消按钮）。已知局限：批量任务与单任务并发时，取消按钮可能命中批量会话；批量侧取消走协程 job.cancel → `invokeOnCancellation` 按自身 sessionId 精确取消，不受此影响。需要原始 `FFmpegSession`（而非 `Result`）的同步调用方（`MetadataService`、`AudioEncoder`、`FFmpegWaveformLoader`）统一走 `FFmpegService.executeTrackedSync()`：内部用 executeAsync + latch，会话运行期同样注册进 `activeSessions`，因此也可被取消；不要再直接调 `FFmpegKit.execute()`。注意 `executeTrackedSync` 会阻塞调用线程，只能从后台线程调用。
 
 ### File Picking
 
@@ -115,13 +115,13 @@ FFmpeg 通过 **ffmpeg-kit 8.1 自编译 AAR**（`app/libs/ffmpeg-kit-8.1.aar`�
 ### 音频编辑
 
 - 核心状态是完整解码后的 16-bit PCM；B/D 加载模式只加速波形预览，播放和编辑仍需完整 PCM，A 模式当前回退到 C。录音入口仍是开发占位。
-- 导出先把选区 PCM 写成临时 WAV，再由 `AudioEncoder` 同步调用 FFmpegKit；播放使用 `AudioTrack + Thread`，不是 Media3/ExoPlayer。
+- 导出先把选区 PCM 写成临时 WAV，再经 `AudioEncoder` → `FFmpegService.executeTrackedSync()` 执行（会话可取消）；播放使用 `AudioTrack + Thread`，不是 Media3/ExoPlayer。
 
 ### 批量任务
 
 - `BatchTaskService` 以前台 Service 顺序执行，失败默认重试一次。模型支持 `COMPRESS` / `EXTRACT_AUDIO` / `CUSTOM_COMMAND`，但当前 UI 只在压缩页创建批量任务。
 - 队列仅保存在内存，Service 为 `START_NOT_STICKY`，没有进程重启后的恢复能力。
-- 取消/重试链路已修复（2026-10-31，见 `docs/batch-task-fix-plan.md`）：取消经 `BatchTaskService.cancelTask()` 真正终止运行协程与 FFmpeg 会话；`markCancelled()` 会把任务移出队列；CANCELLED/COMPLETED 为终态，迟到回调不可覆盖。`pause()/resume()` 仍是死代码（无 UI 入口），语义未修。
+- 取消/重试链路已修复（2026-10-31，见 `docs/batch-task-fix-plan.md`）：取消经 `BatchTaskService.cancelTask()` 真正终止运行协程与 FFmpeg 会话；`markCancelled()` 会把任务移出队列；CANCELLED/COMPLETED 为终态，迟到回调不可覆盖。暂停/恢复功能已整体移除（2026-10-31，产品决策：只需取消），通知栏仅保留取消按钮。
 
 ## 关键陷阱（AAR 升级 / 视频处理前必读）
 

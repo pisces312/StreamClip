@@ -160,7 +160,6 @@
     <string name="batch_notification_channel_name">批处理任务</string>
     <string name="batch_notification_channel_desc">显示批量视频处理进度</string>
     <string name="no_batch_tasks">暂无任务</string>
-    <string name="pause">暂停</string>
     <string name="start">开始</string>
     <string name="task_status_pending">排队中</string>
     <string name="task_status_running">处理中 %d%%</string>

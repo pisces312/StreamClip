@@ -105,9 +105,10 @@ class AudioEncoder {
 
         Log.i(TAG, "FFmpeg command: ffmpeg $cmd")
 
-        // 3. 执行 FFmpeg
-        val session = FFmpegKit.execute(cmd)
-        currentSession = session
+        // 3. 执行 FFmpeg（受会话追踪的同步执行，支持取消）
+        currentSession = null
+        val session = com.pisces312.streamclip.service.FFmpegService
+            .executeTrackedSync(cmd) { currentSession = it }
 
         // 4. 清理临时文件
         tempWav.delete()

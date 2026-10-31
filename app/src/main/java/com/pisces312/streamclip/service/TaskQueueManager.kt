@@ -13,9 +13,6 @@ object TaskQueueManager {
     private val _taskFlow = MutableStateFlow<List<BatchTaskItem>>(emptyList())
     val taskFlow: StateFlow<List<BatchTaskItem>> = _taskFlow.asStateFlow()
 
-    @Volatile
-    private var isPaused = false
-
     val totalCount: Int get() { synchronized(this) { return allTasks.size } }
     val completedCount: Int get() { synchronized(this) { return allTasks.count { it.value.status == TaskStatus.COMPLETED } } }
     val pendingCount: Int get() { synchronized(this) { return queue.size } }
@@ -31,7 +28,6 @@ object TaskQueueManager {
 
     @Synchronized
     fun next(): BatchTaskItem? {
-        if (isPaused) return null
         return queue.removeFirstOrNull()?.also { task ->
             allTasks[task.id] = task.copy(
                 status = TaskStatus.RUNNING,
@@ -107,13 +103,6 @@ object TaskQueueManager {
         }
     }
 
-    fun pause() {
-        synchronized(this) { isPaused = true }
-    }
-    fun resume() {
-        synchronized(this) { isPaused = false }
-    }
-
     @Synchronized
     fun getSummary(): BatchSummary {
         val tasks = allTasks.values.toList()
@@ -174,7 +163,6 @@ object TaskQueueManager {
     fun clearForTesting() {
         queue.clear()
         allTasks.clear()
-        isPaused = false
         emitUpdate()
     }
 }

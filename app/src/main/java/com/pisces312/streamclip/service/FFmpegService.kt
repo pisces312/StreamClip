@@ -2,6 +2,7 @@ package com.pisces312.streamclip.service
 
 import android.content.Context
 import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFmpegSession
 import com.arthenica.ffmpegkit.FFprobeKit
 import com.arthenica.ffmpegkit.ReturnCode
 import com.arthenica.ffmpegkit.StatisticsCallback
@@ -254,6 +255,43 @@ object FFmpegService {
                 activeSessions.remove(session.sessionId)
             }
         }
+    }
+
+    /**
+     * Session-tracked synchronous execution for callers that need the raw
+     * [FFmpegSession] (log output, astats parsing) instead of a [Result].
+     *
+     * Uses executeAsync + a latch rather than FFmpegKit.execute() so the session
+     * id is known up-front: the session is registered in activeSessions while
+     * running, making cancelCurrentSession() work for these paths too.
+     * Previously MetadataService / AudioEncoder / FFmpegWaveformLoader called
+     * FFmpegKit.execute() directly — invisible to session tracking, and
+     * AudioEncoder's own cancel() was dead code because it only captured the
+     * session AFTER the blocking execute() returned.
+     *
+     * [onSessionStarted] fires while the session is running, so callers with
+     * their own cancel path (AudioEncoder) can capture the live session.
+     *
+     * Blocking: call from a background thread only.
+     */
+    fun executeTrackedSync(
+        command: String,
+        onSessionStarted: ((FFmpegSession) -> Unit)? = null
+    ): FFmpegSession {
+        val latch = java.util.concurrent.CountDownLatch(1)
+        var completed: FFmpegSession? = null
+        val session = FFmpegKit.executeAsync(command, { s ->
+            completed = s
+            latch.countDown()
+        })
+        activeSessions[session.sessionId] = System.currentTimeMillis()
+        onSessionStarted?.invoke(session)
+        try {
+            latch.await()
+        } finally {
+            activeSessions.remove(session.sessionId)
+        }
+        return completed ?: session
     }
 
     /**

@@ -156,7 +156,6 @@
     <string name="batch_notification_channel_name">Batch Tasks</string>
     <string name="batch_notification_channel_desc">Show batch video processing progress</string>
     <string name="no_batch_tasks">No tasks</string>
-    <string name="pause">Pause</string>
     <string name="start">Start</string>
     <string name="task_status_pending">Queued</string>
     <string name="task_status_running">Processing %d%%</string>

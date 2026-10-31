@@ -1,6 +1,5 @@
 package com.pisces312.streamclip.service
 
-import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.ReturnCode
 import com.pisces312.streamclip.model.VideoMetadata
 import com.pisces312.streamclip.util.LogCollector
@@ -52,7 +51,7 @@ object MetadataService {
 
             LogCollector.d("MetadataService", "Executing: $command")
 
-            val session = FFmpegKit.execute(command)
+            val session = FFmpegService.executeTrackedSync(command)
 
             if (!ReturnCode.isSuccess(session.returnCode)) {
                 return@withContext Result.failure("FFmpeg failed: ${session.allLogsAsString}")

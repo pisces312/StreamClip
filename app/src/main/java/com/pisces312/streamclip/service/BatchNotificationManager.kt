@@ -75,11 +75,6 @@ class BatchNotificationManager(private val context: Context) {
             .setOnlyAlertOnce(true)
             .addAction(
                 R.drawable.ic_notification,
-                context.getString(R.string.pause),
-                createActionPendingIntent(BatchTaskService.ACTION_PAUSE)
-            )
-            .addAction(
-                R.drawable.ic_notification,
                 context.getString(R.string.cancel),
                 createActionPendingIntent(BatchTaskService.ACTION_STOP)
             )

@@ -160,21 +160,6 @@ class TaskQueueManagerTest {
         assertFalse(TaskQueueManager.hasPending())
     }
 
-    // --- pause ---
-
-    @Test
-    fun pause_blocks_next_until_resume() {
-        val t = task()
-        TaskQueueManager.enqueueAll(listOf(t))
-        TaskQueueManager.pause()
-
-        assertNull(TaskQueueManager.next())
-        assertTrue(TaskQueueManager.hasPending()) // still queued, just not dispatched
-
-        TaskQueueManager.resume()
-        assertEquals(t.id, TaskQueueManager.next()?.id)
-    }
-
     // --- clearCompleted ---
 
     @Test

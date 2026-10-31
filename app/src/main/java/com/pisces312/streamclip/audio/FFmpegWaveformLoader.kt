@@ -1,7 +1,6 @@
 package com.pisces312.streamclip.audio
 
 import android.util.Log
-import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFprobeKit
 import com.arthenica.ffmpegkit.ReturnCode
 import com.arthenica.ffmpegkit.Session
@@ -122,7 +121,7 @@ class FFmpegWaveformLoader {
             val frameSize = (sampleRate * TARGET_FRAME_MS / 1000).toInt()
             val cmd = "-i \"$filePath\" -af \"astats=metadata=1:reset=${frameSize},ametadata=print:key=lavfi.astats.Overall.Peak_level:file=-\" -f null -"
 
-            val session = FFmpegKit.execute(cmd)
+            val session = com.pisces312.streamclip.service.FFmpegService.executeTrackedSync(cmd)
             if (!ReturnCode.isSuccess(session.returnCode)) {
                 return Result(false, IntArray(0), sampleRate, channels, durationMs,
                     "FFmpeg astats failed: rc=${session.returnCode}")
@@ -207,7 +206,7 @@ class FFmpegWaveformLoader {
 
             val cmd = "-i \"$filePath\" -ar $targetRate -ac 1 -f s16le -y \"${tempFile.absolutePath}\""
 
-            val session = FFmpegKit.execute(cmd)
+            val session = com.pisces312.streamclip.service.FFmpegService.executeTrackedSync(cmd)
             if (!ReturnCode.isSuccess(session.returnCode)) {
                 tempFile.delete()
                 return Result(false, IntArray(0), sampleRate, channels, durationMs,
