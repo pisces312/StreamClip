@@ -22,6 +22,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.pisces312.streamclip.databinding.FragmentTrimSimpleBinding
 import com.pisces312.streamclip.service.FFmpegService
 import com.pisces312.streamclip.util.FileUtils
+import com.pisces312.streamclip.util.ResultDialogHelper
 import com.pisces312.streamclip.util.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -343,7 +344,13 @@ class TrimSimpleFragment : Fragment() {
                         FileUtils.applyFileTimes(outputFile.absolutePath, creation, modified)
                     }
                     updateOutputStatus(outputFile)
-                    Toast.makeText(requireContext(), getString(R.string.trim_complete, outputFile.name), Toast.LENGTH_LONG).show()
+                    if (isAdded) {
+                        ResultDialogHelper.show(
+                            requireContext(),
+                            getString(R.string.result_success_trim),
+                            outputFile
+                        )
+                    }
                 } else {
                     val errorMsg = result.error ?: getString(R.string.trim_unknown_error)
                     android.util.Log.e("TrimSimpleFragment", "Trim failed: $errorMsg")

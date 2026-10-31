@@ -27,6 +27,7 @@ import com.pisces312.streamclip.model.toTaskConfig
 import com.pisces312.streamclip.service.FFmpegService
 import com.pisces312.streamclip.adapter.FfmpegLogAdapter
 import com.pisces312.streamclip.util.FileUtils
+import com.pisces312.streamclip.util.FileOpenHelper
 import com.pisces312.streamclip.util.LogCollector
 import com.pisces312.streamclip.util.Mp4RotationUtils
 import com.pisces312.streamclip.util.SettingsManager
@@ -52,6 +53,8 @@ class CompressFragment : Fragment() {
     private val binding get() = _binding!!
     private var videoPath: String? = null
     private var originalVideoInfo: com.pisces312.streamclip.model.MediaInfo? = null
+    private var inputVideoUri: Uri? = null
+    private var lastOutputPath: String? = null
     private var isHardwareTab = true
 
     private val batchVideoUris = mutableListOf<Uri>()
@@ -104,8 +107,12 @@ class CompressFragment : Fragment() {
             // Clear previous selection and info when starting new batch
             videoPath = null
             originalVideoInfo = null
+            inputVideoUri = null
+            lastOutputPath = null
             binding.cardOriginalInfo.visibility = View.GONE
             binding.cardOutputInfo.visibility = View.GONE
+            binding.rowOriginalActions.visibility = View.GONE
+            binding.rowOutputActions.visibility = View.GONE
             // Show all resolution options for batch (multiple videos may have different resolutions)
             updateResolutionOptions(null)
             // Reset rotation to "保持不变" for batch
@@ -404,7 +411,11 @@ class CompressFragment : Fragment() {
         val path = FileUtils.getPathFromUri(requireContext(), uri)
         if (path != null) {
             videoPath = path
+            inputVideoUri = uri
+            lastOutputPath = null
             binding.cardOutputInfo.visibility = View.GONE
+            binding.rowOutputActions.visibility = View.GONE
+            binding.rowOriginalActions.visibility = View.GONE
             SettingsManager.setLastVideoDir(requireContext(), uri)
             sourceFileTimes = FileUtils.readFileTimes(path)
 
@@ -420,6 +431,7 @@ class CompressFragment : Fragment() {
                             infoView = binding.tvOriginalInfo,
                             info = info
                         )
+                        binding.rowOriginalActions.visibility = View.VISIBLE
                         // Update resolution spinners based on source video
                         updateResolutionOptions(info)
 
@@ -530,6 +542,28 @@ class CompressFragment : Fragment() {
                 videoPath != null -> executeSingleCompress()
                 else -> Toast.makeText(requireContext(), getString(R.string.please_select_video), Toast.LENGTH_SHORT).show()
             }
+        }
+
+        // 输入视频：优先用用户选中的原始 Uri，缓存副本作为兜底
+        binding.btnOpenOriginalVideo.setOnClickListener {
+            val uri = inputVideoUri
+            val file = videoPath?.let { java.io.File(it) }
+            when {
+                uri != null -> FileOpenHelper.openVideoUri(requireContext(), uri, file)
+                file != null -> FileOpenHelper.openVideo(requireContext(), file)
+            }
+        }
+
+        binding.btnOpenOriginalLocation.setOnClickListener {
+            videoPath?.let { FileOpenHelper.revealWithFeedback(requireContext(), java.io.File(it)) }
+        }
+
+        binding.btnOpenOutputVideo.setOnClickListener {
+            lastOutputPath?.let { FileOpenHelper.openVideo(requireContext(), java.io.File(it)) }
+        }
+
+        binding.btnOpenOutputLocation.setOnClickListener {
+            lastOutputPath?.let { FileOpenHelper.revealWithFeedback(requireContext(), java.io.File(it)) }
         }
     }
 
@@ -710,6 +744,7 @@ class CompressFragment : Fragment() {
                         }
                     }
                     val outFileName = outPath.substring(outPath.lastIndexOf('/') + 1)
+                    lastOutputPath = outPath
                     FileUtils.scanFile(requireContext(), java.io.File(outPath))
                     val shootingDate = originalVideoInfo?.creationTime.orEmpty()
                     if (shootingDate.isNotEmpty()) {
@@ -731,6 +766,7 @@ class CompressFragment : Fragment() {
                                     infoView = binding.tvOutputInfo,
                                     info = outputInfo
                                 )
+                                binding.rowOutputActions.visibility = View.VISIBLE
                             }
                         }
                     }

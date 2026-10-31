@@ -168,6 +168,17 @@
     <string name="task_status_failed">Failed%s</string>
     <string name="task_status_cancelled">Cancelled</string>
     <string name="cannot_open_file">Cannot open file</string>
+    <string name="open_video">Open video</string>
+    <string name="open_location">Show location</string>
+    <string name="copy_path">Copy path</string>
+    <string name="share_video">Share</string>
+    <string name="path_copied">Path copied</string>
+    <string name="file_not_found">File not found; it may have been moved or deleted</string>
+    <string name="location_missing">Folder not found; it may have been moved</string>
+    <string name="location_private_dir">This folder is in app-private storage and cannot be opened by a file manager; path copied to clipboard</string>
+    <string name="location_failed">No file manager available; path copied to clipboard</string>
+    <string name="result_success_trim">✅ Trim complete</string>
+    <string name="result_success_merge">✅ Merge complete</string>
     <string name="batch_select_video">Select Video</string>
     <string name="batch_select_multiple">Batch Select</string>
     <string name="batch_no_files_selected">No file selected</string>

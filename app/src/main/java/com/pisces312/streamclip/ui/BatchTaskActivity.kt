@@ -1,10 +1,7 @@
 package com.pisces312.streamclip.ui
 
-import android.content.Intent
 import com.pisces312.streamclip.R
-import android.net.Uri
 import android.os.Bundle
-import android.widget.Toast
 import com.pisces312.streamclip.BaseActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
@@ -13,6 +10,7 @@ import com.pisces312.streamclip.adapter.BatchTaskAdapter
 import com.pisces312.streamclip.databinding.ActivityBatchTaskBinding
 import com.pisces312.streamclip.service.BatchTaskService
 import com.pisces312.streamclip.service.TaskQueueManager
+import com.pisces312.streamclip.util.FileOpenHelper
 import kotlinx.coroutines.launch
 
 class BatchTaskActivity : BaseActivity() {
@@ -53,20 +51,7 @@ class BatchTaskActivity : BaseActivity() {
                 refreshTasks()
             },
             onOpen = { outputPath ->
-                try {
-                    val uri = androidx.core.content.FileProvider.getUriForFile(
-                        this,
-                        "${packageName}.fileprovider",
-                        java.io.File(outputPath)
-                    )
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(uri, "video/*")
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(this, getString(R.string.cannot_open_file), Toast.LENGTH_SHORT).show()
-                }
+                FileOpenHelper.openVideo(this, java.io.File(outputPath))
             }
         )
 

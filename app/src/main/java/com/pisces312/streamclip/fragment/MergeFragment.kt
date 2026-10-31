@@ -20,6 +20,7 @@ import com.pisces312.streamclip.databinding.FragmentMergeBinding
 import com.pisces312.streamclip.model.MediaInfo
 import com.pisces312.streamclip.service.FFmpegService
 import com.pisces312.streamclip.util.FileUtils
+import com.pisces312.streamclip.util.ResultDialogHelper
 import com.pisces312.streamclip.util.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -219,7 +220,13 @@ class MergeFragment : Fragment() {
                 if (result.success) {
                     FileUtils.scanFile(requireContext(), outputFile)
                     updateOutputStatus(outputFile)
-                    Toast.makeText(requireContext(), getString(R.string.merge_complete, outputFile.name), Toast.LENGTH_LONG).show()
+                    if (isAdded) {
+                        ResultDialogHelper.show(
+                            requireContext(),
+                            getString(R.string.result_success_merge),
+                            outputFile
+                        )
+                    }
                 } else {
                     val errorMsg = when (result.error) {
                         "MERGE_NEED_2" -> getString(R.string.merge_need_2)
