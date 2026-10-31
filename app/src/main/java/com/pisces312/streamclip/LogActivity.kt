@@ -42,9 +42,9 @@ class LogActivity : BaseActivity() {
         // 显示崩溃日志（如果有）
         val crashLogs = LogCollector.getCrashLogs(this)
         if (crashLogs.isNotEmpty()) {
-            logs.appendLine("=== 崩溃日志 ===")
+            logs.appendLine(getString(R.string.log_section_crash))
             logs.appendLine(crashLogs)
-            logs.appendLine("\n=== 应用日志 ===")
+            logs.appendLine("\n" + getString(R.string.log_section_app))
         }
 
         // 显示文件日志
@@ -104,7 +104,7 @@ class LogActivity : BaseActivity() {
         val logs = binding.logTextView.text.toString()
         val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(android.content.Intent.EXTRA_SUBJECT, "StreamClip 日志")
+            putExtra(android.content.Intent.EXTRA_SUBJECT, getString(R.string.share_logs_subject))
             putExtra(android.content.Intent.EXTRA_TEXT, logs)
         }
         startActivity(android.content.Intent.createChooser(shareIntent, getString(R.string.share_logs)))

@@ -178,7 +178,7 @@ class TrimSimpleFragment : Fragment() {
                 player?.seekTo(startSec * 1000L)
                 dialog.dismiss()
             } else {
-                input.error = "格式错误，请使用 MM:SS"
+                input.error = getString(R.string.trim_format_error)
             }
         }
     }
@@ -206,10 +206,10 @@ class TrimSimpleFragment : Fragment() {
         if (pathResult != null) {
             binding.tvStatus.visibility = View.GONE
             if (pathResult.isDirectRead) {
-                binding.tvFileName.text = "✅ 直读: ${pathResult.path}"
+                binding.tvFileName.text = getString(R.string.status_direct_read, pathResult.path)
                 binding.tvFileName.setTextColor(0xFF4CAF50.toInt())
             } else {
-                binding.tvFileName.text = "⚠️ 缓存: ${java.io.File(pathResult.path).name} (已复制)"
+                binding.tvFileName.text = getString(R.string.status_cached, java.io.File(pathResult.path).name)
                 binding.tvFileName.setTextColor(0xFFFF9800.toInt())
             }
             sourceFileTimes = FileUtils.readFileTimes(pathResult.path)
@@ -217,7 +217,7 @@ class TrimSimpleFragment : Fragment() {
     }
 
     private fun updateOutputStatus(outputFile: java.io.File) {
-        binding.tvFileName.text = "📁 输出: ${outputFile.absolutePath}"
+        binding.tvFileName.text = getString(R.string.status_output, outputFile.absolutePath)
         binding.tvFileName.setTextColor(0xFF2196F3.toInt())
     }
 
@@ -345,7 +345,7 @@ class TrimSimpleFragment : Fragment() {
                     updateOutputStatus(outputFile)
                     Toast.makeText(requireContext(), getString(R.string.trim_complete, outputFile.name), Toast.LENGTH_LONG).show()
                 } else {
-                    val errorMsg = result.error ?: "未知错误"
+                    val errorMsg = result.error ?: getString(R.string.trim_unknown_error)
                     android.util.Log.e("TrimSimpleFragment", "Trim failed: $errorMsg")
                     Toast.makeText(requireContext(), getString(R.string.failed, errorMsg), Toast.LENGTH_LONG).show()
                 }

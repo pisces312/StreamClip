@@ -135,12 +135,12 @@
             <com.google.android.material.tabs.TabItem
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="硬编码" />
+                android:text="@string/compress_tab_hw" />
 
             <com.google.android.material.tabs.TabItem
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="软编码" />
+                android:text="@string/compress_tab_sw" />
         </com.google.android.material.tabs.TabLayout>
 
         <!-- 硬编码面板 -->
@@ -161,7 +161,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="编码器"
+                    android:text="@string/cfg_encoder"
                     android:textStyle="bold" />
 
                 <ImageView
@@ -169,7 +169,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="帮助" />
+                    android:contentDescription="@string/info_help" />
             </LinearLayout>
 
             <Spinner
@@ -189,7 +189,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="码率"
+                    android:text="@string/cfg_bitrate"
                     android:textStyle="bold" />
 
                 <ImageView
@@ -197,7 +197,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="帮助" />
+                    android:contentDescription="@string/info_help" />
             </LinearLayout>
 
             <Spinner
@@ -217,7 +217,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="帧率"
+                    android:text="@string/cfg_framerate"
                     android:textStyle="bold" />
 
                 <ImageView
@@ -225,7 +225,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="帮助" />
+                    android:contentDescription="@string/info_help" />
             </LinearLayout>
 
             <Spinner
@@ -245,7 +245,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="分辨率"
+                    android:text="@string/cfg_resolution"
                     android:textStyle="bold" />
 
                 <ImageView
@@ -253,7 +253,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="帮助" />
+                    android:contentDescription="@string/info_help" />
             </LinearLayout>
 
             <Spinner
@@ -281,7 +281,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="帮助" />
+                    android:contentDescription="@string/info_help" />
             </LinearLayout>
 
             <Spinner
@@ -301,7 +301,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="音频编码"
+                    android:text="@string/cfg_audio"
                     android:textStyle="bold" />
 
                 <ImageView
@@ -309,7 +309,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="帮助" />
+                    android:contentDescription="@string/info_help" />
             </LinearLayout>
 
             <Spinner
@@ -336,7 +336,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="音频码率"
+                        android:text="@string/cfg_audio_bitrate"
                         android:textStyle="bold" />
 
                     <ImageView
@@ -344,7 +344,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_info"
-                        android:contentDescription="帮助" />
+                        android:contentDescription="@string/info_help" />
                 </LinearLayout>
 
                 <Spinner
@@ -364,7 +364,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="音频采样率"
+                        android:text="@string/cfg_audio_sample_rate"
                         android:textStyle="bold" />
 
                     <ImageView
@@ -372,7 +372,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_info"
-                        android:contentDescription="帮助" />
+                        android:contentDescription="@string/info_help" />
                 </LinearLayout>
 
                 <Spinner
@@ -402,7 +402,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="编码器"
+                    android:text="@string/cfg_encoder"
                     android:textStyle="bold" />
 
                 <ImageView
@@ -410,7 +410,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="帮助" />
+                    android:contentDescription="@string/info_help" />
             </LinearLayout>
 
             <Spinner
@@ -430,7 +430,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="CRF 质量"
+                    android:text="@string/cfg_crf"
                     android:textStyle="bold" />
 
                 <ImageView
@@ -438,7 +438,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="帮助" />
+                    android:contentDescription="@string/info_help" />
             </LinearLayout>
 
             <LinearLayout
@@ -473,7 +473,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="预设速度"
+                    android:text="@string/cfg_preset"
                     android:textStyle="bold" />
 
                 <ImageView
@@ -481,7 +481,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="帮助" />
+                    android:contentDescription="@string/info_help" />
             </LinearLayout>
 
             <Spinner
@@ -501,7 +501,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="帧率"
+                    android:text="@string/cfg_framerate"
                     android:textStyle="bold" />
 
                 <ImageView
@@ -509,7 +509,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="帮助" />
+                    android:contentDescription="@string/info_help" />
             </LinearLayout>
 
             <Spinner
@@ -529,7 +529,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="分辨率"
+                    android:text="@string/cfg_resolution"
                     android:textStyle="bold" />
 
                 <ImageView
@@ -537,7 +537,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="帮助" />
+                    android:contentDescription="@string/info_help" />
             </LinearLayout>
 
             <Spinner
@@ -565,7 +565,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="帮助" />
+                    android:contentDescription="@string/info_help" />
             </LinearLayout>
 
             <Spinner
@@ -585,7 +585,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="音频编码"
+                    android:text="@string/cfg_audio"
                     android:textStyle="bold" />
 
                 <ImageView
@@ -593,7 +593,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="帮助" />
+                    android:contentDescription="@string/info_help" />
             </LinearLayout>
 
             <Spinner
@@ -620,7 +620,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="音频码率"
+                        android:text="@string/cfg_audio_bitrate"
                         android:textStyle="bold" />
 
                     <ImageView
@@ -628,7 +628,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_info"
-                        android:contentDescription="帮助" />
+                        android:contentDescription="@string/info_help" />
                 </LinearLayout>
 
                 <Spinner
@@ -648,7 +648,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="音频采样率"
+                        android:text="@string/cfg_audio_sample_rate"
                         android:textStyle="bold" />
 
                     <ImageView
@@ -656,7 +656,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_info"
-                        android:contentDescription="帮助" />
+                        android:contentDescription="@string/info_help" />
                 </LinearLayout>
 
                 <Spinner

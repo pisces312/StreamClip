@@ -9,7 +9,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="FFmpeg 命令"
+        android:text="@string/ffmpeg_command_title"
         android:textStyle="bold"
         android:textSize="14sp"
         android:textColor="#FFFFFF"
@@ -30,7 +30,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="任务监控"
+        android:text="@string/task_monitor"
         android:textStyle="bold"
         android:textSize="14sp"
         android:textColor="#FFFFFF"
@@ -83,7 +83,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="已用: 00:00 | 预估: --:--"
+                android:text="@string/progress_time_placeholder"
                 android:textSize="12sp"
                 android:textColor="#AAAAAA" />
 
@@ -91,7 +91,7 @@
                 android:id="@+id/tvOutputSize"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="输出: 0 MB"
+                android:text="@string/progress_output_placeholder"
                 android:textSize="12sp"
                 android:textColor="#AAAAAA" />
         </LinearLayout>
@@ -100,7 +100,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="实时日志"
+        android:text="@string/realtime_logs"
         android:textStyle="bold"
         android:textSize="14sp"
         android:textColor="#FFFFFF"
@@ -136,7 +136,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="复制日志"
+            android:text="@string/copy_logs"
             style="?attr/materialButtonOutlinedStyle" />
 
         <Space
@@ -148,6 +148,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="取消" />
+            android:text="@string/cancel" />
     </LinearLayout>
 </LinearLayout>

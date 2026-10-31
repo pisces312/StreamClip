@@ -73,6 +73,20 @@ class CompressFragment : Fragment() {
         else -> key
     }
 
+    private fun localizeLabel(key: String, fallback: String): String = when (key) {
+        "h264_mediacodec" -> getString(R.string.encoder_h264_hw)
+        "hevc_mediacodec" -> getString(R.string.encoder_h265_hw)
+        "libx264" -> getString(R.string.encoder_h264_sw)
+        "libx265" -> getString(R.string.encoder_h265_sw)
+        "none" -> getString(R.string.cfg_none)
+        "copy" -> getString(R.string.cfg_copy)
+        "original" -> getString(R.string.cfg_original)
+        else -> fallback
+    }
+
+    private fun localizeRotation(key: Int, fallback: String): String =
+        if (key == -1) getString(R.string.cfg_rotation_keep) else fallback
+
     private val pickVideo = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -177,7 +191,7 @@ class CompressFragment : Fragment() {
         binding.spinnerEncoderHw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.HW_ENCODERS.map { it.second }
+            CompressConfig.HW_ENCODERS.map { localizeLabel(it.first, it.second) }
         )
         binding.spinnerEncoderHw.setSelection(1) // H.265 default
 
@@ -193,7 +207,7 @@ class CompressFragment : Fragment() {
         binding.spinnerFrameRateHw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.FRAME_RATES.map { it.second }
+            CompressConfig.FRAME_RATES.map { localizeLabel(it.first, it.second) }
         )
         binding.spinnerFrameRateHw.setSelection(0) // original
 
@@ -208,7 +222,7 @@ class CompressFragment : Fragment() {
         binding.spinnerAudioHw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.AUDIO_ENCODERS.map { it.second }
+            CompressConfig.AUDIO_ENCODERS.map { localizeLabel(it.first, it.second) }
         )
         binding.spinnerAudioHw.setSelection(1) // copy default (index 0 = none)
 
@@ -216,7 +230,7 @@ class CompressFragment : Fragment() {
         binding.spinnerAudioBitrateHw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.AUDIO_BITRATES.map { it.second }
+            CompressConfig.AUDIO_BITRATES.map { localizeLabel(it.first, it.second) }
         )
         binding.spinnerAudioBitrateHw.setSelection(3) // 128k
 
@@ -224,7 +238,7 @@ class CompressFragment : Fragment() {
         binding.spinnerAudioSampleRateHw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.AUDIO_SAMPLE_RATES.map { it.second }
+            CompressConfig.AUDIO_SAMPLE_RATES.map { localizeLabel(it.first, it.second) }
         )
         binding.spinnerAudioSampleRateHw.setSelection(0) // copy default
 
@@ -232,7 +246,7 @@ class CompressFragment : Fragment() {
         binding.spinnerRotationHw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.ROTATIONS.map { it.second }
+            CompressConfig.ROTATIONS.map { localizeRotation(it.first, it.second) }
         )
         binding.spinnerRotationHw.setSelection(0) // 保持不变 default
 
@@ -244,7 +258,7 @@ class CompressFragment : Fragment() {
         binding.spinnerEncoderSw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.SW_ENCODERS.map { it.second }
+            CompressConfig.SW_ENCODERS.map { localizeLabel(it.first, it.second) }
         )
         binding.spinnerEncoderSw.setSelection(1) // H.265 default
 
@@ -272,7 +286,7 @@ class CompressFragment : Fragment() {
         binding.spinnerFrameRateSw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.FRAME_RATES.map { it.second }
+            CompressConfig.FRAME_RATES.map { localizeLabel(it.first, it.second) }
         )
         binding.spinnerFrameRateSw.setSelection(0) // original
 
@@ -287,7 +301,7 @@ class CompressFragment : Fragment() {
         binding.spinnerAudioSw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.AUDIO_ENCODERS.map { it.second }
+            CompressConfig.AUDIO_ENCODERS.map { localizeLabel(it.first, it.second) }
         )
         binding.spinnerAudioSw.setSelection(1) // copy default (index 0 = none)
 
@@ -295,7 +309,7 @@ class CompressFragment : Fragment() {
         binding.spinnerAudioBitrateSw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.AUDIO_BITRATES.map { it.second }
+            CompressConfig.AUDIO_BITRATES.map { localizeLabel(it.first, it.second) }
         )
         binding.spinnerAudioBitrateSw.setSelection(3) // 128k
 
@@ -303,7 +317,7 @@ class CompressFragment : Fragment() {
         binding.spinnerAudioSampleRateSw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.AUDIO_SAMPLE_RATES.map { it.second }
+            CompressConfig.AUDIO_SAMPLE_RATES.map { localizeLabel(it.first, it.second) }
         )
         binding.spinnerAudioSampleRateSw.setSelection(0) // copy default
 
@@ -311,7 +325,7 @@ class CompressFragment : Fragment() {
         binding.spinnerRotationSw.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.ROTATIONS.map { it.second }
+            CompressConfig.ROTATIONS.map { localizeRotation(it.first, it.second) }
         )
         binding.spinnerRotationSw.setSelection(0) // 保持不变 default
 
@@ -428,13 +442,13 @@ class CompressFragment : Fragment() {
             options.addAll(CompressConfig.SCALE_FACTORS.map { sf ->
                 val finalW = ((w / sf.factor) / 2).toInt() * 2
                 val finalH = ((h / sf.factor) / 2).toInt() * 2
-                "${finalW}×${finalH} (${sf.label})"
+                "${finalW}×${finalH} (${getString(R.string.cfg_scale, sf.factor.toString())})"
             })
         } else {
             // 多文件：只显示倍率
             options.addAll(CompressConfig.SCALE_FACTORS.map { sf ->
                 val percent = (100.0 / sf.factor).toInt()
-                "${sf.label} (约 ${percent}%)"
+                "${getString(R.string.cfg_scale, sf.factor.toString())} ${getString(R.string.approx_percent, percent)}"
             })
         }
 
@@ -470,7 +484,7 @@ class CompressFragment : Fragment() {
         lines.add("${getString(R.string.info_path)}: ${info.path}")
         lines.add("${getString(R.string.info_size)}: $fileSizeMB")
         lines.add("${getString(R.string.info_video)}: ${info.videoCodec} ${info.resolution} ${info.frameRate} ${info.videoBitrateKbps}${info.hdrTag}")
-        lines.add("旋转: ${info.rotation}°")
+        lines.add("${getString(R.string.info_rotation)}: ${info.rotation}°")
         if (info.audioCodec.isNotEmpty()) lines.add("${getString(R.string.info_audio)}: ${info.audioCodec} ${info.audioSampleRateStr} ${info.audioBitrateKbps}")
         if (info.colorSpace.isNotEmpty()) lines.add("${getString(R.string.info_color_space)}: ${info.colorSpace}")
         if (info.colorPrimaries.isNotEmpty()) lines.add("${getString(R.string.info_color_primaries)}: ${info.colorPrimaries}")

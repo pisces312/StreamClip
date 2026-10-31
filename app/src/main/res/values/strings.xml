@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">轻剪辑</string>
     <string name="app_name_with_version">轻剪辑 v%1$s</string>
-    <string name="app_version">v2.1.1</string>
     <string name="menu">菜单</string>
     <string name="title_trim">无损截取</string>
     <string name="title_trim2">无损截取2</string>
@@ -365,4 +364,46 @@
     <string name="ae_load_mode_d">D: FFmpeg 波形</string>
     <string name="ae_load_mode_a">A: 流式解码（未实现）</string>
     <string name="ae_load_mode_label">解码模式</string>
+
+    <!-- 原硬编码文案 -->
+    <string name="compress_tab_hw">硬编码</string>
+    <string name="compress_tab_sw">软编码</string>
+    <string name="cfg_crf">CRF 质量</string>
+    <string name="encoder_h264_hw">H.264 硬件</string>
+    <string name="encoder_h265_hw">H.265 硬件</string>
+    <string name="encoder_h264_sw">H.264 软件</string>
+    <string name="encoder_h265_sw">H.265 软件</string>
+    <string name="cfg_none">无</string>
+    <string name="cfg_rotation_keep">保持不变</string>
+    <string name="cfg_scale">缩小 %1$s×</string>
+    <string name="info_rotation">旋转</string>
+    <string name="approx_percent">(约 %1$d%%)</string>
+    <string name="status_direct_read">✅ 直读: %1$s</string>
+    <string name="status_cached">⚠️ 缓存: %1$s (已复制)</string>
+    <string name="status_output">📁 输出: %1$s</string>
+    <string name="status_audio_detail">🎵 音频: %1$s | %2$dHz | %3$s</string>
+    <string name="ffmpeg_command_title">FFmpeg 命令</string>
+    <string name="task_monitor">任务监控</string>
+    <string name="realtime_logs">实时日志</string>
+    <string name="progress_time_placeholder">已用: 00:00 | 预估: --:--</string>
+    <string name="progress_output_placeholder">输出: 0 MB</string>
+    <string name="audio_editor_subtitle">裁剪、导出、格式转换</string>
+    <string name="ae_select_audio">选择音频文件</string>
+    <string name="ae_record">录音</string>
+    <string name="ae_waveform_ready">波形已加载，后台解码中...</string>
+    <string name="ae_decoding_wait">后台解码中，请稍候...</string>
+    <string name="command_type">命令类型:</string>
+    <string name="execute_command">执行命令</string>
+    <string name="merge_add_video">添加视频</string>
+    <string name="merge_selected_none">已选择 0 个视频</string>
+    <string name="drag_to_reorder">拖动排序</string>
+    <string name="native_no_encoder">未找到可用的视频编码器</string>
+    <string name="native_bitrate_auto">自动</string>
+    <string name="select_encoder">请选择编码器</string>
+    <string name="encoder_type_hw">硬件</string>
+    <string name="encoder_type_sw">软件</string>
+    <string name="log_section_crash">=== 崩溃日志 ===</string>
+    <string name="log_section_app">=== 应用日志 ===</string>
+    <string name="share_logs_subject">StreamClip 日志</string>
+    <string name="gpl_compliance">GPL 合规声明</string>
 </resources>

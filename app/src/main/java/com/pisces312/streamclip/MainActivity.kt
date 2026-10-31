@@ -97,12 +97,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun setupVersionDisplay() {
-        val versionName = try {
-            packageManager.getPackageInfo(packageName, 0).versionName ?: "Unknown"
-        } catch (e: Exception) {
-            "Unknown"
-        }
-        binding.tvVersion.text = "v$versionName"
+        binding.tvVersion.text = "v${BuildConfig.VERSION_NAME}"
     }
 
     private fun getTabText(tabId: String): String = when (tabId) {
@@ -212,7 +207,7 @@ class MainActivity : BaseActivity() {
         }
 
         val donateTitle = androidx.appcompat.widget.AppCompatTextView(this).apply {
-            text = "如果这个软件对你有帮助，欢迎支持维护："
+            text = getString(R.string.donate_desc)
             textSize = 16f
             setPadding(0, 0, 0, 16)
         }
@@ -257,7 +252,7 @@ class MainActivity : BaseActivity() {
         layout.addView(qrContainer)
 
         val qrHint = androidx.appcompat.widget.AppCompatTextView(this).apply {
-            text = "支付宝/微信扫码"
+            text = getString(R.string.donate_qrcode_desc)
             gravity = android.view.Gravity.CENTER_HORIZONTAL
             setPadding(0, 16, 0, 0)
         }
@@ -272,11 +267,7 @@ class MainActivity : BaseActivity() {
     }
 
     internal fun showAboutDialog() {
-        val versionName = try {
-            packageManager.getPackageInfo(packageName, 0).versionName ?: "Unknown"
-        } catch (e: Exception) {
-            "Unknown"
-        }
+        val versionName = BuildConfig.VERSION_NAME
         val changelog = try {
             assets.open("CHANGELOG.md").bufferedReader().use { it.readText() }
         } catch (e: Exception) {
@@ -400,7 +391,7 @@ class MainActivity : BaseActivity() {
             Triple("x264 (GPL v2.0+)", R.raw.license_x264, "https://github.com/mirror/x264"),
             Triple("x265 (GPL v2.0+)", R.raw.license_x265, "https://github.com/videolan/x265"),
             Triple("cpu_features (Apache 2.0)", R.raw.license_cpu_features, "https://github.com/google/cpu_features"),
-            Triple("GPL 合规声明", 0, "https://github.com/pisces312/StreamClip/blob/main/GPL_COMPLIANCE.md")
+            Triple(getString(R.string.gpl_compliance), 0, "https://github.com/pisces312/StreamClip/blob/main/GPL_COMPLIANCE.md")
         )
 
         val items = licenses.map { it.first }.toTypedArray()

@@ -24,6 +24,6 @@
         android:layout_height="wrap_content"
         android:src="@android:drawable/ic_delete"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="移除" />
+        android:contentDescription="@string/remove" />
 
 </LinearLayout>

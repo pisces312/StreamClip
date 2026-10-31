@@ -75,13 +75,13 @@ class NativeCompressFragment : Fragment() {
         encoders = NativeVideoCompressor.listAvailableEncoders()
         if (encoders.isEmpty()) {
             binding.btnCompress.isEnabled = false
-            Toast.makeText(requireContext(), "未找到可用的视频编码器", Toast.LENGTH_LONG).show()
+            Toast.makeText(requireContext(), getString(R.string.native_no_encoder), Toast.LENGTH_LONG).show()
             return
         }
         val adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            encoders.map { it.toString() }
+            encoders.map { it.displayName(requireContext()) }
         )
         binding.spinnerEncoder.adapter = adapter
         val defaultIndex = encoders.indexOfFirst { it.mimeType == "video/hevc" && it.isHardware }
@@ -103,10 +103,10 @@ class NativeCompressFragment : Fragment() {
         if (originalWidth == 0 || originalHeight == 0) return
         val options = mutableListOf(getString(R.string.resolution_copy))
         val factors = listOf(
-            1.5f to "缩小 1.5x",
-            2.0f to "缩小 2.0x",
-            2.25f to "缩小 2.25x",
-            3.0f to "缩小 3.0x"
+            1.5f to getString(R.string.cfg_scale, "1.5"),
+            2.0f to getString(R.string.cfg_scale, "2.0"),
+            2.25f to getString(R.string.cfg_scale, "2.25"),
+            3.0f to getString(R.string.cfg_scale, "3.0")
         )
         for ((factor, label) in factors) {
             val w = ((originalWidth / factor).toInt() / 2) * 2
@@ -122,7 +122,7 @@ class NativeCompressFragment : Fragment() {
 
     private fun setupBitrateSpinner() {
         bitrateOptions = listOf(
-            0 to "自动",
+            0 to getString(R.string.native_bitrate_auto),
             1000 to "1 Mbps",
             2000 to "2 Mbps",
             3000 to "3 Mbps",
@@ -226,7 +226,7 @@ class NativeCompressFragment : Fragment() {
                 lines.add("${getString(R.string.info_path)}: $path")
                 lines.add("${getString(R.string.info_size)}: $fileSizeMB")
                 lines.add("${getString(R.string.info_video)}: ${w}x${h} ${String.format("%.1f", frameRate)}fps ${bitrate / 1000}kbps")
-                if (rotation != 0) lines.add("旋转: ${rotation}")
+                if (rotation != 0) lines.add("${getString(R.string.info_rotation)}: ${rotation}")
 
                 withContext(Dispatchers.Main) {
                     binding.tvOriginalInfo.text = lines.joinToString("\n")
@@ -265,7 +265,7 @@ class NativeCompressFragment : Fragment() {
     private fun executeCompress(path: String) {
         val encoder = encoders.getOrNull(binding.spinnerEncoder.selectedItemPosition)
         if (encoder == null) {
-            Toast.makeText(requireContext(), "请选择编码器", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.select_encoder), Toast.LENGTH_SHORT).show()
             return
         }
 

@@ -221,7 +221,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         binding.spinnerExportFormat.setText(formatOptions[0], false)
 
         // Sample rate spinner
-         val sampleRateOptions = listOf("原始", "44100 Hz", "48000 Hz", "22050 Hz", "16000 Hz")
+         val sampleRateOptions = listOf(getString(R.string.cfg_original), "44100 Hz", "48000 Hz", "22050 Hz", "16000 Hz")
         val sampleRateAdapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, sampleRateOptions)
         binding.spinnerSampleRate.setAdapter(sampleRateAdapter)
         binding.spinnerSampleRate.setText(sampleRateOptions[0], false)
@@ -245,7 +245,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
 
             if (isVbr) {
                 when (format) {
-                    AudioEncoder.OutputFormat.MP3 -> binding.tvBitrateValue.text = "${value.toInt()} (鈮?{listOf(245,225,190,175,150,130,110,95,80,65)[value.toInt().coerceIn(0,9)]} kbps)"
+                    AudioEncoder.OutputFormat.MP3 -> binding.tvBitrateValue.text = "${value.toInt()} (≤${listOf(245,225,190,175,150,130,110,95,80,65)[value.toInt().coerceIn(0,9)]} kbps)"
                     AudioEncoder.OutputFormat.OPUS -> binding.tvBitrateValue.text = "${value.toInt()} kbps"
                     else -> binding.tvBitrateValue.text = "${value.toInt()}"
                 }
@@ -444,7 +444,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
         LogCollector.i(TAG, "loadFastPreview: preview waveform in ${previewMs}ms, frames=${previewResult.numFrames}")
 
         // Show waveform immediately
-        binding.tvLoadingPercent.text = "娉㈠舰宸插姞杞斤紝鍚庡彴瑙ｇ爜涓?.."
+        binding.tvLoadingPercent.text = getString(R.string.ae_waveform_ready)
 
         val waveform = WaveformProcessor.processFromGains(
             previewResult.frameGains,
@@ -595,7 +595,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
     private fun startPlayback() {
         val p = player
         if (p == null) {
-             Toast.makeText(this, "后台解码中，请稍候...", Toast.LENGTH_SHORT).show()
+             Toast.makeText(this, getString(R.string.ae_decoding_wait), Toast.LENGTH_SHORT).show()
             return
         }
         // 清除旧的轮询回调，防止多次调用后 handler 队列堆积
@@ -893,7 +893,7 @@ class AudioEditorActivity : BaseActivity(), WaveformView.WaveformListener {
                     binding.sliderBitrate.valueTo = 9f
                     binding.sliderBitrate.stepSize = 1f
                     binding.sliderBitrate.value = 4f
-                    binding.tvBitrateValue.text = "4 (鈮?75 kbps)"
+                    binding.tvBitrateValue.text = "4 (≤75 kbps)"
                 }
                 AudioEncoder.OutputFormat.M4A -> {
                     binding.sliderBitrate.valueFrom = 1f

@@ -11,7 +11,7 @@
         android:id="@+id/btnAddVideo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="添加视频"
+        android:text="@string/merge_add_video"
         app:cornerRadius="8dp" />
 
     <TextView
@@ -20,7 +20,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:textColor="@color/teal_200"
-        android:text="已选择 0 个视频"
+        android:text="@string/merge_selected_none"
         android:textSize="14sp" />
 
     <androidx.recyclerview.widget.RecyclerView

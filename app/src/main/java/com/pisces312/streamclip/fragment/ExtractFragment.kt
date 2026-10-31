@@ -106,17 +106,17 @@ class ExtractFragment : Fragment() {
         if (pathResult != null) {
             binding.tvStatus.visibility = View.VISIBLE
             if (pathResult.isDirectRead) {
-                binding.tvStatus.text = "✅ 直读: ${pathResult.path}"
+                binding.tvStatus.text = getString(R.string.status_direct_read, pathResult.path)
                 binding.tvStatus.setTextColor(0xFF4CAF50.toInt())
             } else {
-                binding.tvStatus.text = "⚠️ 缓存: ${java.io.File(pathResult.path).name} (已复制)"
+                binding.tvStatus.text = getString(R.string.status_cached, java.io.File(pathResult.path).name)
                 binding.tvStatus.setTextColor(0xFFFF9800.toInt())
             }
         }
     }
 
     private fun updateOutputStatus(outputFile: java.io.File) {
-        binding.tvStatus.text = "📁 输出: ${outputFile.absolutePath}"
+        binding.tvStatus.text = getString(R.string.status_output, outputFile.absolutePath)
         binding.tvStatus.setTextColor(0xFF2196F3.toInt())
     }
 
@@ -134,7 +134,7 @@ class ExtractFragment : Fragment() {
                 val audio = info.audio
                 if (audio != null) {
                     binding.tvAudioInfo.visibility = View.VISIBLE
-                    binding.tvAudioInfo.text = "🎵 音频: ${audio.codec} | ${info.audioSampleRate}Hz | ${audio.channelLayout}"
+                    binding.tvAudioInfo.text = getString(R.string.status_audio_detail, audio.codec, info.audioSampleRate, audio.channelLayout)
                 }
             }
         }

@@ -128,7 +128,7 @@ class MergeFragment : Fragment() {
     }
 
     private fun updateOutputStatus(outputFile: java.io.File) {
-        binding.tvStatus.text = "📁 输出: ${outputFile.absolutePath}"
+        binding.tvStatus.text = getString(R.string.status_output, outputFile.absolutePath)
         binding.tvStatus.setTextColor(0xFF2196F3.toInt())
     }
 

@@ -38,7 +38,7 @@
         android:id="@+id/action_cancel"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:text="取消"
+        android:text="@string/cancel"
         android:textColor="#AAAAAA"
         android:textSize="15sp"
         android:gravity="center_vertical"

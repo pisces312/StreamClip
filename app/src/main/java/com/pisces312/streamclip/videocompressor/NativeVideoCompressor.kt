@@ -1,7 +1,9 @@
 package com.pisces312.streamclip.videocompressor
 
+import android.content.Context
 import android.media.MediaCodecInfo
 import android.media.MediaCodecList
+import com.pisces312.streamclip.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -22,8 +24,8 @@ data class EncoderInfo(
     val mimeType: String,
     val isHardware: Boolean
 ) {
-    override fun toString(): String {
-        val type = if (isHardware) "硬件" else "软件"
+    fun displayName(context: Context): String {
+        val type = context.getString(if (isHardware) R.string.encoder_type_hw else R.string.encoder_type_sw)
         val codec = when (mimeType) {
             "video/avc" -> "H.264"
             "video/hevc" -> "H.265"

@@ -55,7 +55,7 @@
     <string name="guide_h264_title">H.264 (Best Compatibility)</string>
     <string name="guide_h264_desc">Recommended for daily use, playable on all devices</string>
     <string name="guide_hevc_title">HEVC/H.265 (Smallest Size)</string>
-    <string name="guide_hevc_desc">Saves 40-60% space compared to H.264, may not work on older devices</string>
+    <string name="guide_hevc_desc" formatted="false">Saves 40-60% space compared to H.264, may not work on older devices</string>
     <string name="guide_hw_title">Hardware Encoding (Fastest Speed)</string>
     <string name="guide_hw_desc">Suitable for quick sharing, slightly lower quality than software encoding</string>
     <string name="guide_crf">CRF Quality</string>
@@ -63,6 +63,10 @@
     <string name="guide_bitrate">Bitrate</string>
     <string name="guide_bitrate_desc">Data amount per second, recommended 2-4 Mbps (1080p)</string>
     <string name="guide_ok">Got It</string>
+
+    <!-- Donate -->
+    <string name="donate_desc">If StreamClip has been helpful, your support keeps development going</string>
+    <string name="donate_qrcode_desc">Scan with Alipay or WeChat</string>
 
     <!-- General Settings -->
     <string name="general_settings">General Settings</string>
@@ -104,7 +108,7 @@
     <string name="guide_hevc_recommend">HEVC/H.265 Settings</string>
     <string name="guide_hevc_high">• High quality: CRF 28</string>
     <string name="guide_hevc_size">• Size priority: CRF 30 (Recommended)</string>
-    <string name="guide_hevc_space">• Saves 40-60% space vs H.264</string>
+    <string name="guide_hevc_space" formatted="false">• Saves 40-60% space vs H.264</string>
     <string name="guide_hw_recommend">Hardware Encoding Settings</string>
     <string name="guide_hw_1080p">• 1080p: 3 Mbps recommended</string>
     <string name="guide_hw_720p">• 720p: 1.5-2 Mbps recommended</string>
@@ -235,6 +239,7 @@
     <string name="info_creation_time">Date Taken</string>
     <string name="info_file_creation_time">Date Created</string>
     <string name="info_location">Location</string>
+    <string name="info_path">Path</string>
     <string name="info_format_error">Unrecognized file format</string>
     <string name="info_no_help">No help available</string>
     <string name="info_help">Help</string>
@@ -265,6 +270,7 @@
     <string name="cfg_help_preset">Software encoding preset speed. 9 levels from ultrafast to veryslow; slower = better compression = smaller file.</string>
     <string name="cfg_help_framerate">Frames per second. Original keeps the source; lowering reduces file size but may affect smoothness.</string>
     <string name="cfg_help_resolution">Output resolution. Original keeps the source size; lowering reduces file size significantly.</string>
+    <string name="resolution_copy">Copy</string>
     <string name="cfg_rotation">Rotation</string>
     <string name="cfg_help_rotation">Lossless rotation via container metadata, instant. Defaults to source video rotation.</string>
     <string name="cfg_help_audio">Audio encoder. None = remove audio; Copy = preserve original (fastest); AAC = best compatibility.</string>
@@ -363,4 +369,53 @@
     <string name="ae_cbr">Constant (CBR)</string>
     <string name="ae_vbr">Variable (VBR)</string>
     <string name="ae_info_format">%1$s  |  %2$s  |  %3$sHz  |  %4$s  |  %5$dkbps</string>
+
+    <!-- Audio load modes -->
+    <string name="ae_load_mode_c">C: Full decode (optimized)</string>
+    <string name="ae_load_mode_b">B: Fast waveform preview</string>
+    <string name="ae_load_mode_d">D: FFmpeg waveform</string>
+    <string name="ae_load_mode_a">A: Streaming decode (not implemented)</string>
+    <string name="ae_load_mode_label">Decode Mode</string>
+
+    <!-- Previously hardcoded UI text -->
+    <string name="compress_tab_hw">Hardware</string>
+    <string name="compress_tab_sw">Software</string>
+    <string name="cfg_crf">CRF Quality</string>
+    <string name="encoder_h264_hw">H.264 HW</string>
+    <string name="encoder_h265_hw">H.265 HW</string>
+    <string name="encoder_h264_sw">H.264 SW</string>
+    <string name="encoder_h265_sw">H.265 SW</string>
+    <string name="cfg_none">None</string>
+    <string name="cfg_rotation_keep">Keep unchanged</string>
+    <string name="cfg_scale">Shrink %1$s×</string>
+    <string name="info_rotation">Rotation</string>
+    <string name="approx_percent">(~%1$d%%)</string>
+    <string name="status_direct_read">✅ Direct: %1$s</string>
+    <string name="status_cached">⚠️ Cached: %1$s (copied)</string>
+    <string name="status_output">📁 Output: %1$s</string>
+    <string name="status_audio_detail">🎵 Audio: %1$s | %2$dHz | %3$s</string>
+    <string name="ffmpeg_command_title">FFmpeg Command</string>
+    <string name="task_monitor">Task Monitor</string>
+    <string name="realtime_logs">Live Logs</string>
+    <string name="progress_time_placeholder">Elapsed: 00:00 | Remaining: --:--</string>
+    <string name="progress_output_placeholder">Output: 0 MB</string>
+    <string name="audio_editor_subtitle">Trim, export, and convert audio</string>
+    <string name="ae_select_audio">Select Audio File</string>
+    <string name="ae_record">Record</string>
+    <string name="ae_waveform_ready">Waveform ready, decoding in background...</string>
+    <string name="ae_decoding_wait">Decoding in background, please wait...</string>
+    <string name="command_type">Command type:</string>
+    <string name="execute_command">Execute Command</string>
+    <string name="merge_add_video">Add Video</string>
+    <string name="merge_selected_none">0 videos selected</string>
+    <string name="drag_to_reorder">Drag to reorder</string>
+    <string name="native_no_encoder">No available video encoder found</string>
+    <string name="native_bitrate_auto">Auto</string>
+    <string name="select_encoder">Please select an encoder</string>
+    <string name="encoder_type_hw">HW</string>
+    <string name="encoder_type_sw">SW</string>
+    <string name="log_section_crash">=== Crash Log ===</string>
+    <string name="log_section_app">=== App Log ===</string>
+    <string name="share_logs_subject">StreamClip Logs</string>
+    <string name="gpl_compliance">GPL Compliance</string>
 </resources>

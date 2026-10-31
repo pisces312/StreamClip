@@ -18,7 +18,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="命令类型:"
+            android:text="@string/command_type"
             android:textColor="@color/gray_400"
             android:textSize="12sp"
             android:layout_gravity="center_vertical" />
@@ -35,7 +35,7 @@
         android:id="@+id/tvCommandHint"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="输入完整的 FFmpeg 参数（不含 ffmpeg 前缀）"
+        android:text="@string/hint_ffmpeg"
         android:textColor="@color/gray_400"
         android:textSize="12sp"
         android:layout_marginBottom="8dp" />
@@ -58,7 +58,7 @@
         android:id="@+id/btnExecute"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="执行命令"
+        android:text="@string/execute_command"
         android:layout_marginTop="16dp" />
 
     <ProgressBar

@@ -61,6 +61,36 @@ git 在 `D:\dev\git\cmd\git.exe`。
 
 **只有 host JVM 单元测试**：`app/src/test/`（JUnit，当前仅覆盖 `Mp4RotationUtils` 容器解析，约 0.3 s）。**无 Espresso / 无 `src/androidTest`**；FFmpeg 执行、Native 压缩、音频 PCM 编辑、批量队列和外部 Intent 均需真机手动回归。
 
+### 模拟器 UI 验证（android CLI）
+
+本机装有 Android CLI：`D:\dev\AndroidCLI\android.exe`（不在 PATH 时用绝对路径）。装包、启动、取 UI 树、截图、按选择器点击可以串成一条快速回归回路，比 `adb` + `uiautomator` 快：
+
+```bash
+# 装 + 启动（debug 包名是 com.pisces312.streamclip.debug）
+D:/dev/AndroidCLI/android.exe run --apks=app/build/outputs/apk/debug/app-debug.apk --device=emulator-5554
+
+# UI 树（JSON，--flat 便于 grep）与截图
+D:/dev/AndroidCLI/android.exe layout --device=emulator-5554 --flat -o D:/Temp/ui.json
+D:/dev/AndroidCLI/android.exe screen capture --device=emulator-5554 -o D:/Temp/screen.png
+
+# 按选择器操作（text= / id= / desc=），不要照截图目测坐标
+D:/dev/AndroidCLI/android.exe input tap "text=设置" --wait=1500
+
+# 验证英文文案
+adb shell cmd locale set-app-locales com.pisces312.streamclip.debug --user 0 --locales en-US
+```
+
+注意：`layout` / `screen capture` 必须带 `-o`（否则 JSON/PNG 直接灌 stdout）；首次 `layout` 会在设备上安装 instrumentation helper（约 17 s），之后约 2.6 s；`android emulator` 在 Windows 被禁用，AVD 启停用 `emulator.exe -avd pixel6`；该模拟器镜像自带 ARM 转译，arm64-only APK 可直接安装。
+
+参考文档（本机技能，按需深读）：
+
+| 文档 | 用途 |
+|---|---|
+| `C:\Users\nili6\.qoder-cn\skills\android-cli-workflow\SKILL.md` | 本机实测工作流：命令映射、选择器、耗时对比、Windows 坑 |
+| `C:\Users\nili6\.qoder-cn\skills\android-cli\SKILL.md` | Google 官方 android CLI 完整语法（脚手架、SDK、Compose preview 等） |
+| `C:\Users\nili6\.qoder-cn\skills\android-emulator-manager\SKILL.md` | pixel6 AVD 启停、冷启动、快照损坏处理 |
+| `C:\Users\nili6\.qoder-cn\skills\android-adb-ui-verification\SKILL.md` | 纯 adb 路线：UI 树、剪贴板、设置冷启动持久化验证 |
+
 ## Architecture
 
 **主界面为 `MainActivity + Fragment`**，`ViewPager2 + TabLayout` 做标签页导航，无 MVVM、无依赖注入、无 RxJava。Fragment 直接用 `lifecycleScope` 协程管理状态。

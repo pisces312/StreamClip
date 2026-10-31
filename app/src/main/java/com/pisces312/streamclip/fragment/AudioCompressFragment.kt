@@ -77,7 +77,7 @@ class AudioCompressFragment : Fragment() {
         binding.spinnerAudioEncoder.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.AUDIO_ENCODERS.map { it.second }
+            CompressConfig.AUDIO_ENCODERS.map { localizeLabel(it.first, it.second) }
         )
         binding.spinnerAudioEncoder.setSelection(2) // AAC default (index 0=none, 1=copy)
 
@@ -85,7 +85,7 @@ class AudioCompressFragment : Fragment() {
         binding.spinnerAudioBitrate.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.AUDIO_BITRATES.map { it.second }
+            CompressConfig.AUDIO_BITRATES.map { localizeLabel(it.first, it.second) }
         )
         binding.spinnerAudioBitrate.setSelection(3) // 128k
 
@@ -93,11 +93,17 @@ class AudioCompressFragment : Fragment() {
         binding.spinnerAudioSampleRate.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            CompressConfig.AUDIO_SAMPLE_RATES.map { it.second }
+            CompressConfig.AUDIO_SAMPLE_RATES.map { localizeLabel(it.first, it.second) }
         )
         binding.spinnerAudioSampleRate.setSelection(0) // copy default
 
         setupAudioVisibilityListener()
+    }
+
+    private fun localizeLabel(key: String, fallback: String): String = when (key) {
+        "none" -> getString(R.string.cfg_none)
+        "copy" -> getString(R.string.cfg_copy)
+        else -> fallback
     }
 
     private fun setupAudioVisibilityListener() {
