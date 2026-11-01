@@ -118,24 +118,24 @@ debug 额外含 `native_compress`（`NativeCompressFragment` 实验入口，rele
 
 ### FFmpeg Integration
 
-FFmpeg 通过 **ffmpeg-kit 8.1.3 自编译 AAR**（`app/libs/ffmpeg-kit-8.1.3.aar`，包名 `com.arthenica.ffmpegkit`，GPL-3.0，仅 arm64-v8a）。源码在 `D:\3rd-party-projects\ffmpeg-kit`，构建文档 `docs/ffmpeg-build.md`（含升级必查清单：`setThreadPoolMaxThreadCount` 计数必须为 0 等 11 项）。
+FFmpeg 通过 **ffmpeg-kit-next 9.0.2 自编译 AAR**（`app/libs/ffmpeg-kit-next-9.0.2-arm64.aar`，包名 `com.arthenica.ffmpegkit`，GPL-3.0，仅 arm64-v8a）。源码在 `D:\3rd-party-projects\ffmpeg-kit-next`（fork `pisces/v9.0.2`），构建文档 `docs/android-aar-build-plan-v9.0.2.md`。
 
-**下一代 AAR 已构建待集成**：ffmpeg-kit-next v9.0.2（fork 在 `D:\3rd-party-projects\ffmpeg-kit-next`，分支 `pisces/v9.0.2`），产物 `prebuilt/ffmpeg-kit-next-9.0.2-arm64.aar`。集成方案与必测项见该仓库 `docs/android-aar-build-plan-v9.0.2.md` §9。API 与 8.1.3 兼容（包名不变、Kotlin 业务代码零改动），但集成时必须：换 AAR 路径 + 补 `implementation("com.arthenica:smart-exception-java:0.2.1")`（`files()` 不传递依赖）+ 更新 `OssComponents.kt` 与 `GPL_COMPLIANCE.md`（去 nonfree、加 libiconv/zlib）。
+下一代 AAR 已集成（`ffmpeg-kit-9.0.2-aar` 分支）。API 与 8.1.3 兼容（包名不变、Kotlin 业务代码零改动）；集成要点：AAR 路径换为 `ffmpeg-kit-next-9.0.2-arm64.aar`，且需 `implementation("com.arthenica:smart-exception-java:0.2.1")`（`files()` 不传递依赖，缺失会运行期 `NoClassDefFoundError`）。回退：改回 `files("libs/ffmpeg-kit-8.1.3.aar")` 并删除 smart-exception 依赖（旧 AAR 保留在 `libs/`）。
 
 两代 AAR 的第三方库版本（编译时实际锁定）：
 
-| 库 | 8.1.3 AAR（当前在用） | next v9.0.2 AAR（待集成） |
+| 库 | 8.1.3 AAR（回退用，保留在 libs/） | next v9.0.2 AAR（当前在用） |
 |---|---|---|
 | FFmpeg | n8.1.3 | n9.0.2 |
 | x264 | stable `eaa68fa`，BUILD 164 | `b35605a`，BUILD 165 |
 | x265 | master `b81f650`，4.2（BUILD 216） | tag `4.2`（BUILD 216） |
-| LAME | 3.100 | 3.100（`RELEASE__3_100`） |
+| LAME | 4.0（`src/lame` 源码 `LAME_MAJOR_VERSION=4`） | 3.100（arthenica fork `RELEASE__3_100`） |
 | libiconv | — | 1.17（lame 依赖链带出） |
 | cpu_features | 0.8.0 | 0.11.0 |
 | zlib | 系统库（自动检测） | 系统库（显式 `--enable-zlib`） |
 | 构建工具链 | NDK r27 / API 24 | NDK r27d (27.3) / API 26，WSL Ubuntu + Gradle 9.4.1 / AGP 8.13.2 |
 
-> 注意：LAME 均为 arthenica fork（`RELEASE__3_100`），非 SourceForge 原版；Opus 按产品决策**不编入**（走 FFmpeg 内置实验性编码器，见 `AudioEncoder.kt` 的 `-strict -2` + 强制 48 kHz workaround）。
+> 注意：LAME 版本存在**回退**——8.1.3 编入 LAME 4.0（自存源码，`libmp3lame/version.h` MAJOR=4），next v9.0.2 被 `scripts/source.sh` 钉在 arthenica fork `RELEASE__3_100`（=3.100）。若需保持 4.0，须改 next 仓库 `source.sh` 的 lame `SOURCE_ID` 并重新编译 AAR。Opus 按产品决策**不编入**（走 FFmpeg 内置实验性编码器，见 `AudioEncoder.kt` 的 `-strict -2` + 强制 48 kHz workaround）。
 
 - 执行：`FFmpegKit.executeAsync()` 包在 `suspendCancellableCoroutine` 中；探测：`FFprobeKit.execute()`
 - 操作模式：
@@ -343,7 +343,7 @@ $ffm = "D:\dev\ffmpeg\bin\ffmpeg.exe"
 
 | 依赖 | 用途 |
 |---|---|
-| `libs/ffmpeg-kit-8.1.3.aar`（本地，12 MB） | FFmpeg 执行（自编译，GPL-3.0） |
+| `libs/ffmpeg-kit-next-9.0.2-arm64.aar`（本地，14.7 MB） | FFmpeg 执行（自编译，GPL-3.0） |
 | `libs/isoparser-1.0.6.jar` + `libs/aspectjrt-1.7.3.jar`（本地） | MP4 元数据解析（NativeVideoCompressor 路径） |
 | `androidx.media3` 1.6.1（exoplayer / ui / common） | 裁剪页视频预览 |
 | `com.google.android.material` 1.13.0 | Material Design 3 组件 |

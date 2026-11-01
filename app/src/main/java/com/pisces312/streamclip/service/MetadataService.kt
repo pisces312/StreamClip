@@ -53,8 +53,8 @@ object MetadataService {
 
             val session = FFmpegService.executeTrackedSync(command)
 
-            if (!ReturnCode.isSuccess(session.returnCode)) {
-                return@withContext Result.failure("FFmpeg failed: ${session.allLogsAsString}")
+            if (!ReturnCode.isSuccess(session.getReturnCode())) {
+                return@withContext Result.failure("FFmpeg failed: ${session.getAllLogsAsString()}")
             }
 
             LogCollector.d("MetadataService", "Metadata saved to $outputPath")

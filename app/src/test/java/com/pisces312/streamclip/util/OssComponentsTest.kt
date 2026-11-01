@@ -55,7 +55,7 @@ class OssComponentsTest {
     @Test
     fun native_section_covers_every_statically_linked_library() {
         val names = components.map { it.name }
-        listOf("FFmpeg", "FFmpegKit", "x264", "x265", "LAME", "cpu_features").forEach {
+        listOf("FFmpeg", "FFmpegKitNext", "x264", "x265", "LAME", "libiconv", "cpu_features").forEach {
             assertTrue("原生库清单缺少 $it", it in names)
         }
     }

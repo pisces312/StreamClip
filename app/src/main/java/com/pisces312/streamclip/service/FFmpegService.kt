@@ -72,12 +72,12 @@ object FFmpegService {
             val session = FFprobeKit.execute(
                 "-v quiet -print_format json -show_format -show_streams \"$path\""
             )
-            if (!ReturnCode.isSuccess(session.returnCode)) {
-                LogCollector.e("FFmpegService", "probeMediaInfo: ffprobe failed, rc=${session.returnCode}")
+            if (!ReturnCode.isSuccess(session.getReturnCode())) {
+                LogCollector.e("FFmpegService", "probeMediaInfo: ffprobe failed, rc=${session.getReturnCode()}")
                 return null
             }
 
-            val output = session.output.trim()
+            val output = session.getOutput().trim()
             if (output.isEmpty()) {
                 LogCollector.e("FFmpegService", "probeMediaInfo: empty output")
                 return null
@@ -109,10 +109,10 @@ object FFmpegService {
 
             val session = if (onProgress != null || onLog != null) {
                 FFmpegKit.executeAsync(command, { session ->
-                    activeSessions.remove(session.sessionId)
-                    val returnCode = session.returnCode
+                    activeSessions.remove(session.getSessionId())
+                    val returnCode = session.getReturnCode()
                     val success = ReturnCode.isSuccess(returnCode)
-                    val error = if (success) null else (session.output.takeIf { it.isNotEmpty() } ?: "Unknown error")
+                    val error = if (success) null else (session.getOutput().takeIf { it.isNotEmpty() } ?: "Unknown error")
 
                     LogCollector.i("FFmpegService", "Completed: success=$success, code=$returnCode, error=$error")
 
@@ -161,10 +161,10 @@ object FFmpegService {
                 })
             } else {
                 FFmpegKit.executeAsync(command, { session ->
-                    activeSessions.remove(session.sessionId)
-                    val returnCode = session.returnCode
+                    activeSessions.remove(session.getSessionId())
+                    val returnCode = session.getReturnCode()
                     val success = ReturnCode.isSuccess(returnCode)
-                    val error = if (success) null else (session.output.takeIf { it.isNotEmpty() } ?: "Unknown error")
+                    val error = if (success) null else (session.getOutput().takeIf { it.isNotEmpty() } ?: "Unknown error")
 
                     LogCollector.i("FFmpegService", "Completed: success=$success, code=$returnCode, error=$error")
 
@@ -178,11 +178,11 @@ object FFmpegService {
                 })
             }
 
-            activeSessions[session.sessionId] = System.currentTimeMillis()
+            activeSessions[session.getSessionId()] = System.currentTimeMillis()
 
             continuation.invokeOnCancellation {
-                FFmpegKit.cancel(session.sessionId)
-                activeSessions.remove(session.sessionId)
+                FFmpegKit.cancel(session.getSessionId())
+                activeSessions.remove(session.getSessionId())
             }
         }
     }
@@ -214,12 +214,12 @@ object FFmpegService {
             completed = s
             latch.countDown()
         })
-        activeSessions[session.sessionId] = System.currentTimeMillis()
+        activeSessions[session.getSessionId()] = System.currentTimeMillis()
         onSessionStarted?.invoke(session)
         try {
             latch.await()
         } finally {
-            activeSessions.remove(session.sessionId)
+            activeSessions.remove(session.getSessionId())
         }
         return completed ?: session
     }

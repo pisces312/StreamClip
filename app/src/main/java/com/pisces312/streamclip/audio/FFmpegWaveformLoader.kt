@@ -77,9 +77,9 @@ class FFmpegWaveformLoader {
             val session = FFprobeKit.execute(
                 "-v quiet -print_format json -show_streams -show_format \"$filePath\""
             )
-            if (!ReturnCode.isSuccess(session.returnCode)) return null
+            if (!ReturnCode.isSuccess(session.getReturnCode())) return null
 
-            val json = JSONObject(session.output.trim())
+            val json = JSONObject(session.getOutput().trim())
             val streams = json.optJSONArray("streams") ?: return null
             var sampleRate = 44100
             var channels = 2
@@ -122,13 +122,13 @@ class FFmpegWaveformLoader {
             val cmd = "-i \"$filePath\" -af \"astats=metadata=1:reset=${frameSize},ametadata=print:key=lavfi.astats.Overall.Peak_level:file=-\" -f null -"
 
             val session = com.pisces312.streamclip.service.FFmpegService.executeTrackedSync(cmd)
-            if (!ReturnCode.isSuccess(session.returnCode)) {
+            if (!ReturnCode.isSuccess(session.getReturnCode())) {
                 return Result(false, IntArray(0), sampleRate, channels, durationMs,
-                    "FFmpeg astats failed: rc=${session.returnCode}")
+                    "FFmpeg astats failed: rc=${session.getReturnCode()}")
             }
 
             // Parse the output for peak values
-            val logs = session.allLogsAsString ?: ""
+            val logs = session.getAllLogsAsString() ?: ""
             val frameGains = parseIntArrayFromAStats(logs, numFrames)
 
             if (frameGains.isEmpty()) {
@@ -207,10 +207,10 @@ class FFmpegWaveformLoader {
             val cmd = "-i \"$filePath\" -ar $targetRate -ac 1 -f s16le -y \"${tempFile.absolutePath}\""
 
             val session = com.pisces312.streamclip.service.FFmpegService.executeTrackedSync(cmd)
-            if (!ReturnCode.isSuccess(session.returnCode)) {
+            if (!ReturnCode.isSuccess(session.getReturnCode())) {
                 tempFile.delete()
                 return Result(false, IntArray(0), sampleRate, channels, durationMs,
-                    "FFmpeg PCM decode failed: rc=${session.returnCode}")
+                    "FFmpeg PCM decode failed: rc=${session.getReturnCode()}")
             }
 
             // Read PCM data and compute frame gains

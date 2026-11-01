@@ -113,14 +113,14 @@ class AudioEncoder {
         // 4. 清理临时文件
         tempWav.delete()
 
-        val returnCode = session.returnCode
+        val returnCode = session.getReturnCode()
         val durationMs = System.currentTimeMillis() - startTime
 
         return if (ReturnCode.isSuccess(returnCode)) {
             Log.i(TAG, "Encode success: $outputPath (${durationMs}ms)")
             EncodeResult(true, outputPath, durationMs = durationMs)
         } else {
-            val errorMsg = session.allLogsAsString ?: "FFmpeg failed with code ${returnCode.value}"
+            val errorMsg = session.getAllLogsAsString() ?: "FFmpeg failed with code ${returnCode?.value}"
             Log.e(TAG, "Encode failed: $errorMsg")
             EncodeResult(false, errorMessage = errorMsg, durationMs = durationMs)
         }
@@ -131,8 +131,8 @@ class AudioEncoder {
      */
     fun cancel() {
         currentSession?.let {
-            if (it.state == SessionState.RUNNING) {
-                FFmpegKit.cancel(it.sessionId)
+            if (it.getState() == SessionState.RUNNING) {
+                FFmpegKit.cancel(it.getSessionId())
             }
         }
     }

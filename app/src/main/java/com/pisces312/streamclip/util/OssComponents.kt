@@ -35,7 +35,7 @@ data class OssComponent(
 object OssComponents {
 
     /** native 未加载或返回值无法解析时的兜底版本，与当前 AAR 保持一致。 */
-    private const val FFMPEG_VERSION_FALLBACK = "8.1.3"
+    private const val FFMPEG_VERSION_FALLBACK = "9.0.2"
 
     private val VERSION_PATTERN = Regex("""\d+\.\d+(?:\.\d+)?""")
 
@@ -65,48 +65,57 @@ object OssComponents {
                 license = "GPL-3.0",
                 licenseRes = R.raw.license_ffmpeg,
                 url = "https://github.com/FFmpeg/FFmpeg",
-                coordinate = "configure: --enable-gpl --enable-nonfree " +
-                    "--enable-libx264 --enable-libx265 --enable-libmp3lame --enable-mediacodec"
+                coordinate = "configure: --enable-gpl --enable-version3 " +
+                    "--enable-libx264 --enable-libx265 --enable-libmp3lame " +
+                    "--enable-libiconv --enable-zlib --enable-mediacodec"
             ),
             OssComponent(
-                name = "FFmpegKit",
-                version = "8.1.3",
+                name = "FFmpegKitNext",
+                version = "9.0.2",
                 license = "LGPL-3.0",
                 licenseRes = R.raw.license_ffmpegkit,
-                url = "https://github.com/pisces312/ffmpeg-kit",
-                coordinate = "pisces312 fork，NDK r27d / aarch64-linux-android24"
+                url = "https://github.com/pisces312/ffmpeg-kit-next",
+                coordinate = "pisces312 fork @ pisces/v9.0.2，NDK r27d / aarch64-linux-android26"
             ),
             OssComponent(
                 name = "x264",
-                version = "164 (eaa68fa)",
+                version = "165 (b35605a)",
                 license = "GPL-2.0+",
                 licenseRes = R.raw.license_x264,
                 url = "https://code.videolan.org/videolan/x264",
-                coordinate = "arthenica/x264 stable @ eaa68fa，X264_BUILD 164"
+                coordinate = "arthenica/x264 @ b35605a，X264_BUILD 165"
             ),
             OssComponent(
                 name = "x265",
-                version = "4.2 (b81f650)",
+                version = "4.2 (BUILD 216)",
                 license = "GPL-2.0+",
                 licenseRes = R.raw.license_x265,
                 url = "https://bitbucket.org/multicoreware/x265_git",
-                coordinate = "multicoreware/x265_git master @ b81f650，X265_BUILD 216"
+                coordinate = "multicoreware/x265_git tag 4.2，X265_BUILD 216"
             ),
             OssComponent(
                 name = "LAME",
-                version = "4.0",
+                version = "3.100",
                 license = "LGPL-2.0",
                 licenseRes = R.raw.license_lame,
                 url = "https://lame.sourceforge.io",
-                coordinate = "libmp3lame，configure 需 --disable-decoder"
+                coordinate = "libmp3lame @ RELEASE__3_100，configure 需 --disable-decoder"
+            ),
+            OssComponent(
+                name = "libiconv",
+                version = "1.17",
+                license = "LGPL-2.1",
+                licenseRes = R.raw.license_libiconv,
+                url = "https://www.gnu.org/software/libiconv/",
+                coordinate = "gnu libiconv 1.17，lame 依赖链静态链接"
             ),
             OssComponent(
                 name = "cpu_features",
-                version = "0.8.0",
+                version = "0.11.0",
                 license = "Apache-2.0",
                 licenseRes = R.raw.license_cpu_features,
                 url = "https://github.com/google/cpu_features",
-                coordinate = "google/cpu_features v0.8.0"
+                coordinate = "google/cpu_features v0.11.0"
             )
         )
 

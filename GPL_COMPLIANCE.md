@@ -26,12 +26,13 @@ the Free Software Foundation, either version 3 of the License, or
 
 | 组件 | 版本 | 许可证 | 源码地址 |
 |------|------|--------|---------|
-| FFmpeg | n8.1.3 | GPL-3.0 | https://github.com/FFmpeg/FFmpeg |
-| FFmpegKit | 8.1.3（pisces312 fork） | LGPL-3.0 | https://github.com/pisces312/ffmpeg-kit |
-| x264 | BUILD 164（`eaa68fa`） | GPL-2.0+ | https://code.videolan.org/videolan/x264 |
-| x265 | 4.2 / BUILD 216（`b81f650`） | GPL-2.0+ | https://bitbucket.org/multicoreware/x265_git |
-| LAME | 4.0 | LGPL-2.0 | https://lame.sourceforge.io |
-| cpu_features | 0.8.0 | Apache-2.0 | https://github.com/google/cpu_features |
+| FFmpeg | n9.0.2 | GPL-3.0 | https://github.com/FFmpeg/FFmpeg |
+| FFmpegKitNext | 9.0.2（pisces312 fork） | LGPL-3.0 | https://github.com/pisces312/ffmpeg-kit-next |
+| x264 | BUILD 165（`b35605a`） | GPL-2.0+ | https://code.videolan.org/videolan/x264 |
+| x265 | 4.2 / BUILD 216（tag `4.2`） | GPL-2.0+ | https://bitbucket.org/multicoreware/x265_git |
+| LAME | 3.100 | LGPL-2.0 | https://lame.sourceforge.io |
+| libiconv | 1.17 | LGPL-2.1 | https://www.gnu.org/software/libiconv/ |
+| cpu_features | 0.11.0 | Apache-2.0 | https://github.com/google/cpu_features |
 
 ### Java / Kotlin 依赖
 
@@ -59,19 +60,19 @@ the Free Software Foundation, either version 3 of the License, or
 
 **https://github.com/pisces312/StreamClip**
 
-### FFmpegKit 定制构建
+### FFmpegKitNext 定制构建
 
-本应用使用的 FFmpegKit 为基于官方源码的定制构建，包含以下修改：
-- 基于 **FFmpeg n8.1.3** 源码
-- 仅编译 arm64-v8a 架构（NDK r27d，`aarch64-linux-android24`）
-- 静态链接 x264、x265、LAME 4.0，并启用 MediaCodec 硬编硬解
-- 修复 App 内 binder 线程池断言导致的 SIGABRT（见 ffmpeg-kit 仓库 `docs/ffmpeg-modifications.md`）
+本应用使用的 FFmpegKitNext 为基于官方源码的定制构建，包含以下修改：
+- 基于 **FFmpeg n9.0.2** 源码
+- 仅编译 arm64-v8a 架构（NDK r27d，`aarch64-linux-android26`）
+- 静态链接 x264、x265、LAME 3.100、libiconv 1.17、zlib，并启用 MediaCodec 硬编硬解
+- 启用 `--enable-version3`（FFmpegKitNext 强制），未启用 `--enable-nonfree`
 
 定制构建脚本和文档：
-**https://github.com/pisces312/ffmpeg-kit**
+**https://github.com/pisces312/ffmpeg-kit-next**
 
-原始 FFmpegKit 源码：
-**https://github.com/arthenica/ffmpeg-kit**
+原始 FFmpegKitNext 源码：
+**https://github.com/arthenica/ffmpeg-kit-next**
 
 ## 商业使用说明
 

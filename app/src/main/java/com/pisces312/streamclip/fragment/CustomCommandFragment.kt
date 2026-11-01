@@ -149,12 +149,12 @@ class CustomCommandFragment : Fragment() {
                 )
                 CommandType.FFPROBE -> withContext(Dispatchers.IO) {
                     val session = FFprobeKit.execute(command)
-                    val success = ReturnCode.isSuccess(session.returnCode)
-                    val output = session.output
-                    val logs = session.allLogsAsString
+                    val success = ReturnCode.isSuccess(session.getReturnCode())
+                    val output = session.getOutput()
+                    val logs = session.getAllLogsAsString()
 
                     withContext(Dispatchers.Main) {
-                        logDialog.addLog(FFmpegService.LogLine("ReturnCode: ${session.returnCode}"))
+                        logDialog.addLog(FFmpegService.LogLine("ReturnCode: ${session.getReturnCode()}"))
                         if (output.isNotEmpty()) {
                             logDialog.addLog(FFmpegService.LogLine("=== OUTPUT ==="))
                             output.lines().forEach { logDialog.addLog(FFmpegService.LogLine(it)) }
