@@ -10,8 +10,8 @@ android {
         applicationId = "com.pisces312.streamclip"
         minSdk = 26
         targetSdk = 37
-        versionCode = 15
-        versionName = "2.2.3"
+        versionCode = 16
+        versionName = "2.3.0"
     }
 
     buildTypes {

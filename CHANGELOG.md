@@ -1,8 +1,9 @@
 # 轻剪辑 更新日志
 
-## [Unreleased]
+## [2.3.0] - 2026-11-01
 
 ### 新增
+- **压缩页新增打开视频/所在位置/复制路径/分享按钮，裁剪与合并改用成功弹窗**：压缩完成后的结果卡可一键打开视频、定位文件所在目录、复制路径或分享；无损截取与视频合并完成后改为弹窗提示「截取成功 / 合并成功」，并提供打开与分享入口
 - **输入/输出信息卡显示全部第二类元数据**：直接解析 MP4 的 `moov/meta`（mdta `keys` + `ilst`），把厂商相机/镜头键逐条列出，如 `com.honor.lens.model = back_main`、`com.apple.quicktime.model = iPhone 15 Pro`。ffprobe 只暴露 demuxer 映射到的那部分键，直接读容器才能保证「全部」；文本、整数、浮点分别格式化，二进制值只显示前 16 字节预览
 
 ### 修复
@@ -13,6 +14,10 @@
 
 ### 测试
 - **补齐色彩与相机元数据的单元测试**：把 ffprobe 的 JSON 解析从 `FFmpegService` 抽到 `MediaProbeParser`（原类依赖 ffmpeg-kit，宿主 JVM 加载不了），新增 `MediaProbeParserTest` 13 例——JSON 取自真实 `ffprobe` 输出，锁死 `color_space` 键名（改回 `colorspace` 立即失败）、`unknown` 归一为空串、`side_data_list` 旋转、多流取首条、mdta 合并；`MediaInfoColorTest` 8 例覆盖三色标签透传、`isHdr` 只看 transfer、`is10bit` 与 `hdrTag` 组合；`Mp4MetadataUtilsTest` 扩到 23 例，新增 64 位 `moov` 的 largesize 改写、Apple 全键保序、UTF-16/整数/浮点解码、NUL 裁剪、二进制预览、`keys` 无 `ilst`、ilst 索引越界、截断文件、源文件缺失、源=目标等边界。单测总数 42 → 76
+
+### 构建
+- **ffmpeg-kit 8.1.3 → ffmpeg-kit-next 9.0.2**：FFmpeg 升级到 n9.0.2（`--enable-version3` 取代非自由 `--enable-nonfree`），新增 libiconv 1.17（LGPL-2.1）与显式 `--enable-zlib`；x264 升到 165、x265 4.2、cpu_features 0.11.0；AAR 由 Java 实现换成 Kotlin 实现，会话属性改为显式 getter 调用（两代 AAR 兼容），并新增 smart-exception-java 0.2.1 依赖
+- **LAME 升回 4.0**：上一版 8.1.3 已编入 LAME 4.0，next 初始 AAR 回退到 3.100；本次重编 AAR 将 LAME 升回 4.0，与上一版保持一致
 
 ## [2.2.3] - 2026-10-31
 
