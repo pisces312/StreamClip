@@ -4,6 +4,7 @@
 *.ap_
 *.dex
 *.idsig
+releases/
 
 # Java/class files
 *.class

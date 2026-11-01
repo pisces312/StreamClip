@@ -45,7 +45,7 @@
 
 使用 `collect-native-crash.sh` 脚本收集：
 ```bash
-./collect-native-crash.sh
+./scripts/collect-native-crash.sh
 # 复现 crash 后按回车
 # 脚本自动拉取 tombstone 并用 ndk-stack 解析
 ```

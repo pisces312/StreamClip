@@ -105,20 +105,20 @@ sdk.dir=/home/claudeuser/android-sdk
 
 ```bash
 # debug
-bash ./build-termux.sh debug
+bash ./scripts/build-termux.sh debug
 
 # release（需要 KEY_STORE_PASSWORD/KEY_ALIAS/STREAMCLIP_KEYSTORE 三个环境变量）
-KEY_STORE_PASSWORD=xxx bash ./build-termux.sh release
+KEY_STORE_PASSWORD=xxx bash ./scripts/build-termux.sh release
 ```
 
-成功后产物落在项目根目录：
+成功后产物落在 `releases/` 目录：
 
 ```
 StreamClip-v2.2.0-debug.apk
 StreamClip-v2.2.0-release-signed.apk
 ```
 
-由于 sdcard 上的目录就是手机外部存储，用文件管理器进入 `内部存储/my-git-projects/StreamClip/` 直接点击 APK 即可安装。
+由于 sdcard 上的目录就是手机外部存储，用文件管理器进入 `内部存储/my-git-projects/StreamClip/releases/` 直接点击 APK 即可安装。
 
 ## 6. 已知坑
 

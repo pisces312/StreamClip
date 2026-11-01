@@ -19,18 +19,18 @@ StreamClip（轻剪辑）— Android 视频/音频处理工具，基于 FFmpeg �
 ./gradlew assembleRelease
 
 # 签名 release（arm64，zipalign + apksigner）
-./build.sh                 # release
-./build.sh debug           # debug
-./build.sh release arm64 --no-minify
+./scripts/build.sh                 # release
+./scripts/build.sh debug           # debug
+./scripts/build.sh release arm64 --no-minify
 
-# 构建并安装到设备（透传参数给 build.sh，-d 指定设备）
-./build-and-push.sh debug -d emulator-5554
+# 构建并安装到设备（透传参数给 scripts/build.sh，-d 指定设备）
+./scripts/build-and-push.sh debug -d emulator-5554
 
 # 只出 AAB（Google Play 上传用，Google 侧签名）
-./build-aab.sh
+./scripts/build-aab.sh
 
 # 手机本地构建（Termux + proot ubuntu, aarch64）
-./build-termux.sh debug
+./scripts/build-termux.sh debug
 ```
 
 > Termux 使用 JDK 21 回退，构建前需手动临时移走 `gradle/gradle-daemon-jvm.properties`，脚本不会自动处理。当前 `build-termux.sh` 仍检查 `platforms/android-36`，与 `compileSdk 37` 不一致，使用前需先修正。
@@ -50,7 +50,7 @@ git 在 `D:\dev\git\cmd\git.exe`。
 
 ### 签名
 
-签名不在 Gradle 内配置，由 `build.sh` 完成：
+签名不在 Gradle 内配置，由 `scripts/build.sh` 完成：
 
 - Keystore：`D:/my-projects/my-backup/backup-settings/my-android-release.keystore`
 - Alias：`pisces312`
