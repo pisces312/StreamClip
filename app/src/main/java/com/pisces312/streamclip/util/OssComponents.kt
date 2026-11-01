@@ -95,11 +95,11 @@ object OssComponents {
             ),
             OssComponent(
                 name = "LAME",
-                version = "3.100",
+                version = "4.0",
                 license = "LGPL-2.0",
                 licenseRes = R.raw.license_lame,
                 url = "https://lame.sourceforge.io",
-                coordinate = "libmp3lame @ RELEASE__3_100，configure 需 --disable-decoder"
+                coordinate = "libmp3lame @ RELEASE__4_0，configure 需 --disable-decoder"
             ),
             OssComponent(
                 name = "libiconv",

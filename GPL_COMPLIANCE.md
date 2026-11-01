@@ -30,7 +30,7 @@ the Free Software Foundation, either version 3 of the License, or
 | FFmpegKitNext | 9.0.2（pisces312 fork） | LGPL-3.0 | https://github.com/pisces312/ffmpeg-kit-next |
 | x264 | BUILD 165（`b35605a`） | GPL-2.0+ | https://code.videolan.org/videolan/x264 |
 | x265 | 4.2 / BUILD 216（tag `4.2`） | GPL-2.0+ | https://bitbucket.org/multicoreware/x265_git |
-| LAME | 3.100 | LGPL-2.0 | https://lame.sourceforge.io |
+| LAME | 4.0 | LGPL-2.0 | https://lame.sourceforge.io |
 | libiconv | 1.17 | LGPL-2.1 | https://www.gnu.org/software/libiconv/ |
 | cpu_features | 0.11.0 | Apache-2.0 | https://github.com/google/cpu_features |
 
@@ -65,7 +65,7 @@ the Free Software Foundation, either version 3 of the License, or
 本应用使用的 FFmpegKitNext 为基于官方源码的定制构建，包含以下修改：
 - 基于 **FFmpeg n9.0.2** 源码
 - 仅编译 arm64-v8a 架构（NDK r27d，`aarch64-linux-android26`）
-- 静态链接 x264、x265、LAME 3.100、libiconv 1.17、zlib，并启用 MediaCodec 硬编硬解
+- 静态链接 x264、x265、LAME 4.0、libiconv 1.17、zlib，并启用 MediaCodec 硬编硬解
 - 启用 `--enable-version3`（FFmpegKitNext 强制），未启用 `--enable-nonfree`
 
 定制构建脚本和文档：

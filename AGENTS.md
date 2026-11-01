@@ -129,13 +129,13 @@ FFmpeg 通过 **ffmpeg-kit-next 9.0.2 自编译 AAR**（`app/libs/ffmpeg-kit-nex
 | FFmpeg | n8.1.3 | n9.0.2 |
 | x264 | stable `eaa68fa`，BUILD 164 | `b35605a`，BUILD 165 |
 | x265 | master `b81f650`，4.2（BUILD 216） | tag `4.2`（BUILD 216） |
-| LAME | 4.0（`src/lame` 源码 `LAME_MAJOR_VERSION=4`） | 3.100（arthenica fork `RELEASE__3_100`） |
+| LAME | 4.0（`src/lame` 源码 `LAME_MAJOR_VERSION=4`） | 4.0（enzo1982 fork `RELEASE__4_0`） |
 | libiconv | — | 1.17（lame 依赖链带出） |
 | cpu_features | 0.8.0 | 0.11.0 |
 | zlib | 系统库（自动检测） | 系统库（显式 `--enable-zlib`） |
 | 构建工具链 | NDK r27 / API 24 | NDK r27d (27.3) / API 26，WSL Ubuntu + Gradle 9.4.1 / AGP 8.13.2 |
 
-> 注意：LAME 版本存在**回退**——8.1.3 编入 LAME 4.0（自存源码，`libmp3lame/version.h` MAJOR=4），next v9.0.2 被 `scripts/source.sh` 钉在 arthenica fork `RELEASE__3_100`（=3.100）。若需保持 4.0，须改 next 仓库 `source.sh` 的 lame `SOURCE_ID` 并重新编译 AAR。Opus 按产品决策**不编入**（走 FFmpeg 内置实验性编码器，见 `AudioEncoder.kt` 的 `-strict -2` + 强制 48 kHz workaround）。
+> 注意：LAME 两代均为 **4.0**——8.1.3 自存源码（`libmp3lame/version.h` MAJOR=4），next v9.0.2 由 `scripts/source.sh` 指向 enzo1982 fork `RELEASE__4_0`（官方 SVN 镜像，源为官方 2026-07 的 4.0）。next 的 lame.sh 另加 `--disable-decoder`（排除 mpg123 解码器依赖）。Opus 按产品决策**不编入**（走 FFmpeg 内置实验性编码器，见 `AudioEncoder.kt` 的 `-strict -2` + 强制 48 kHz workaround）。
 
 - 执行：`FFmpegKit.executeAsync()` 包在 `suspendCancellableCoroutine` 中；探测：`FFprobeKit.execute()`
 - 操作模式：
