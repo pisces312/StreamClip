@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.pisces312.streamclip.databinding.ItemVideoBinding
+import com.pisces312.streamclip.util.FileUtils
 
 class VideoListAdapter(
     private val videos: List<Uri>,
@@ -24,7 +25,8 @@ class VideoListAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val uri = videos[position]
-        holder.binding.tvVideoUri.text = uri.lastPathSegment ?: "Video ${position + 1}"
+        holder.binding.tvVideoUri.text =
+            FileUtils.getFileNameFromUri(holder.itemView.context, uri) ?: "Video ${position + 1}"
         holder.binding.btnRemove.setOnClickListener {
             onRemove(position)
         }
