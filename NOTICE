@@ -1,0 +1,29 @@
+StreamClip（轻剪辑）— Android video processing app based on FFmpeg
+Copyright (C) 2025 pisces312
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+---
+
+完整许可证文本见 [LICENSE](LICENSE)（GNU General Public License v3.0，未作任何修改）。
+The full, unmodified license text is in the [LICENSE](LICENSE) file.
+
+本程序静态链接以下 GPL 组件，对应源码：
+This program statically links the following GPL components; corresponding source:
+
+- FFmpeg — https://github.com/pisces312/FFmpeg
+- ffmpeg-kit — https://github.com/pisces312/ffmpeg-kit
+
+其余第三方组件的版本、许可证与源码地址见 [GPL_COMPLIANCE.md](GPL_COMPLIANCE.md)。
+See [GPL_COMPLIANCE.md](GPL_COMPLIANCE.md) for the full third-party component list.
