@@ -1,0 +1,7 @@
+2.3.0
+
+- Compression results now offer open video, show location, copy path and share
+- The info card lists every type-2 metadata key, including vendor camera and lens entries such as com.honor.lens.model
+- Fixed color space, primaries and transfer tags being rewritten after compression
+- Camera and lens information is no longer lost after compression
+- FFmpeg upgraded to 9.0.2 via ffmpeg-kit-next

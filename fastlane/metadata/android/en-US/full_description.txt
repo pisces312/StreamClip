@@ -1,0 +1,27 @@
+StreamClip is a lossless video toolkit for Android, built on FFmpeg. It handles the jobs that usually force a full re-encode — trimming, merging, extracting audio — by copying the original streams, so quality is untouched and the work finishes in seconds.
+
+Lossless by default
+- Trim: pick a range and save it with stream copy, no re-encoding
+- Merge: join clips by concatenating containers, video data untouched
+- Extract audio: pull the audio track out as-is (AAC, MP3, FLAC, WAV)
+
+Metadata preserved
+Capture time, GPS coordinates, camera and lens model, rotation and color tags are carried over to the output, including after compression. Most tools drop these silently.
+
+Hardware-accelerated compression
+When re-encoding is unavoidable, H.264 and H.265 run through MediaCodec on the device's own encoder, with automatic fallback to software encoding. Bitrate, frame rate, resolution and rotation are adjustable.
+
+Also included
+- Audio compression with configurable bitrate and sample rate
+- Waveform-based audio editor
+- Batch queue for processing several files in a row
+- Custom FFmpeg command runner with live logs
+- Metadata viewer and editor
+
+Private by design
+Everything runs on the device. No account, no upload, no analytics.
+
+Open source
+Licensed GPL-3.0. FFmpeg, x264, x265 and LAME are compiled from source and bundled.
+
+Requires Android 8.0 or later. arm64-v8a devices only.
